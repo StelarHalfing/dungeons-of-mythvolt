@@ -1,0 +1,49 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/XPGem.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/gem/gem-1.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/gem/gem-2.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/gem/gem-3.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/gem/gem-4.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/gem/gem-5.png" id="6"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 6.0
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_1"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6")
+}],
+"loop": true,
+"name": &"sparkle",
+"speed": 8.0
+}]
+
+[node name="RedXPGem" type="Area2D"]
+script = ExtResource("1")
+xp_value = 5
+gem_color = Color(1, 0.2, 0.2, 1)
+gem_radius = 6.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_1")
+animation = &"sparkle"
+autoplay = "sparkle"
+scale = Vector2(1.25, 1.25)
