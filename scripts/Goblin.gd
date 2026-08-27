@@ -15,6 +15,9 @@ extends Area2D
 @export var xp_gem_scene: PackedScene = preload("res://scenes/XPGem.tscn")
 @export var coin_pickup_scene: PackedScene = preload("res://scenes/CoinPickup.tscn")
 @export var damage_number_scene: PackedScene = preload("res://scenes/DamageNumber.tscn")
+@export var magnet_pickup_scene: PackedScene = preload("res://scenes/MagnetPickup.tscn")
+
+const MAGNET_DROP_CHANCE := 0.001  # 0.1% chance per kill
 
 var hp: float
 var damage_tick_timer: float = 0.0
@@ -101,6 +104,11 @@ func die() -> void:
 		var coin = coin_pickup_scene.instantiate()
 		get_parent().add_child(coin)
 		coin.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
+
+	if randf() < MAGNET_DROP_CHANCE:
+		var magnet = magnet_pickup_scene.instantiate()
+		get_parent().add_child(magnet)
+		magnet.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
 
 	queue_free()
 
