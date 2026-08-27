@@ -28,6 +28,8 @@ func _draw() -> void:
 			_draw_forcefield(center, s, color)
 		"tornado":
 			_draw_tornado(center, s, color)
+		"grenade":
+			_draw_grenade(center, s, color)
 		_:
 			_draw_locked(center, s, color)
 
@@ -39,6 +41,8 @@ func _base_color() -> Color:
 			return Color(0.65, 0.35, 1.0)
 		"tornado":
 			return Color(0.65, 0.8, 0.85)
+		"grenade":
+			return Color(0.35, 0.55, 0.3)
 		_:
 			return Color(0.6, 0.6, 0.6)
 
@@ -61,6 +65,13 @@ func _draw_tornado(center: Vector2, s: float, color: Color) -> void:
 		var arc_radius: float = s * (0.42 - i * 0.12)
 		var start_angle: float = i * 1.3
 		draw_arc(center, arc_radius, start_angle, start_angle + PI * 1.4, 16, color, s * 0.07)
+
+func _draw_grenade(center: Vector2, s: float, color: Color) -> void:
+	var body_center: Vector2 = center + Vector2(0, s * 0.08)
+	draw_circle(body_center, s * 0.32, color)
+	# pin stem and ring poking out the top of the body
+	draw_rect(Rect2(center.x - s * 0.05, body_center.y - s * 0.42, s * 0.1, s * 0.2), color)
+	draw_arc(center + Vector2(0, -s * 0.42), s * 0.1, 0.0, TAU, 12, Color(1, 1, 1, color.a), s * 0.05)
 
 func _draw_locked(center: Vector2, s: float, color: Color) -> void:
 	var body_w: float = s * 0.5

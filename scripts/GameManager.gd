@@ -108,6 +108,20 @@ const WEAPON_DEFS := {
 		"speed_label": "cooldown",
 		"max_level": 12,
 	},
+	"grenade": {
+		"display_name": "Grenade",
+		"description": "Lobs a grenade onto a nearby enemy that explodes once for heavy AoE damage.",
+		"start_level": 0,
+		# damage tuned so a single un-upgraded throw (level 1: first pick
+		# applies no gain, see level_up_weapon()) one-shots a Goblin (20
+		# HP), and max level (12) deals ~half a Minotaur's 300 HP (150) in
+		# one burst hit - see the level-12 math in chat. projectile_count
+		# gets +1 every 3rd level same as Laser Pistol/Tornado.
+		"base": {"damage": 22.0, "size": 60.0, "speed": 1.0 / 15.0, "projectile_count": 1.0},
+		"gain": {"damage": 11.6364, "size": 5.0, "speed": 0.004},
+		"speed_label": "cooldown",
+		"max_level": 12,
+	},
 }
 
 # Live per-weapon stats: weapons[id] = {"level": int, "damage": float, "size": float, "speed": float}
@@ -222,7 +236,13 @@ func get_weapon_choice_text(weapon_id: String) -> Dictionary:
 		_percent_gain(stats["damage"], gain["damage"]), _percent_gain(stats["size"], gain["size"]), speed_text
 	]
 	if def["base"].has("projectile_count") and next_level % 3 == 0:
-		desc += ", +1 projectile" if weapon_id == "laser_pistol" else ", +1 tornado"
+		match weapon_id:
+			"laser_pistol":
+				desc += ", +1 projectile"
+			"tornado":
+				desc += ", +1 tornado"
+			"grenade":
+				desc += ", +1 grenade"
 	return {
 		"name": "%s (Lv %d)" % [def["display_name"], next_level],
 		"desc": desc,
