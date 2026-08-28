@@ -112,13 +112,19 @@ const WEAPON_DEFS := {
 		"display_name": "Grenade",
 		"description": "Lobs a grenade onto a nearby enemy that explodes once for heavy AoE damage.",
 		"start_level": 0,
-		# damage tuned so a single un-upgraded throw (level 1: first pick
-		# applies no gain, see level_up_weapon()) one-shots a Goblin (20
-		# HP), and max level (12) deals ~half a Minotaur's 300 HP (150) in
-		# one burst hit - see the level-12 math in chat. projectile_count
-		# gets +1 every 3rd level same as Laser Pistol/Tornado.
-		"base": {"damage": 22.0, "size": 60.0, "speed": 1.0 / 15.0, "projectile_count": 1.0},
-		"gain": {"damage": 11.6364, "size": 5.0, "speed": 0.004},
+		# damage tuned so a single un-upgraded throw (base raised from 22.0
+		# to 35.0 for a punchier early game; first pick applies no gain,
+		# see level_up_weapon()) one-shots a Goblin (20 HP), and max level
+		# (12) deals ~2/3 of a Minotaur's 300 HP (200) in one burst hit:
+		# 35.0 + 11 * 15.0 = 200.0 exactly. Gain lowered from 16.1818 to
+		# 15.0 so the climb per level is gentler now that base is higher.
+		# speed here is casts/sec (cooldown = 1/speed): base 1/15 = 15s
+		# cooldown at level 1, gain 13/330 per level so level 12 lands on
+		# exactly 2s: 1/15 + 11 * (13/330) = 22/330 + 143/330 = 165/330 =
+		# 0.5 -> 1/0.5 = 2.0s. projectile_count gets +1 every 3rd level
+		# same as Laser Pistol/Tornado.
+		"base": {"damage": 35.0, "size": 60.0, "speed": 1.0 / 15.0, "projectile_count": 1.0},
+		"gain": {"damage": 15.0, "size": 5.0, "speed": 13.0 / 330.0},
 		"speed_label": "cooldown",
 		"max_level": 12,
 	},
