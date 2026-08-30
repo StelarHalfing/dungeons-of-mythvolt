@@ -1,10 +1,10 @@
-[gd_scene load_steps=29 format=3]
+[gd_scene load_steps=37 format=3]
 
-[ext_resource type="Script" path="res://scripts/Minotaur.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/minotaur/MinotaurWalk.png" id="2"]
+[ext_resource type="Script" path="res://scripts/Zombie.gd" id="1"]
+[ext_resource type="Texture2D" path="res://allassets/DG Monsters Expansion/Zombies Pack/1Zombie-Run.png" id="2"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
-radius = 18.0
+radius = 11.5
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_down1"]
 atlas = ExtResource("2")
@@ -30,6 +30,14 @@ region = Rect2(128, 0, 32, 32)
 atlas = ExtResource("2")
 region = Rect2(160, 0, 32, 32)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_down7"]
+atlas = ExtResource("2")
+region = Rect2(192, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_down8"]
+atlas = ExtResource("2")
+region = Rect2(224, 0, 32, 32)
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_up1"]
 atlas = ExtResource("2")
 region = Rect2(0, 32, 32, 32)
@@ -53,6 +61,14 @@ region = Rect2(128, 32, 32, 32)
 [sub_resource type="AtlasTexture" id="AtlasTexture_up6"]
 atlas = ExtResource("2")
 region = Rect2(160, 32, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_up7"]
+atlas = ExtResource("2")
+region = Rect2(192, 32, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_up8"]
+atlas = ExtResource("2")
+region = Rect2(224, 32, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_right1"]
 atlas = ExtResource("2")
@@ -78,6 +94,14 @@ region = Rect2(128, 64, 32, 32)
 atlas = ExtResource("2")
 region = Rect2(160, 64, 32, 32)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_right7"]
+atlas = ExtResource("2")
+region = Rect2(192, 64, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_right8"]
+atlas = ExtResource("2")
+region = Rect2(224, 64, 32, 32)
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_left1"]
 atlas = ExtResource("2")
 region = Rect2(0, 96, 32, 32)
@@ -102,6 +126,14 @@ region = Rect2(128, 96, 32, 32)
 atlas = ExtResource("2")
 region = Rect2(160, 96, 32, 32)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_left7"]
+atlas = ExtResource("2")
+region = Rect2(192, 96, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_left8"]
+atlas = ExtResource("2")
+region = Rect2(224, 96, 32, 32)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_1"]
 animations = [{
 "frames": [{
@@ -122,6 +154,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_down6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_down7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_down8")
 }],
 "loop": true,
 "name": &"walk_down",
@@ -145,6 +183,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_up6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_up7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_up8")
 }],
 "loop": true,
 "name": &"walk_up",
@@ -168,6 +212,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_right6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_right7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_right8")
 }],
 "loop": true,
 "name": &"walk_right",
@@ -191,16 +241,20 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_left6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_left7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_left8")
 }],
 "loop": true,
 "name": &"walk_left",
 "speed": 10.0
 }]
 
-[node name="Minotaur" type="Area2D"]
+[node name="Zombie" type="Area2D"]
 script = ExtResource("1")
-speed = 30.0
-max_hp = 300.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_1")
@@ -209,4 +263,4 @@ shape = SubResource("CircleShape2D_1")
 sprite_frames = SubResource("SpriteFrames_1")
 animation = &"walk_down"
 autoplay = "walk_down"
-scale = Vector2(4.219, 4.219)
+scale = Vector2(2.9, 2.9)

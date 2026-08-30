@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/HUD.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/IconSlot.tscn" id="2"]
 [ext_resource type="Script" path="res://scripts/WeaponIcon.gd" id="3"]
+[ext_resource type="Theme" path="res://assets/ui/AppTheme.tres" id="4"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1")
@@ -12,6 +13,7 @@ offset_left = 20.0
 offset_top = 20.0
 offset_right = 300.0
 offset_bottom = 44.0
+theme = ExtResource("4")
 show_percentage = false
 modulate = Color(1, 0.3, 0.3, 1)
 
@@ -20,6 +22,7 @@ offset_left = 20.0
 offset_top = 50.0
 offset_right = 300.0
 offset_bottom = 66.0
+theme = ExtResource("4")
 show_percentage = false
 modulate = Color(0.3, 0.8, 1, 1)
 
@@ -124,6 +127,7 @@ offset_left = -240.0
 offset_top = -170.0
 offset_right = 240.0
 offset_bottom = 170.0
+theme = ExtResource("4")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UpgradePanel"]
 anchor_right = 1.0
@@ -243,6 +247,7 @@ offset_left = -150.0
 offset_top = -140.0
 offset_right = 150.0
 offset_bottom = 140.0
+theme = ExtResource("4")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="GameOverPanel"]
 anchor_right = 1.0
@@ -286,6 +291,7 @@ offset_left = -120.0
 offset_top = -130.0
 offset_right = 120.0
 offset_bottom = 130.0
+theme = ExtResource("4")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="PausePanel"]
 anchor_right = 1.0
@@ -324,6 +330,7 @@ offset_left = -150.0
 offset_top = -130.0
 offset_right = 150.0
 offset_bottom = 130.0
+theme = ExtResource("4")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="GameSettingsPanel"]
 anchor_right = 1.0

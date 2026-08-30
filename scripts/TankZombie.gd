@@ -1,4 +1,4 @@
-extends "res://scripts/Goblin.gd"
+extends "res://scripts/Zombie.gd"
 
 # Every dash_interval seconds: brief telegraph (stands still, flashes
 # orange) then charges in a straight line at the player's position
@@ -20,13 +20,13 @@ var dash_direction: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	super._ready()
-	add_to_group("minotaurs")
+	add_to_group("tank_zombies")
 	dash_timer = dash_interval
 
 func _process(delta: float) -> void:
 	# Base _process() is overridden here (different per-state
 	# movement), so slow_timer's countdown has to happen here too -
-	# Goblin's _process() never runs for a Minotaur instance.
+	# Zombie's _process() never runs for a TankZombie instance.
 	if slow_timer > 0.0:
 		slow_timer -= delta
 	var speed_mult: float = SLOWED_SPEED_MULT if slow_timer > 0.0 else 1.0

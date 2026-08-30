@@ -4,7 +4,7 @@ extends Area2D
 # in large numbers - no physics collision resolution needed, just
 # "am I touching the player" and "move toward the player."
 #
-# This is the base enemy (Goblin). Minotaur.gd extends this script
+# This is the base enemy (Zombie). TankZombie.gd extends this script
 # and overrides _process()/_drop_loot() for its dash attack and
 # different loot, while reusing take_damage()/die()/contact
 # damage/damage numbers/coin drops as-is.
@@ -62,9 +62,27 @@ func _move_toward_player(delta: float) -> void:
 # Picks whichever axis (horizontal/vertical) dominates `dir` and
 # returns the matching walk_* animation - the sprite sheets are
 # 4-directional (no diagonal frames), so this is the standard way to
-# collapse an arbitrary movement vector onto one of the 4.
+# collapse an arbitrary movement vector onto one of the 4. Recomputed
+# every frame from raw direction, so an enemy approaching from close
+# to a 45-degree angle (extremely common - enemies spawn all around
+# the player) would otherwise flicker between two animations on tiny
+# frame-to-frame jitter; AnimatedSprite2D.play() restarts from frame 0
+# on every actual switch, so that flicker reads as the walk cycle
+# constantly stuttering/resetting even though each individual frame is
+# a perfectly valid image (confirmed: ~2% jitter around the diagonal
+# caused 20 switches in 40 ticks without this guard). facing_horizontal
+# is sticky - switching away from the current axis needs a clear
+# margin, not just barely crossing the exact diagonal.
+var facing_horizontal: bool = false
+
 func _facing_animation(dir: Vector2) -> String:
-	if abs(dir.x) > abs(dir.y):
+	const HYSTERESIS := 1.15
+	if facing_horizontal:
+		facing_horizontal = abs(dir.x) * HYSTERESIS > abs(dir.y)
+	else:
+		facing_horizontal = abs(dir.x) > abs(dir.y) * HYSTERESIS
+
+	if facing_horizontal:
 		return "walk_right" if dir.x > 0.0 else "walk_left"
 	else:
 		return "walk_down" if dir.y > 0.0 else "walk_up"
@@ -112,7 +130,7 @@ func die() -> void:
 
 	queue_free()
 
-# Overridden by Minotaur to drop a RedXPGem instead.
+# Overridden by TankZombie to drop a RedXPGem instead.
 func _drop_loot() -> void:
 	var gem = xp_gem_scene.instantiate()
 	get_parent().add_child(gem)

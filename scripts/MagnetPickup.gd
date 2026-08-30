@@ -1,7 +1,7 @@
 extends Area2D
 
-# Dropped by Goblin.gd/Minotaur.gd on kill with a tiny 0.1% chance
-# (Goblin.MAGNET_DROP_CHANCE). Homes to the player exactly like
+# Dropped by Zombie.gd/TankZombie.gd on kill with a tiny 0.1% chance
+# (Zombie.MAGNET_DROP_CHANCE). Homes to the player exactly like
 # XPGem.gd/CoinPickup.gd; on pickup, instead of granting its own
 # value, it sets every XP gem and coin currently on the field homing
 # toward the player - same per-frame accelerate-and-move_toward

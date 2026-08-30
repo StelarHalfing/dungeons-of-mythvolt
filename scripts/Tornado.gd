@@ -5,8 +5,8 @@ extends Area2D
 # tick-damage pattern as ForcefieldWeapon.gd), and pulls overlapping
 # enemies toward its own center each frame so they stay "caught"
 # inside it as it drifts, instead of needing to track/replicate the
-# tornado's exact movement. Minotaurs are too heavy to drag around -
-# they get slowed (Goblin.apply_slow()) instead of pulled. Frees
+# tornado's exact movement. Tank Zombies are too heavy to drag around
+# - they get slowed (Zombie.apply_slow()) instead of pulled. Frees
 # itself after `duration` seconds.
 
 var damage: float = 6.0
@@ -15,14 +15,15 @@ var duration: float = 2.5
 
 const TICK_INTERVAL := 0.4
 const PULL_SPEED := 90.0
-# Minotaurs get slowed, not pulled (see class comment), so nothing
+# Tank Zombies get slowed, not pulled (see class comment), so nothing
 # re-centers them in the tornado - wander can carry it away from a
-# stationary/slow Minotaur and cost a tick or two. That's intentional
-# variance, not a bug: max-level damage gain (GameManager.gd) is
-# tuned so a full, uninterrupted 6-tick duration deals exactly half a
-# Minotaur's HP - that's the ceiling when wander cooperates, not a
-# guarantee. Goblins are unaffected since the pull re-centers them
-# regardless of where the tornado wanders.
+# stationary/slow Tank Zombie and cost a tick or two. That's
+# intentional variance, not a bug: max-level damage gain
+# (GameManager.gd) is tuned so a full, uninterrupted 6-tick duration
+# deals exactly half a Tank Zombie's HP - that's the ceiling when
+# wander cooperates, not a guarantee. Regular Zombies are unaffected
+# since the pull re-centers them regardless of where the tornado
+# wanders.
 const WANDER_SPEED := 45.0
 const WANDER_TURN_INTERVAL := 0.7
 
@@ -68,13 +69,13 @@ func _deal_damage() -> void:
 # Re-centers overlapping enemies toward the tornado each frame rather
 # than moving them by the tornado's own delta - simpler and avoids
 # ever needing to know if the tornado moved this frame before or
-# after a given enemy did. Minotaurs are exempt from the pull (see
+# after a given enemy did. Tank Zombies are exempt from the pull (see
 # class comment above) and get slowed instead.
 func _pull_enemies(delta: float) -> void:
 	for area in get_overlapping_areas():
 		if not area.is_in_group("enemies"):
 			continue
-		if area.is_in_group("minotaurs"):
+		if area.is_in_group("tank_zombies"):
 			area.apply_slow()
 		else:
 			area.global_position = area.global_position.move_toward(global_position, PULL_SPEED * delta)

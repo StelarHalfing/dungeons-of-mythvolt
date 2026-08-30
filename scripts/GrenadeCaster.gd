@@ -59,8 +59,8 @@ func _try_throw(stats: Dictionary) -> void:
 		get_parent().get_parent().add_child(grenade)
 		grenade.start_throw(player.global_position, target_pos)
 
-# Enemies never stand still - Goblin/Minotaur AI always walks straight
-# toward wherever the player currently is (see Goblin._move_toward_
+# Enemies never stand still - Zombie/TankZombie AI always walks straight
+# toward wherever the player currently is (see Zombie._move_toward_
 # player()) - so aiming at today's positions means a group has
 # usually walked out from under the blast by the time it actually
 # goes off (throw travel time plus Grenade.FUSE_TIME's 1s charge-up,

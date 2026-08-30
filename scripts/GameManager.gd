@@ -68,10 +68,10 @@ const WEAPON_DEFS := {
 		"start_level": 1,
 		"base": {"damage": 10.0, "size": 4.0, "speed": 400.0, "projectile_count": 1.0},
 		# damage gain tuned so that at max level (12), projectile_count
-		# (5, from +1 every 3rd level) times damage clears a Minotaur's
+		# (5, from +1 every 3rd level) times damage clears a Tank Zombie's
 		# 300 HP in one cooldown cycle if every shot could land on the
 		# same target - see the level-12 math in chat. Also already
-		# one-shots a Goblin (20 HP) well before max level.
+		# one-shots a Zombie (20 HP) well before max level.
 		"gain": {"damage": 4.6, "size": 1.0, "speed": 40.0},
 		"speed_label": "projectile speed",
 		"max_level": 12,
@@ -95,10 +95,10 @@ const WEAPON_DEFS := {
 		# simultaneous tornado (projectile_count), same mechanic as
 		# Laser Pistol.
 		"base": {"damage": 6.0, "size": 55.0, "speed": 0.1, "duration": 2.5, "projectile_count": 1.0},
-		# damage gain tuned so max level (12) deals ~half a Minotaur's
+		# damage gain tuned so max level (12) deals ~half a Tank Zombie's
 		# 300 HP (150) over a full 2.5s duration: with Tornado.gd's
 		# fixed 0.4s tick interval, that's 6 ticks * 25.0 dmg/tick -
-		# see the level-12 math in chat. Goblins (20 HP) stay a fast
+		# see the level-12 math in chat. Zombies (20 HP) stay a fast
 		# wipe throughout - killed in 4 ticks at level 1, down to a
 		# single tick by level 10+.
 		"gain": {"damage": 1.73, "size": 6.0, "speed": 0.02},
@@ -114,8 +114,8 @@ const WEAPON_DEFS := {
 		"start_level": 0,
 		# damage tuned so a single un-upgraded throw (base raised from 22.0
 		# to 35.0 for a punchier early game; first pick applies no gain,
-		# see level_up_weapon()) one-shots a Goblin (20 HP), and max level
-		# (12) deals ~2/3 of a Minotaur's 300 HP (200) in one burst hit:
+		# see level_up_weapon()) one-shots a Zombie (20 HP), and max level
+		# (12) deals ~2/3 of a Tank Zombie's 300 HP (200) in one burst hit:
 		# 35.0 + 11 * 15.0 = 200.0 exactly. Gain lowered from 16.1818 to
 		# 15.0 so the climb per level is gentler now that base is higher.
 		# speed here is casts/sec (cooldown = 1/speed): base 1/15 = 15s
