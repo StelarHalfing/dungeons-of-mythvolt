@@ -51,6 +51,12 @@ func _process(delta: float) -> void:
 			if state_elapsed >= dash_duration:
 				state = State.CHASE
 
+	# Called unconditionally across every state (not just CHASE, where
+	# base Zombie's _process() would call it) - see _update_facing()'s
+	# own comment: the sprite should always track the player's current
+	# position, even mid-TELEGRAPH/DASH where actual movement follows
+	# a direction locked in back at _start_telegraph().
+	_update_facing()
 	_update_contact_damage(delta)
 
 func _start_telegraph() -> void:
@@ -62,10 +68,6 @@ func _start_telegraph() -> void:
 		dash_direction = (players[0].global_position - global_position).normalized()
 	else:
 		dash_direction = Vector2.RIGHT
-	# Face (and hold) the charge direction through both TELEGRAPH and
-	# DASH, since dash_direction is locked in right here and neither
-	# state calls _move_toward_player() to update facing on its own.
-	sprite.play(_facing_animation(dash_direction))
 
 func _start_dash() -> void:
 	state = State.DASH

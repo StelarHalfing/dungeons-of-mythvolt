@@ -13,6 +13,7 @@ extends Area2D
 @export var max_hp: float = 20.0
 @export var contact_damage: float = 10.0
 @export var xp_gem_scene: PackedScene = preload("res://scenes/XPGem.tscn")
+@export var xp_gem_count: int = 1
 @export var coin_pickup_scene: PackedScene = preload("res://scenes/CoinPickup.tscn")
 @export var damage_number_scene: PackedScene = preload("res://scenes/DamageNumber.tscn")
 @export var magnet_pickup_scene: PackedScene = preload("res://scenes/MagnetPickup.tscn")
@@ -45,6 +46,7 @@ func _process(delta: float) -> void:
 	if slow_timer > 0.0:
 		slow_timer -= delta
 	_move_toward_player(delta)
+	_update_facing()
 	_update_contact_damage(delta)
 
 func apply_slow(duration: float = 0.25) -> void:
@@ -57,7 +59,19 @@ func _move_toward_player(delta: float) -> void:
 		var dir: Vector2 = (player.global_position - global_position).normalized()
 		var effective_speed: float = speed * (SLOWED_SPEED_MULT if slow_timer > 0.0 else 1.0)
 		global_position += dir * effective_speed * delta
-		sprite.play(_facing_animation(dir))
+
+# Split out from _move_toward_player() so the sprite always faces
+# wherever the player currently is, independent of whatever direction
+# the enemy is actually moving in - matters for TankZombie, whose
+# TELEGRAPH/DASH states move along a direction locked in when the
+# charge started (see TankZombie._start_telegraph()), which can go
+# stale relative to the player's live position by the time the dash
+# actually plays out.
+func _update_facing() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if not players.is_empty():
+		var dir_to_player: Vector2 = (players[0].global_position - global_position).normalized()
+		sprite.play(_facing_animation(dir_to_player))
 
 # Picks whichever axis (horizontal/vertical) dominates `dir` and
 # returns the matching walk_* animation - the sprite sheets are
@@ -130,11 +144,16 @@ func die() -> void:
 
 	queue_free()
 
-# Overridden by TankZombie to drop a RedXPGem instead.
+# Overridden by TankZombie to drop a RedXPGem instead. xp_gem_count
+# above 1 (e.g. Skeleton) spreads the extra gems out slightly so they
+# don't spawn stacked exactly on top of each other - same small-offset
+# idea as the coin/magnet drops in die().
 func _drop_loot() -> void:
-	var gem = xp_gem_scene.instantiate()
-	get_parent().add_child(gem)
-	gem.global_position = global_position
+	for i in range(xp_gem_count):
+		var gem = xp_gem_scene.instantiate()
+		get_parent().add_child(gem)
+		var offset: Vector2 = Vector2.ZERO if i == 0 else Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
+		gem.global_position = global_position + offset
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):

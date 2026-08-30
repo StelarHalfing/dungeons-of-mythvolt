@@ -47,13 +47,36 @@ func _physics_process(delta: float) -> void:
 		try_fire()
 		fire_timer = attack_cooldown
 
+# Tracks the last nonzero movement direction so idle keeps facing
+# whichever way the player was last walking, instead of snapping back
+# to a default facing the instant input stops.
+var facing_dir: Vector2 = Vector2.DOWN
+
+# Sticky per Zombie.gd's _facing_animation() - switching away from the
+# current axis needs a clear margin, not just barely crossing the
+# diagonal, or facing flickers between side/up/down on tiny frame-to-
+# frame jitter around a ~45-degree input.
+var facing_horizontal: bool = false
+
 func _update_sprite(input_dir: Vector2) -> void:
-	if input_dir.length() > 0:
-		sprite.play("run")
-		if input_dir.x != 0:
-			sprite.flip_h = input_dir.x < 0
+	var moving: bool = input_dir.length() > 0
+	if moving:
+		facing_dir = input_dir
+
+	const HYSTERESIS := 1.15
+	if facing_horizontal:
+		facing_horizontal = abs(facing_dir.x) * HYSTERESIS > abs(facing_dir.y)
 	else:
-		sprite.play("idle")
+		facing_horizontal = abs(facing_dir.x) > abs(facing_dir.y) * HYSTERESIS
+
+	var direction_suffix: String
+	if facing_horizontal:
+		direction_suffix = "side"
+		sprite.flip_h = facing_dir.x < 0.0
+	else:
+		direction_suffix = "up" if facing_dir.y < 0.0 else "down"
+
+	sprite.play(("run_" if moving else "idle_") + direction_suffix)
 
 func get_input_dir() -> Vector2:
 	var dir := Vector2.ZERO
