@@ -42,7 +42,7 @@ func _try_throw(stats: Dictionary) -> void:
 	var blast_radius: float = stats["size"]
 	var grenade_count: int = int(stats.get("projectile_count", 1.0))
 	var throws: int = min(grenade_count, enemies.size())
-	var damage: float = stats["damage"] * GameManager.get_permanent_damage_mult()
+	var damage: float = stats["damage"] * GameManager.get_damage_mult()
 	var predicted: Array = _predict_positions(enemies, player.global_position)
 	var targets: Array = _pick_cluster_targets(predicted, blast_radius, throws, player.global_position)
 

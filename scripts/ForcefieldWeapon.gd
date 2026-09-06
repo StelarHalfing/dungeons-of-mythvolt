@@ -29,7 +29,7 @@ func _process(delta: float) -> void:
 	var interval: float = 1.0 / max(stats["speed"], 0.01)
 	tick_timer -= delta
 	if tick_timer <= 0:
-		_deal_damage(stats["damage"] * GameManager.get_permanent_damage_mult())
+		_deal_damage(stats["damage"] * GameManager.get_damage_mult())
 		tick_timer = interval
 
 func _sync_shape() -> void:

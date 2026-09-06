@@ -37,7 +37,7 @@ func _try_cast(stats: Dictionary) -> void:
 
 	var tornado_count: int = int(stats.get("projectile_count", 1.0))
 	var casts: int = min(tornado_count, enemies.size())
-	var damage: float = stats["damage"] * GameManager.get_permanent_damage_mult()
+	var damage: float = stats["damage"] * GameManager.get_damage_mult()
 
 	for i in range(casts):
 		var tornado = tornado_scene.instantiate()

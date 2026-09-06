@@ -114,7 +114,7 @@ is_weapon = false
 
 [node name="PassiveSlot2" parent="WeaponGrid" instance=ExtResource("2")]
 layout_mode = 2
-icon_id = ""
+icon_id = "power_emblem"
 is_weapon = false
 
 [node name="PassiveSlot3" parent="WeaponGrid" instance=ExtResource("2")]

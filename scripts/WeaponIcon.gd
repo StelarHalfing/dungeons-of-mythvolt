@@ -13,6 +13,7 @@ const ICON_TEXTURES := {
 	"forcefield": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Shield.png"),
 	"grenade": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Fire Orb.png"),
 	"attraction_tome": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Book.png"),
+	"power_emblem": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Emblem.png"),
 }
 
 var icon_id: String = ""

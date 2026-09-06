@@ -104,7 +104,7 @@ func try_fire() -> void:
 	var stats: Dictionary = GameManager.weapons["laser_pistol"]
 	var projectile_count: int = int(stats.get("projectile_count", 1.0))
 	var shots: int = min(projectile_count, enemies.size())
-	var damage: float = stats["damage"] * GameManager.get_permanent_damage_mult()
+	var damage: float = stats["damage"] * GameManager.get_damage_mult()
 
 	for i in range(shots):
 		var target: Node2D = enemies[i]

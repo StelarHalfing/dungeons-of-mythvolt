@@ -59,13 +59,15 @@ const PERMANENT_UPGRADE_DEFS := {
 	},
 }
 
-# Player-level stats read by Player/XPGem/CoinPickup/MagnetPickup.
-# Passives (PASSIVE_DEFS below) drive these: pickup_range_mult is the
-# Attraction Tome's stat; speed_mult/max_hp_bonus are still free hooks
-# for future passives.
+# Player-level stats. Passives (PASSIVE_DEFS below) drive these:
+# pickup_range_mult is the Attraction Tome's stat (read by XPGem/
+# CoinPickup/MagnetPickup), damage_mult is the Power Emblem's (folded
+# into every weapon's damage via get_damage_mult()); speed_mult/
+# max_hp_bonus are still free hooks for future passives.
 var speed_mult: float = 1.0
 var max_hp_bonus: float = 0.0
 var pickup_range_mult: float = 1.0
+var damage_mult: float = 1.0
 
 # Static definition of every weapon: its starting level (0 = not yet
 # owned, must be picked once to unlock), base stats, and the flat
@@ -162,6 +164,19 @@ const PASSIVE_DEFS := {
 		"per_level_value": 0.3,
 		"max_level": 5,
 	},
+	"power_emblem": {
+		"display_name": "Power Emblem",
+		"description": "Every weapon hits harder.",
+		"stat": "damage_mult",
+		"stat_label": "damage",
+		"base": 1.0,
+		# +20% per level, x2 damage at max: a real rival to spending the
+		# pick on a weapon level (a Laser Pistol level is ~+46% at Lv 2
+		# falling to ~+8% by Lv 12), on top of the coin-bought permanent
+		# +10%/level - both multiply together in get_damage_mult().
+		"per_level_value": 0.2,
+		"max_level": 5,
+	},
 }
 
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
@@ -214,6 +229,7 @@ func reset() -> void:
 	speed_mult = 1.0
 	max_hp_bonus = 0.0
 	pickup_range_mult = 1.0
+	damage_mult = 1.0
 	_init_weapons()
 	_init_passives()
 
@@ -392,6 +408,13 @@ func get_health_regen_rate() -> float:
 func get_permanent_damage_mult() -> float:
 	var per_level: float = PERMANENT_UPGRADE_DEFS["damage"]["per_level_value"]
 	return 1.0 + get_upgrade_level("damage") * per_level
+
+# The one multiplier every weapon applies to its base damage: the
+# permanent (coin-bought) bonus times this run's Power Emblem passive.
+# Weapons call this rather than either piece so a new global damage
+# source only has to be added here.
+func get_damage_mult() -> float:
+	return get_permanent_damage_mult() * damage_mult
 
 func _load_persistent_data() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
