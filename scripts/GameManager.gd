@@ -16,6 +16,14 @@ var is_paused_for_upgrade: bool = false
 var is_menu_paused: bool = false
 var is_game_over: bool = false
 var enemies_defeated: int = 0
+# Level-ups the player has earned but not yet picked an upgrade for.
+# Several can land at once (a burst of gems arriving in the same
+# physics tick - a magnet pull makes this common - or one RedXPGem
+# crossing two thresholds at low level); they're queued here so each
+# one gets its own choice panel in turn, instead of every extra
+# offer_upgrades() overwriting the panel that's already open and
+# silently losing that level's pick.
+var pending_level_ups: int = 0
 
 # User preferences and meta-progression. Persist across runs (not
 # touched by reset()) and across game restarts (saved to disk).
@@ -162,6 +170,7 @@ func reset() -> void:
 	is_menu_paused = false
 	is_game_over = false
 	enemies_defeated = 0
+	pending_level_ups = 0
 	speed_mult = 1.0
 	max_hp_bonus = 0.0
 	pickup_range_mult = 1.0
@@ -178,8 +187,12 @@ func add_xp(amount: int) -> void:
 		level += 1
 		xp_to_next = int(xp_to_next * 1.25) + 3
 		level_changed.emit(level)
-		offer_upgrades()
+		pending_level_ups += 1
 	xp_changed.emit(xp, xp_to_next)
+	# Only open a panel if one isn't already up; choose_upgrade() works
+	# through the rest of the queue one pick at a time.
+	if pending_level_ups > 0 and not is_paused_for_upgrade:
+		offer_upgrades()
 
 func offer_upgrades() -> void:
 	is_paused_for_upgrade = true
@@ -196,6 +209,12 @@ func offer_upgrades() -> void:
 
 func choose_upgrade(weapon_id: String) -> void:
 	level_up_weapon(weapon_id)
+	pending_level_ups = max(pending_level_ups - 1, 0)
+	if pending_level_ups > 0:
+		# Another level-up is still owed a pick: stay paused and put up
+		# the next set of choices right away.
+		offer_upgrades()
+		return
 	is_paused_for_upgrade = false
 	get_tree().paused = false
 
