@@ -1,17 +1,18 @@
 extends Control
 
 # Identifies a weapon or passive by id with a small icon. Most
-# weapons now use a real sprite (see ICON_TEXTURES); anything without
-# a matching texture - currently only Tornado, which has no fitting
-# icon in the asset library - falls back to a procedurally-drawn
-# glyph, same as the "locked" glyph used for any id this doesn't
-# recognize (including an empty icon_id, i.e. a not-yet-implemented
-# future slot).
+# weapons and every passive use a real sprite (see ICON_TEXTURES);
+# anything without a matching texture - currently only Tornado, which
+# has no fitting icon in the asset library - falls back to a
+# procedurally-drawn glyph, same as the "locked" glyph used for any id
+# this doesn't recognize (including an empty icon_id, i.e. a
+# not-yet-implemented future slot).
 
 const ICON_TEXTURES := {
 	"laser_pistol": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Magic wand.png"),
 	"forcefield": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Shield.png"),
 	"grenade": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Fire Orb.png"),
+	"attraction_tome": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Book.png"),
 }
 
 var icon_id: String = ""

@@ -85,7 +85,7 @@ func _on_level_up_choices(choices: Array) -> void:
 	current_choices = choices
 	for i in range(upgrade_buttons.size()):
 		if i < choices.size():
-			var info: Dictionary = GameManager.get_weapon_choice_text(choices[i])
+			var info: Dictionary = GameManager.get_choice_text(choices[i])
 			upgrade_labels[i].text = "%s\n%s" % [info["name"], info["desc"]]
 			upgrade_icons[i].configure(choices[i], false)
 			upgrade_buttons[i].visible = true

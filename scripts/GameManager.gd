@@ -59,9 +59,10 @@ const PERMANENT_UPGRADE_DEFS := {
 	},
 }
 
-# Player-level stats. Nothing levels these up right now (the level-up
-# pool is entirely weapons - see below) but Player/XPGem still read
-# them, so they're kept as a hook for non-weapon upgrades later.
+# Player-level stats read by Player/XPGem/CoinPickup/MagnetPickup.
+# Passives (PASSIVE_DEFS below) drive these: pickup_range_mult is the
+# Attraction Tome's stat; speed_mult/max_hp_bonus are still free hooks
+# for future passives.
 var speed_mult: float = 1.0
 var max_hp_bonus: float = 0.0
 var pickup_range_mult: float = 1.0
@@ -91,7 +92,7 @@ const WEAPON_DEFS := {
 		"base": {"damage": 10.0, "size": 50.0, "speed": 1.0},
 		"gain": {"damage": 4.0, "size": 8.0, "speed": 0.15},
 		# speed here is ticks/sec (interval = 1/speed), same as
-		# Tornado - see get_weapon_choice_text().
+		# Tornado - see _get_weapon_choice_text().
 		"speed_label": "cooldown",
 	},
 	"tornado": {
@@ -112,7 +113,7 @@ const WEAPON_DEFS := {
 		"gain": {"damage": 1.73, "size": 6.0, "speed": 0.02},
 		# speed here is casts/sec (cooldown = 1/speed), so the level-up
 		# text should show the cooldown getting shorter, not the raw
-		# "speed" stat going up - see get_weapon_choice_text().
+		# "speed" stat going up - see _get_weapon_choice_text().
 		"speed_label": "cooldown",
 		"max_level": 12,
 	},
@@ -141,11 +142,37 @@ const WEAPON_DEFS := {
 # Live per-weapon stats: weapons[id] = {"level": int, "damage": float, "size": float, "speed": float}
 var weapons: Dictionary = {}
 
+# Static definition of every passive (non-weapon) upgrade. Passives sit
+# in the same level-up pool as weapons (see offer_upgrades()) but
+# instead of their own stats they drive one of the player-level vars
+# above: after every level, `stat` is set to base + level *
+# per_level_value. Unlike weapons, the first pick already applies one
+# step (level 1 = one bonus), since a passive with no effect would be a
+# dead pick.
+const PASSIVE_DEFS := {
+	"attraction_tome": {
+		"display_name": "Attraction Tome",
+		"description": "Widens the range at which XP gems and coins fly to you.",
+		"stat": "pickup_range_mult",
+		"stat_label": "pickup range",
+		"base": 1.0,
+		# +30% pickup range per level: 60px base becomes 78/96/114/132/150,
+		# i.e. 2.5x at max level - enough to feel magnetic without making
+		# the Magnet pickup pointless.
+		"per_level_value": 0.3,
+		"max_level": 5,
+	},
+}
+
+# Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
+var passives: Dictionary = {}
+
 func _ready() -> void:
 	# Keep ticking (and keep the level-up UI responsive) while the
 	# tree is paused for an upgrade choice.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_init_weapons()
+	_init_passives()
 	_load_persistent_data()
 	_apply_fullscreen()
 
@@ -156,6 +183,19 @@ func _init_weapons() -> void:
 		var stats: Dictionary = def["base"].duplicate()
 		stats["level"] = def["start_level"]
 		weapons[id] = stats
+
+func _init_passives() -> void:
+	passives.clear()
+	for id in PASSIVE_DEFS.keys():
+		passives[id] = {"level": 0}
+		_apply_passive(id)
+
+# Recomputes the player-level stat a passive drives from its current
+# level - the single place the level -> stat math lives.
+func _apply_passive(id: String) -> void:
+	var def: Dictionary = PASSIVE_DEFS[id]
+	var level: int = passives[id]["level"]
+	set(def["stat"], def["base"] + level * def["per_level_value"])
 
 func _process(delta: float) -> void:
 	if not is_paused_for_upgrade and not is_menu_paused and not is_game_over:
@@ -175,6 +215,7 @@ func reset() -> void:
 	max_hp_bonus = 0.0
 	pickup_range_mult = 1.0
 	_init_weapons()
+	_init_passives()
 
 func end_run() -> void:
 	is_game_over = true
@@ -202,13 +243,19 @@ func offer_upgrades() -> void:
 		var max_level: int = WEAPON_DEFS[id].get("max_level", -1)
 		if max_level < 0 or weapons[id]["level"] < max_level:
 			ids.append(id)
+	for id in passives.keys():
+		if passives[id]["level"] < PASSIVE_DEFS[id]["max_level"]:
+			ids.append(id)
 	ids.shuffle()
 	var count: int = min(3, ids.size())
 	var choices: Array = ids.slice(0, count)
 	level_up_choices.emit(choices)
 
-func choose_upgrade(weapon_id: String) -> void:
-	level_up_weapon(weapon_id)
+func choose_upgrade(id: String) -> void:
+	if PASSIVE_DEFS.has(id):
+		level_up_passive(id)
+	else:
+		level_up_weapon(id)
 	pending_level_ups = max(pending_level_ups - 1, 0)
 	if pending_level_ups > 0:
 		# Another level-up is still owed a pick: stay paused and put up
@@ -237,9 +284,33 @@ func level_up_weapon(weapon_id: String) -> void:
 	if WEAPON_DEFS[weapon_id]["base"].has("projectile_count") and stats["level"] % 3 == 0:
 		stats["projectile_count"] = stats.get("projectile_count", 1.0) + 1.0
 
-# Text for a level-up choice button: current weapon name/level plus
-# what picking it will grant.
-func get_weapon_choice_text(weapon_id: String) -> Dictionary:
+func level_up_passive(id: String) -> void:
+	passives[id]["level"] += 1
+	_apply_passive(id)
+
+# Text for a level-up choice button (weapon or passive): current
+# name/level plus what picking it will grant.
+func get_choice_text(id: String) -> Dictionary:
+	if PASSIVE_DEFS.has(id):
+		return _get_passive_choice_text(id)
+	return _get_weapon_choice_text(id)
+
+func _get_passive_choice_text(id: String) -> Dictionary:
+	var def: Dictionary = PASSIVE_DEFS[id]
+	var level: int = passives[id]["level"]
+	var step_pct: float = def["per_level_value"] * 100.0
+	if level <= 0:
+		return {
+			"name": "%s (NEW)" % def["display_name"],
+			"desc": "%s +%.0f%% %s." % [def["description"], step_pct, def["stat_label"]],
+		}
+	var next_level: int = level + 1
+	return {
+		"name": "%s (Lv %d)" % [def["display_name"], next_level],
+		"desc": "+%.0f%% %s (total +%.0f%%)" % [step_pct, def["stat_label"], next_level * step_pct],
+	}
+
+func _get_weapon_choice_text(weapon_id: String) -> Dictionary:
 	var def: Dictionary = WEAPON_DEFS[weapon_id]
 	var stats: Dictionary = weapons[weapon_id]
 	var gain: Dictionary = def["gain"]

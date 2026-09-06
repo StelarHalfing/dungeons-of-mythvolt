@@ -109,7 +109,7 @@ is_weapon = true
 
 [node name="PassiveSlot1" parent="WeaponGrid" instance=ExtResource("2")]
 layout_mode = 2
-icon_id = ""
+icon_id = "attraction_tome"
 is_weapon = false
 
 [node name="PassiveSlot2" parent="WeaponGrid" instance=ExtResource("2")]
@@ -159,7 +159,7 @@ offset_bottom = -12.0
 [node name="TitleLabel" type="Label" parent="UpgradePanel/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "Level Up! Choose a weapon:"
+text = "Level Up! Choose an upgrade:"
 horizontal_alignment = 1
 
 [node name="ScrollContainer" type="ScrollContainer" parent="UpgradePanel/VBoxContainer"]
