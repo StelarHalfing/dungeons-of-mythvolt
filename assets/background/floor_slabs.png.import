@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dprgxc5mjw6hy"
-path="res://.godot/imported/floor_tile.png-b69e379977dd006733789816cfe0ba14.ctex"
+uid="uid://bt3ydnq8wiqcv"
+path="res://.godot/imported/floor_slabs.png-71a522a970643e7f38b32b5ae9be8d13.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/background/floor_tile.png"
-dest_files=["res://.godot/imported/floor_tile.png-b69e379977dd006733789816cfe0ba14.ctex"]
+source_file="res://assets/background/floor_slabs.png"
+dest_files=["res://.godot/imported/floor_slabs.png-71a522a970643e7f38b32b5ae9be8d13.ctex"]
 
 [params]
 
