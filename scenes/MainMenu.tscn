@@ -17,11 +17,12 @@ color = Color(0.08, 0.08, 0.1, 1)
 [node name="TitleLabel" type="Label" parent="."]
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -280.0
+offset_left = -400.0
 offset_top = 100.0
-offset_right = 280.0
-offset_bottom = 150.0
-theme_override_font_sizes/font_size = 28
+offset_right = 400.0
+offset_bottom = 160.0
+theme_override_font_sizes/font_size = 32
+theme_override_constants/outline_size = 3
 text = "THE DUNGEONS OF MYTHVOLT"
 horizontal_alignment = 1
 
@@ -30,32 +31,33 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -100.0
-offset_top = -75.0
-offset_right = 100.0
-offset_bottom = 75.0
+offset_left = -110.0
+offset_top = -96.0
+offset_right = 110.0
+offset_bottom = 96.0
+theme_override_constants/separation = 8
 
 [node name="PlayButton" type="Button" parent="MainButtons"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 60)
 text = "Play"
 
 [node name="SettingsButton" type="Button" parent="MainButtons"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 60)
 text = "Settings"
 
 [node name="UpgradesButton" type="Button" parent="MainButtons"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 60)
 text = "Upgrades"
 
 [node name="QuitButton" type="Button" parent="."]
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = -60.0
-offset_right = 160.0
+offset_top = -76.0
+offset_right = 170.0
 offset_bottom = -20.0
 text = "Quit"
 
@@ -64,21 +66,22 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -130.0
-offset_right = 150.0
-offset_bottom = 130.0
+offset_left = -160.0
+offset_top = -150.0
+offset_right = 160.0
+offset_bottom = 150.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="SettingsPanel"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = -10.0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = -14.0
+offset_bottom = -12.0
 
 [node name="SettingsLabel" type="Label" parent="SettingsPanel/VBoxContainer"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Settings"
 horizontal_alignment = 1
 
@@ -105,7 +108,7 @@ button_pressed = false
 
 [node name="BackButton" type="Button" parent="SettingsPanel/VBoxContainer"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 56)
 text = "Back"
 
 [node name="UpgradesPanel" type="Panel" parent="."]
@@ -113,21 +116,22 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -190.0
-offset_top = -180.0
-offset_right = 190.0
-offset_bottom = 180.0
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 200.0
+offset_bottom = 200.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UpgradesPanel"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = -10.0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = -14.0
+offset_bottom = -12.0
 
 [node name="TitleLabel" type="Label" parent="UpgradesPanel/VBoxContainer"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Upgrades"
 horizontal_alignment = 1
 
@@ -153,7 +157,7 @@ autowrap_mode = 2
 
 [node name="HealthRegenBuyButton" type="Button" parent="UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 56)
 text = "Buy Lv 1 (100 coins)"
 
 [node name="DamageInfoLabel" type="Label" parent="UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList"]
@@ -164,10 +168,10 @@ autowrap_mode = 2
 
 [node name="DamageBuyButton" type="Button" parent="UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 56)
 text = "Buy Lv 1 (200 coins)"
 
 [node name="BackButton" type="Button" parent="UpgradesPanel/VBoxContainer"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 56)
 text = "Back"

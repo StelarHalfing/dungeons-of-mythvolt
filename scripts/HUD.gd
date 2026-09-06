@@ -1,7 +1,7 @@
 extends CanvasLayer
 
-@onready var hp_bar: ProgressBar = $HPBar
-@onready var xp_bar: ProgressBar = $XPBar
+@onready var hp_bar: TextureProgressBar = $HPBar
+@onready var xp_bar: TextureProgressBar = $XPBar
 @onready var time_label: Label = $TimeLabel
 @onready var level_label: Label = $LevelLabel
 @onready var coins_label: Label = $CoinsLabel

@@ -1,91 +1,141 @@
-[gd_resource type="Theme" load_steps=8 format=3]
+[gd_resource type="Theme" load_steps=15 format=3]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.11, 0.13, 0.2, 0.95)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.35, 0.42, 0.55, 1.0)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
+[ext_resource type="Texture2D" path="res://assets/ui/ui_sheet.png" id="1"]
+[ext_resource type="FontFile" path="res://allassets/DG UI-HUD Exp/TeamSnow.ttf" id="2"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
-bg_color = Color(0.18, 0.22, 0.32, 1.0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.35, 0.42, 0.55, 1.0)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxTexture" id="btn_normal"]
+texture = ExtResource("1")
+region_rect = Rect2(4, 4, 174, 78)
+texture_margin_left = 48.0
+texture_margin_top = 27.0
+texture_margin_right = 36.0
+texture_margin_bottom = 24.0
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
-bg_color = Color(0.26, 0.32, 0.46, 1.0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1.0, 0.85, 0.1, 1.0)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxTexture" id="btn_hover"]
+texture = ExtResource("1")
+region_rect = Rect2(4, 86, 174, 78)
+texture_margin_left = 48.0
+texture_margin_top = 27.0
+texture_margin_right = 36.0
+texture_margin_bottom = 24.0
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_pressed"]
-bg_color = Color(0.08, 0.1, 0.16, 1.0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1.0, 0.85, 0.1, 1.0)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxTexture" id="btn_pressed"]
+texture = ExtResource("1")
+region_rect = Rect2(4, 168, 174, 72)
+texture_margin_left = 48.0
+texture_margin_top = 27.0
+texture_margin_right = 36.0
+texture_margin_bottom = 21.0
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_disabled"]
-bg_color = Color(0.13, 0.14, 0.18, 1.0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.24, 0.26, 0.32, 1.0)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxTexture" id="btn_disabled"]
+texture = ExtResource("1")
+region_rect = Rect2(4, 168, 174, 72)
+texture_margin_left = 48.0
+texture_margin_top = 27.0
+texture_margin_right = 36.0
+texture_margin_bottom = 21.0
+modulate_color = Color(0.72, 0.74, 0.8, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_progress_bg"]
-bg_color = Color(0.08, 0.09, 0.14, 1.0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.35, 0.42, 0.55, 1.0)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxEmpty" id="focus_empty"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_progress_fill"]
-bg_color = Color(0.92, 0.92, 0.94, 1.0)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
+[sub_resource type="StyleBoxTexture" id="panel"]
+texture = ExtResource("1")
+region_rect = Rect2(4, 244, 255, 474)
+texture_margin_left = 6.0
+texture_margin_top = 6.0
+texture_margin_right = 6.0
+texture_margin_bottom = 6.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+content_margin_left = 14.0
+content_margin_top = 14.0
+content_margin_right = 14.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="slot"]
+texture = ExtResource("1")
+region_rect = Rect2(4, 722, 51, 51)
+texture_margin_left = 9.0
+texture_margin_top = 9.0
+texture_margin_right = 9.0
+texture_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxTexture" id="slider_track"]
+texture = ExtResource("1")
+region_rect = Rect2(4, 832, 126, 18)
+texture_margin_left = 9.0
+texture_margin_top = 6.0
+texture_margin_right = 9.0
+texture_margin_bottom = 6.0
+content_margin_left = 9.0
+content_margin_top = 9.0
+content_margin_right = 9.0
+content_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxTexture" id="slider_fill"]
+texture = ExtResource("1")
+region_rect = Rect2(4, 854, 126, 12)
+texture_margin_left = 9.0
+texture_margin_top = 4.0
+texture_margin_right = 9.0
+texture_margin_bottom = 4.0
+content_margin_left = 9.0
+content_margin_top = 6.0
+content_margin_right = 9.0
+content_margin_bottom = 6.0
+
+[sub_resource type="AtlasTexture" id="check_on"]
+atlas = ExtResource("1")
+region = Rect2(4, 870, 40, 40)
+
+[sub_resource type="AtlasTexture" id="check_off"]
+atlas = ExtResource("1")
+region = Rect2(4, 914, 40, 40)
+
+[sub_resource type="AtlasTexture" id="knob"]
+atlas = ExtResource("1")
+region = Rect2(4, 958, 24, 24)
 
 [resource]
-Button/styles/normal = SubResource("StyleBoxFlat_button_normal")
-Button/styles/hover = SubResource("StyleBoxFlat_button_hover")
-Button/styles/pressed = SubResource("StyleBoxFlat_button_pressed")
-Button/styles/focus = SubResource("StyleBoxFlat_button_hover")
-Button/styles/disabled = SubResource("StyleBoxFlat_button_disabled")
-Button/colors/font_disabled_color = Color(0.5, 0.52, 0.58, 1.0)
-Panel/styles/panel = SubResource("StyleBoxFlat_panel")
-ProgressBar/styles/background = SubResource("StyleBoxFlat_progress_bg")
-ProgressBar/styles/fill = SubResource("StyleBoxFlat_progress_fill")
+default_font = ExtResource("2")
+default_font_size = 16
+Button/colors/font_color = Color(1, 1, 1, 1)
+Button/colors/font_disabled_color = Color(0.6, 0.62, 0.7, 1)
+Button/colors/font_focus_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_pressed_color = Color(0.85, 0.88, 0.95, 1)
+Button/colors/font_outline_color = Color(0.11, 0.12, 0.2, 1)
+Button/colors/font_pressed_color = Color(0.85, 0.88, 0.95, 1)
+Button/constants/outline_size = 2
+Button/styles/disabled = SubResource("btn_disabled")
+Button/styles/focus = SubResource("focus_empty")
+Button/styles/hover = SubResource("btn_hover")
+Button/styles/hover_pressed = SubResource("btn_pressed")
+Button/styles/normal = SubResource("btn_normal")
+Button/styles/pressed = SubResource("btn_pressed")
+CheckButton/colors/font_color = Color(1, 1, 1, 1)
+CheckButton/colors/font_hover_color = Color(1, 1, 1, 1)
+CheckButton/colors/font_outline_color = Color(0.11, 0.12, 0.2, 1)
+CheckButton/colors/font_pressed_color = Color(1, 1, 1, 1)
+CheckButton/constants/outline_size = 2
+CheckButton/icons/checked = SubResource("check_on")
+CheckButton/icons/checked_disabled = SubResource("check_on")
+CheckButton/icons/unchecked = SubResource("check_off")
+CheckButton/icons/unchecked_disabled = SubResource("check_off")
+CheckButton/styles/disabled = SubResource("focus_empty")
+CheckButton/styles/focus = SubResource("focus_empty")
+CheckButton/styles/hover = SubResource("focus_empty")
+CheckButton/styles/hover_pressed = SubResource("focus_empty")
+CheckButton/styles/normal = SubResource("focus_empty")
+CheckButton/styles/pressed = SubResource("focus_empty")
+HSlider/icons/grabber = SubResource("knob")
+HSlider/icons/grabber_disabled = SubResource("knob")
+HSlider/icons/grabber_highlight = SubResource("knob")
+HSlider/styles/grabber_area = SubResource("slider_fill")
+HSlider/styles/grabber_area_highlight = SubResource("slider_fill")
+HSlider/styles/slider = SubResource("slider_track")
+IconSlot/base_type = &"Panel"
+IconSlot/styles/panel = SubResource("slot")
+Label/colors/font_outline_color = Color(0.11, 0.12, 0.2, 1)
+Label/constants/outline_size = 2
+Panel/styles/panel = SubResource("panel")
