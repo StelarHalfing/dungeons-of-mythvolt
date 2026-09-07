@@ -134,15 +134,16 @@ const PERMANENT_UPGRADE_DEFS := {
 	},
 	# Each level turns one locked box in the HUD's collection grid into an
 	# open slot (see get_weapon_slots() / get_passive_slots()): 2 base
-	# slots + 4 levels = the 6-box row fully open.
+	# slots + 2 levels = 4 of the row's 6 boxes. The last two boxes are
+	# reserved for a different unlock, not coins.
 	"weapon_slots": {
 		"display_name": "Weapon Slots",
 		"description": "Unlock another weapon slot for every run.",
 		"stat_label": "weapon slots",
 		"format": "count",
 		"per_level_value": 1.0,
-		"max_level": 4,
-		"costs": [1000, 2500, 5000, 10000],
+		"max_level": 2,
+		"costs": [1000, 2500],
 	},
 	"passive_slots": {
 		"display_name": "Passive Slots",
@@ -150,16 +151,18 @@ const PERMANENT_UPGRADE_DEFS := {
 		"stat_label": "passive slots",
 		"format": "count",
 		"per_level_value": 1.0,
-		"max_level": 4,
-		"costs": [1000, 2500, 5000, 10000],
+		"max_level": 2,
+		"costs": [1000, 2500],
 	},
 }
 
 # Weapon and passive slots: how many different weapons (passives) a run
 # can hold. Every run has BASE_*_SLOTS; the permanent Weapon Slots /
-# Passive Slots upgrades add one each per level, up to the
-# GRID_SLOTS_PER_ROW boxes the HUD grid shows per row (open ones first,
-# a lock on each of the rest, so buying a level visibly removes one).
+# Passive Slots upgrades add one each per level (to 4). The HUD grid
+# shows GRID_SLOTS_PER_ROW boxes per row - open ones first, a lock on
+# each of the rest, so buying a level visibly removes one - and the two
+# boxes beyond the shop's reach are for a future, non-coin unlock: add
+# its source to get_weapon_slots()/get_passive_slots() when it exists.
 # A slot is a real cap: _upgrade_pool() only offers a weapon (passive)
 # you don't own yet while a slot is free for it.
 const BASE_WEAPON_SLOTS := 2

@@ -119,7 +119,9 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   frame and the lock glyph. Runs start with
   `BASE_WEAPON_SLOTS`/`BASE_PASSIVE_SLOTS` (2 each, so four locks per
   row) and each level of the permanent Weapon Slots / Passive Slots
-  upgrades opens one more, up to the full row of six. A slot is a
+  upgrades opens one more, to four; the last two boxes of each row
+  are reserved for a different, non-coin unlock (not built yet - its
+  source plugs into `get_weapon_slots()`/`get_passive_slots()`). A slot is a
   real cap: `_upgrade_pool()` only offers a weapon or passive you
   don't own yet while a slot is free for it, so with two base slots a
   run holds the Laser Pistol plus one more weapon until the upgrades
@@ -200,10 +202,10 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     1000 then 5000 coins, Rerolls (+1 free reroll per run on top of
     the one everyone gets, via `get_free_rerolls()`) and Bans (+1 ban
     per run; there are none without it, via `get_max_bans()`); and
-    for the collection grid, four levels each at 1000 / 2500 / 5000 /
-    10000 coins, Weapon Slots and Passive Slots (+1 open slot per run
-    each, from 2 up to 6, via `get_weapon_slots()`/`get_passive_slots()`
-    - see the grid notes above).
+    for the collection grid, two levels each at 1000 then 2500 coins,
+    Weapon Slots and Passive Slots (+1 open slot per run each, from 2
+    up to 4, via `get_weapon_slots()`/`get_passive_slots()` - see the
+    grid notes above).
   - **Bans**: the Ban button beside Reroll on the level-up panel is a
     mode - press it, the title switches to "Choose an upgrade to
     ban:", and clicking a choice removes that weapon/passive from the
