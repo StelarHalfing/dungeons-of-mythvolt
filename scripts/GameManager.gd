@@ -87,6 +87,9 @@ var speed_mult: float = 1.0
 var max_hp_bonus: float = 0.0
 var pickup_range_mult: float = 1.0
 var damage_mult: float = 1.0
+# Vitality Elixir's stat: extra HP/sec this run, added to the permanent
+# Health Regeneration upgrade in get_health_regen_rate().
+var regen_bonus: float = 0.0
 # Wisdom Orb's stat (this run's XP multiplier; the permanent XP Gain
 # upgrade multiplies on top - see get_xp_mult()). XP is integer (1 per
 # gem, 5 per red gem), so the boosted value's fraction is carried in
@@ -230,6 +233,20 @@ const PASSIVE_DEFS := {
 		"per_level_value": 0.1,
 		"max_level": 5,
 	},
+	"vitality_elixir": {
+		"display_name": "Vitality Elixir",
+		"description": "Slowly regenerates health during the run.",
+		"stat": "regen_bonus",
+		"stat_label": "HP/sec",
+		# A flat amount, not a percentage: shown as "+0.2 HP/sec".
+		"format": "flat",
+		"base": 0.0,
+		# Same curve as the permanent Health Regeneration upgrade (+0.2
+		# HP/sec per level, 5 levels, 1.0 HP/sec at max); the two add
+		# together in get_health_regen_rate().
+		"per_level_value": 0.2,
+		"max_level": 5,
+	},
 }
 
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
@@ -250,7 +267,7 @@ const CHARACTER_DEFS := {
 			"Move speed: 140",
 			"Starting weapon: Laser Pistol",
 			"Can unlock: Forcefield, Tornado, Grenade, Fireball",
-			"Passives: Attraction Tome, Power Emblem, Wisdom Orb",
+			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir",
 		],
 		"portrait": "res://assets/ui/portrait_knight.tres",
 	},
@@ -320,6 +337,7 @@ func reset() -> void:
 	max_hp_bonus = 0.0
 	pickup_range_mult = 1.0
 	damage_mult = 1.0
+	regen_bonus = 0.0
 	xp_mult = 1.0
 	xp_carry = 0.0
 	_init_weapons()
@@ -417,17 +435,24 @@ func get_choice_text(id: String) -> Dictionary:
 func _get_passive_choice_text(id: String) -> Dictionary:
 	var def: Dictionary = PASSIVE_DEFS[id]
 	var passive_level: int = passives[id]["level"]
-	var step_pct: float = def["per_level_value"] * 100.0
+	var step: float = def["per_level_value"]
 	if passive_level <= 0:
 		return {
 			"name": "%s (NEW)" % def["display_name"],
-			"desc": "%s +%.0f%% %s." % [def["description"], step_pct, def["stat_label"]],
+			"desc": "%s %s." % [def["description"], _passive_bonus_text(def, step)],
 		}
 	var next_level: int = passive_level + 1
 	return {
 		"name": "%s (Lv %d)" % [def["display_name"], next_level],
-		"desc": "+%.0f%% %s (total +%.0f%%)" % [step_pct, def["stat_label"], next_level * step_pct],
+		"desc": "%s (total %s)" % [_passive_bonus_text(def, step), _passive_bonus_text(def, next_level * step)],
 	}
+
+# "+10% XP gain" for percentage passives, "+0.2 HP/sec" for flat ones
+# (format "flat", where stat_label is the unit).
+func _passive_bonus_text(def: Dictionary, value: float) -> String:
+	if def.get("format", "percent") == "flat":
+		return "+%.1f %s" % [value, def["stat_label"]]
+	return "+%.0f%% %s" % [value * 100.0, def["stat_label"]]
 
 func _get_weapon_choice_text(weapon_id: String) -> Dictionary:
 	var def: Dictionary = WEAPON_DEFS[weapon_id]
@@ -501,10 +526,11 @@ func purchase_upgrade(id: String) -> bool:
 	_save_slot()
 	return true
 
-# Total HP/sec granted by the Health Regeneration upgrade right now.
+# Total HP/sec right now: the permanent Health Regeneration upgrade plus
+# this run's Vitality Elixir passive (both flat, so they add).
 func get_health_regen_rate() -> float:
 	var per_level: float = PERMANENT_UPGRADE_DEFS["health_regen"]["per_level_value"]
-	return get_upgrade_level("health_regen") * per_level
+	return get_upgrade_level("health_regen") * per_level + regen_bonus
 
 # Damage multiplier from the permanent Damage upgrade (1.0 = no
 # bonus, up to 1.5 at max level - flat +10%/level, not compounding).

@@ -18,6 +18,7 @@ const ICON_TEXTURES := {
 	# The XP gem's own green orb sprite (an AtlasTexture slice of the orbs
 	# sheet) - the passive makes those gems worth more.
 	"wisdom_orb": preload("res://assets/ui/icon_wisdom_orb.tres"),
+	"vitality_elixir": preload("res://assets/ui/icon_vitality_elixir.tres"),
 }
 
 var icon_id: String = ""

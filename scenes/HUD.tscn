@@ -124,7 +124,7 @@ is_weapon = false
 
 [node name="PassiveSlot4" parent="WeaponGrid" instance=ExtResource("2")]
 layout_mode = 2
-icon_id = ""
+icon_id = "vitality_elixir"
 is_weapon = false
 
 [node name="PassiveSlot5" parent="WeaponGrid" instance=ExtResource("2")]
