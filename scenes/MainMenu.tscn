@@ -1,8 +1,13 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1"]
 [ext_resource type="Theme" path="res://assets/ui/AppTheme.tres" id="2"]
 [ext_resource type="Theme" path="res://assets/ui/MenuPanelTheme.tres" id="3"]
+[ext_resource type="FontFile" path="res://allassets/m5x7.ttf" id="4"]
+
+[sub_resource type="FontVariation" id="font_bold"]
+base_font = ExtResource("4")
+variation_embolden = 0.4
 
 [node name="MainMenu" type="Control"]
 anchor_right = 1.0
@@ -22,6 +27,7 @@ offset_left = -400.0
 offset_top = 80.0
 offset_right = 400.0
 offset_bottom = 160.0
+theme_override_fonts/font = SubResource("font_bold")
 theme_override_font_sizes/font_size = 80
 theme_override_constants/outline_size = 8
 text = "THE DUNGEONS OF MYTHVOLT"
@@ -41,18 +47,21 @@ theme_override_constants/separation = 8
 [node name="PlayButton" type="Button" parent="MainButtons"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 102)
+theme_override_fonts/font = SubResource("font_bold")
 theme_override_font_sizes/font_size = 64
 text = "Play"
 
 [node name="SettingsButton" type="Button" parent="MainButtons"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 102)
+theme_override_fonts/font = SubResource("font_bold")
 theme_override_font_sizes/font_size = 64
 text = "Settings"
 
 [node name="UpgradesButton" type="Button" parent="MainButtons"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 102)
+theme_override_fonts/font = SubResource("font_bold")
 theme_override_font_sizes/font_size = 64
 text = "Upgrades"
 
@@ -60,10 +69,11 @@ text = "Upgrades"
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = -110.0
-offset_right = 240.0
+offset_top = -122.0
+offset_right = 280.0
 offset_bottom = -20.0
-theme_override_font_sizes/font_size = 48
+theme_override_fonts/font = SubResource("font_bold")
+theme_override_font_sizes/font_size = 64
 text = "Quit"
 
 [node name="SaveSlotButton" type="Button" parent="."]
@@ -72,10 +82,11 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -130.0
-offset_top = -110.0
+offset_top = -122.0
 offset_right = 130.0
 offset_bottom = -20.0
-theme_override_font_sizes/font_size = 48
+theme_override_fonts/font = SubResource("font_bold")
+theme_override_font_sizes/font_size = 64
 text = "Saves"
 
 [node name="UnlocksButton" type="Button" parent="."]
@@ -83,11 +94,12 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -240.0
-offset_top = -110.0
+offset_left = -280.0
+offset_top = -122.0
 offset_right = -20.0
 offset_bottom = -20.0
-theme_override_font_sizes/font_size = 48
+theme_override_fonts/font = SubResource("font_bold")
+theme_override_font_sizes/font_size = 64
 text = "Unlocks"
 
 [node name="UnlocksPanel" type="Panel" parent="."]
