@@ -392,6 +392,22 @@ const PASSIVE_DEFS := {
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
 var passives: Dictionary = {}
 
+# Consolation picks for a level-up with nothing left to offer (every
+# slot full and everything owned at max level): the panel shows these
+# two instead of dropping the level-up. Applied by _apply_fallback().
+const FALLBACK_DEFS := {
+	"heal": {
+		"display_name": "Small Heal",
+		"description": "Restore 25% of your max HP.",
+		"heal_fraction": 0.25,
+	},
+	"coins": {
+		"display_name": "Coin Bonus",
+		"description": "+25 gold, right now.",
+		"coins": 25,
+	},
+}
+
 # Playable characters and maps offered on the run-setup screens
 # (RunSetup.tscn builds one card per entry). `traits` are the lines shown
 # in the description panel - keep them true to the actual numbers in
@@ -523,20 +539,32 @@ func add_xp(amount: int) -> void:
 	if pending_level_ups > 0 and not is_paused_for_upgrade:
 		offer_upgrades()
 
-# Pauses the game and puts up a choice panel. Returns false (and does
-# nothing) when every weapon and passive is already at max level: with
-# nothing left to offer, pausing would leave the player stuck on an
-# empty panel - the pending level-ups are simply dropped instead.
+# Pauses the game and puts up a choice panel: the usual weapon/passive
+# picks, or the FALLBACK_DEFS consolation picks when there's nothing
+# left to level or unlock. Always returns true now (kept as a bool so
+# callers can treat "no panel" as a possibility if that ever returns).
 func offer_upgrades() -> bool:
 	var pool: Array = _upgrade_pool()
-	if pool.is_empty():
-		pending_level_ups = 0
-		return false
 	is_paused_for_upgrade = true
 	get_tree().paused = true
-	current_choices = _pick_choices(pool, [])
+	# Nothing left to level or unlock: offer the consolation picks so the
+	# level-up still pays out something.
+	current_choices = FALLBACK_DEFS.keys() if pool.is_empty() else _pick_choices(pool, [])
 	level_up_choices.emit(current_choices)
 	return true
+
+# Whether the open panel is showing the consolation picks (no rerolls
+# or bans apply to those).
+func is_fallback_panel() -> bool:
+	return not current_choices.is_empty() and FALLBACK_DEFS.has(current_choices[0])
+
+func _apply_fallback(id: String) -> void:
+	var def: Dictionary = FALLBACK_DEFS[id]
+	if def.has("heal_fraction"):
+		for player in get_tree().get_nodes_in_group("player"):
+			player.hp = minf(player.hp + player.max_hp * def["heal_fraction"], player.max_hp)
+	if def.has("coins"):
+		add_coins(def["coins"])
 
 # Every weapon and passive that can still level up and isn't banned. A
 # weapon (passive) you don't own yet is only offered while a slot is
@@ -633,7 +661,7 @@ func get_reroll_cost() -> int:
 # A reroll needs an open panel, the coins, and at least one option the
 # panel isn't already showing (otherwise it could only repeat itself).
 func can_reroll() -> bool:
-	if not is_paused_for_upgrade or coins < get_reroll_cost():
+	if not is_paused_for_upgrade or is_fallback_panel() or coins < get_reroll_cost():
 		return false
 	return _upgrade_pool().size() > current_choices.size()
 
@@ -660,7 +688,7 @@ func get_bans_left() -> int:
 # A ban needs an open panel, a ban left, and something for the panel to
 # still show afterwards (another choice, or a replacement in the pool).
 func can_ban() -> bool:
-	if not is_paused_for_upgrade or get_bans_left() <= 0:
+	if not is_paused_for_upgrade or is_fallback_panel() or get_bans_left() <= 0:
 		return false
 	return current_choices.size() > 1 or _upgrade_pool().size() > 1
 
@@ -683,7 +711,9 @@ func ban_upgrade(id: String) -> bool:
 	return true
 
 func choose_upgrade(id: String) -> void:
-	if PASSIVE_DEFS.has(id):
+	if FALLBACK_DEFS.has(id):
+		_apply_fallback(id)
+	elif PASSIVE_DEFS.has(id):
 		level_up_passive(id)
 	else:
 		level_up_weapon(id)
@@ -725,6 +755,8 @@ func level_up_passive(id: String) -> void:
 # Text for a level-up choice button (weapon or passive): current
 # name/level plus what picking it will grant.
 func get_choice_text(id: String) -> Dictionary:
+	if FALLBACK_DEFS.has(id):
+		return {"name": FALLBACK_DEFS[id]["display_name"], "desc": FALLBACK_DEFS[id]["description"]}
 	if PASSIVE_DEFS.has(id):
 		return _get_passive_choice_text(id)
 	return _get_weapon_choice_text(id)

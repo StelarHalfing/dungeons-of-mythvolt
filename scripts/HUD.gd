@@ -202,7 +202,10 @@ func _refresh_action_buttons() -> void:
 	else:
 		ban_button.text = "Ban (%d left)" % GameManager.get_bans_left()
 		ban_button.disabled = not GameManager.can_ban()
-		upgrade_title.text = "Level Up! Choose an upgrade:"
+		if GameManager.is_fallback_panel():
+			upgrade_title.text = "Level Up! Pick a bonus:"
+		else:
+			upgrade_title.text = "Level Up! Choose an upgrade:"
 
 func _on_upgrade_pressed(index: int) -> void:
 	if ban_mode:
