@@ -31,7 +31,7 @@ func _process(delta: float) -> void:
 	cast_timer -= delta
 	if cast_timer <= 0:
 		_try_throw(stats)
-		cast_timer = 1.0 / max(stats["speed"], 0.01)
+		cast_timer = 1.0 / max(stats["speed"], 0.01) * GameManager.get_cooldown_mult()
 
 func _try_throw(stats: Dictionary) -> void:
 	var enemies := get_tree().get_nodes_in_group("enemies")
@@ -40,7 +40,7 @@ func _try_throw(stats: Dictionary) -> void:
 
 	var player: Node2D = get_parent()
 	var blast_radius: float = stats["size"]
-	var grenade_count: int = int(stats.get("projectile_count", 1.0))
+	var grenade_count: int = GameManager.get_projectile_count("grenade")
 	var throws: int = min(grenade_count, enemies.size())
 	var damage: float = stats["damage"] * GameManager.get_damage_mult()
 	var predicted: Array = _predict_positions(enemies, player.global_position)

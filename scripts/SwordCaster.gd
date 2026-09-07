@@ -26,7 +26,7 @@ func _process(delta: float) -> void:
 
 	swing_timer -= delta
 	if swing_timer <= 0.0 and _try_swing(stats):
-		swing_timer = 1.0 / stats["speed"]
+		swing_timer = 1.0 / stats["speed"] * GameManager.get_cooldown_mult()
 
 # How long a slash flies right now: the weapon's duration stat times
 # the run's duration multiplier.
@@ -51,7 +51,7 @@ func _try_swing(stats: Dictionary) -> bool:
 		return origin.distance_squared_to(a.global_position) < origin.distance_squared_to(b.global_position)
 	)
 
-	var swings: int = mini(int(stats.get("projectile_count", 1.0)), in_depth.size())
+	var swings: int = mini(GameManager.get_projectile_count("sword"), in_depth.size())
 	var damage: float = stats["damage"] * GameManager.get_damage_mult()
 	var world: Node = get_parent().get_parent()
 	for i in range(swings):

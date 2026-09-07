@@ -26,7 +26,7 @@ func _process(delta: float) -> void:
 
 	_sync_shape()
 
-	var interval: float = 1.0 / max(stats["speed"], 0.01)
+	var interval: float = 1.0 / max(stats["speed"], 0.01) * GameManager.get_cooldown_mult()
 	tick_timer -= delta
 	if tick_timer <= 0:
 		_deal_damage(stats["damage"] * GameManager.get_damage_mult())

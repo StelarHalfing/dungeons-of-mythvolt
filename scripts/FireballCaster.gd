@@ -24,7 +24,7 @@ func _process(delta: float) -> void:
 	cast_timer -= delta
 	if cast_timer <= 0.0:
 		_try_launch(stats)
-		cast_timer = COOLDOWN
+		cast_timer = COOLDOWN * GameManager.get_cooldown_mult()
 
 func _try_launch(stats: Dictionary) -> void:
 	var enemies := get_tree().get_nodes_in_group("enemies")
@@ -36,7 +36,7 @@ func _try_launch(stats: Dictionary) -> void:
 	enemies.sort_custom(func(a, b):
 		return origin.distance_squared_to(a.global_position) < origin.distance_squared_to(b.global_position)
 	)
-	var shots: int = min(int(stats.get("projectile_count", 1.0)), enemies.size())
+	var shots: int = min(GameManager.get_projectile_count("fireball"), enemies.size())
 	var damage: float = stats["damage"] * GameManager.get_damage_mult()
 
 	for i in range(shots):

@@ -135,6 +135,18 @@ const PERMANENT_UPGRADE_DEFS := {
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
 	},
+	# Double Damage's costs. Every weapon's seconds-between-attacks is
+	# divided by (1 + bonus) in get_cooldown_mult(), so each +10% is 10%
+	# more attacks per second, and with the Haste Crystal passive maxed
+	# too (+50% each, ADDED) every cooldown is exactly halved.
+	"cooldown": {
+		"display_name": "Cooldown",
+		"description": "Permanently shorten every weapon's cooldown.",
+		"stat_label": "attack speed",
+		"per_level_value": 0.10,
+		"max_level": 5,
+		"costs": [400, 800, 2000, 4000, 10000],
+	},
 	# Whole-number perks for the level-up panel (format "count": shown as
 	# "+1"). Two expensive levels each, so they're a late investment.
 	"rerolls": {
@@ -176,6 +188,19 @@ const PERMANENT_UPGRADE_DEFS := {
 		"per_level_value": 1.0,
 		"max_level": 2,
 		"costs": [1000, 2500],
+	},
+	# The late-game luxury: one more projectile per volley for every
+	# weapon that has a projectile_count (laser shots, tornadoes,
+	# grenades, fireballs, slashes, hammers) via get_projectile_count();
+	# two levels, at 15000 and 50000 coins.
+	"projectiles": {
+		"display_name": "Projectile Count",
+		"description": "Every weapon fires one more projectile per volley.",
+		"stat_label": "extra projectiles",
+		"format": "count",
+		"per_level_value": 1.0,
+		"max_level": 2,
+		"costs": [15000, 50000],
 	},
 }
 
@@ -254,6 +279,10 @@ var duration_bonus: float = 0.0
 # Heavy Club's stat: this run's extra knockback as a fraction (0.5 =
 # +50%), added to the permanent Knockback bonus in get_knockback_mult().
 var knockback_bonus: float = 0.0
+# Haste Crystal's stat: this run's extra attack speed as a fraction
+# (0.5 = +50%), added to the permanent Cooldown bonus in
+# get_cooldown_mult().
+var attack_speed_bonus: float = 0.0
 # Gold Dream (the GoldDreamPickup power-up): while gold_dream_timer is
 # running, every kill drops a coin (Zombie.die()) and gold is worth
 # GOLD_DREAM_COIN_BONUS more (get_coin_mult()). Picking up another
@@ -482,6 +511,18 @@ const PASSIVE_DEFS := {
 		"per_level_value": 0.1,
 		"max_level": 5,
 	},
+	"haste_crystal": {
+		"display_name": "Haste Crystal",
+		"description": "Every weapon attacks faster.",
+		"stat": "attack_speed_bonus",
+		"stat_label": "attack speed",
+		# The bonus fraction again (base 0, +0.1/level, +50% at max), ADDED
+		# to the permanent Cooldown upgrade in get_cooldown_mult(): both
+		# maxed = every cooldown exactly halved.
+		"base": 0.0,
+		"per_level_value": 0.1,
+		"max_level": 5,
+	},
 }
 
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
@@ -518,7 +559,7 @@ const CHARACTER_DEFS := {
 			"Move speed: 140",
 			"Starting weapon: Sword",
 			"Can unlock: Laser Pistol, Forcefield, Tornado, Grenade, Fireball, Mjolnir",
-			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin, Hourglass, Heavy Club",
+			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin, Hourglass, Heavy Club, Haste Crystal",
 			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00, a 5th passive slot for 15:00)",
 		],
 		"starting_weapon": "sword",
@@ -624,6 +665,7 @@ func reset() -> void:
 	coin_carry = 0
 	duration_bonus = 0.0
 	knockback_bonus = 0.0
+	attack_speed_bonus = 0.0
 	gold_dream_timer = 0.0
 	_init_weapons()
 	_init_passives()
@@ -1054,6 +1096,24 @@ func get_duration_mult() -> float:
 # duration so the two maxed +50%s make exactly x2.
 func get_knockback_mult() -> float:
 	return 1.0 + get_permanent_bonus("knockback") + knockback_bonus
+
+# Multiplier on every weapon's seconds between attacks (the Laser
+# Pistol's fixed cooldown, the casters' cooldowns, the Forcefield's tick
+# interval): 1 / (1 + the permanent Cooldown bonus + this run's Haste
+# Crystal bonus), so each +10% is 10% more attacks per second and both
+# maxed (+50% each, added) is exactly half the cooldown.
+func get_cooldown_mult() -> float:
+	return 1.0 / (1.0 + get_permanent_bonus("cooldown") + attack_speed_bonus)
+
+# Projectiles per volley for a weapon: its own projectile_count stat
+# plus the permanent Projectile Count upgrade. Weapons without a
+# projectile_count (the Forcefield) always fire "one" and ignore the
+# upgrade. The casters read this rather than the stat directly.
+func get_projectile_count(weapon_id: String) -> int:
+	var stats: Dictionary = weapons[weapon_id]
+	if not stats.has("projectile_count"):
+		return 1
+	return int(stats["projectile_count"]) + int(get_permanent_bonus("projectiles"))
 
 # Gold per coin: the permanent Gold Gain bonus plus this run's Lucky
 # Coin bonus, ADDED (not multiplied like damage/XP) so the two maxed

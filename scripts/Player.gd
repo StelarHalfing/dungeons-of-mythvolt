@@ -48,7 +48,7 @@ func _physics_process(delta: float) -> void:
 	fire_timer -= delta
 	if fire_timer <= 0:
 		try_fire()
-		fire_timer = attack_cooldown
+		fire_timer = attack_cooldown * GameManager.get_cooldown_mult()
 
 # Tracks the last nonzero movement direction so idle keeps facing
 # whichever way the player was last walking, instead of snapping back
@@ -112,7 +112,7 @@ func try_fire() -> void:
 	var stats: Dictionary = GameManager.weapons["laser_pistol"]
 	if stats["level"] <= 0:
 		return
-	var projectile_count: int = int(stats.get("projectile_count", 1.0))
+	var projectile_count: int = GameManager.get_projectile_count("laser_pistol")
 	var shots: int = min(projectile_count, enemies.size())
 	var damage: float = stats["damage"] * GameManager.get_damage_mult()
 

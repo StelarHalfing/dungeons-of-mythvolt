@@ -23,7 +23,7 @@ func _process(delta: float) -> void:
 	cast_timer -= delta
 	if cast_timer <= 0:
 		_try_cast(stats)
-		cast_timer = 1.0 / max(stats["speed"], 0.01)
+		cast_timer = 1.0 / max(stats["speed"], 0.01) * GameManager.get_cooldown_mult()
 
 func _try_cast(stats: Dictionary) -> void:
 	var enemies := get_tree().get_nodes_in_group("enemies")
@@ -35,7 +35,7 @@ func _try_cast(stats: Dictionary) -> void:
 		return player.global_position.distance_squared_to(a.global_position) < player.global_position.distance_squared_to(b.global_position)
 	)
 
-	var tornado_count: int = int(stats.get("projectile_count", 1.0))
+	var tornado_count: int = GameManager.get_projectile_count("tornado")
 	var casts: int = min(tornado_count, enemies.size())
 	var damage: float = stats["damage"] * GameManager.get_damage_mult()
 

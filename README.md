@@ -211,7 +211,14 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   bigger surge ramps in (`SECOND_SURGE_INTERVAL_MULT`: a quarter of the
   plateau interval by 11:00, four times the rate and twice the first
   surge, Slimes included) and stays for the rest of the run. A Slime
-  drops one blue `BlueXPGem` worth 3 XP in place of green gems.
+  drops one blue `BlueXPGem` worth 3 XP in place of green gems. At
+  15:01 (`REAPER_TIME`, one second after the 15-minute survival unlock)
+  the run ends: `_summon_reaper()` frees every enemy on the field (no
+  drops), spawning stops for good, and one `Reaper.tscn` (`Reaper.gd`
+  extends `Zombie.gd`: the dark skeleton at 5x, a billion HP, 400
+  speed, 1000 contact damage, immune to knockback and slows) runs the
+  player down. It is a placeholder finale to be pushed later once
+  there is more game to survive.
 - **Minotaur extends Goblin via GDScript inheritance**
   (`extends "res://scripts/Goblin.gd"`), not a from-scratch script.
   `Goblin.gd` splits its behavior into small overridable pieces
@@ -257,8 +264,8 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `enemies_defeated % 10` - Minotaur inherits this unchanged) drops a
   `CoinPickup` — same magnet/pickup code as `XPGem`, just paying out
   `GameManager.add_coins()` instead of `add_xp()`.
-  - There are ten permanent upgrades right now, all `level *
-    per_level_value` via `get_permanent_bonus(id)`. Six are stat
+  - There are twelve permanent upgrades right now, all `level *
+    per_level_value` via `get_permanent_bonus(id)`. Seven are stat
     bonuses: Health
     Regeneration (+0.2 HP/sec/level, applied in `Player.gd`'s
     `_physics_process()` via `get_health_regen_rate()`, which also adds
@@ -274,10 +281,17 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     folded into `get_duration_mult()` next to the Hourglass passive -
     see the Duration note above) and Knockback (same curve and costs,
     folded into `get_knockback_mult()` next to the Heavy Club passive,
-    added like Duration). Damage's, XP Gain's, Gold Gain's, Duration's
-    and Knockback's `costs` are exactly double Health Regeneration's
-    (`[200, 400, 1000, 2000, 5000]` vs `[100, 200, 500, 1000, 2500]`).
-    Four more are whole-number perks
+    added like Duration), and Cooldown (+10% attack speed/level: every
+    weapon's seconds between attacks - the Laser Pistol's fixed
+    cooldown, the casters' cooldowns, the Forcefield's tick interval -
+    is multiplied by `get_cooldown_mult()` = 1 / (1 + the upgrade + the
+    Haste Crystal passive), so both maxed halves every cooldown; its
+    `costs` are double Damage's). Damage's, XP Gain's, Gold Gain's,
+    Duration's and Knockback's `costs` are exactly double Health
+    Regeneration's (`[200, 400, 1000, 2000, 5000]` vs
+    `[100, 200, 500, 1000, 2500]`), and Cooldown's double those again
+    (`[400, 800, 2000, 4000, 10000]`).
+    Five more are whole-number perks
     (`"format": "count"`): for the level-up panel, two levels each at
     1000 then 5000 coins, Rerolls (+1 free reroll per run on top of
     the one everyone gets, via `get_free_rerolls()`) and Bans (+1 ban
@@ -285,7 +299,12 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     for the collection grid, two levels each at 1000 then 2500 coins,
     Weapon Slots and Passive Slots (+1 open slot per run each, from 2
     up to 4, via `get_weapon_slots()`/`get_passive_slots()` - see the
-    grid notes above).
+    grid notes above); and the late-game Projectile Count (two levels
+    at 15000 then 50000 coins, +1 projectile per volley for every
+    weapon with a `projectile_count` - laser shots, tornadoes,
+    grenades, fireballs, slashes, hammers - via
+    `get_projectile_count(id)`, which every caster reads instead of the
+    raw stat; the Forcefield has none and ignores it).
   - **Bans**: the Ban button beside Reroll on the level-up panel is a
     mode - press it, the title switches to "Choose an upgrade to
     ban:", and clicking a choice removes that weapon/passive from the

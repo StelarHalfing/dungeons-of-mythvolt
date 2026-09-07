@@ -29,6 +29,9 @@ const ICON_TEXTURES := {
 	# The wooden club from the item sheet - the passive shoves enemies
 	# further with every hit.
 	"heavy_club": preload("res://assets/ui/icon_heavy_club.tres"),
+	# The blue diamond from the item sheet - the passive speeds up every
+	# weapon's cooldown.
+	"haste_crystal": preload("res://assets/ui/icon_haste_crystal.tres"),
 	# The consolation picks offered once every upgrade is maxed.
 	"heal": preload("res://assets/ui/icon_heal.tres"),
 	"coins": preload("res://allassets/2D Pixel Dungeon Asset Pack/items and trap_animation/coin/coin_1.png"),
