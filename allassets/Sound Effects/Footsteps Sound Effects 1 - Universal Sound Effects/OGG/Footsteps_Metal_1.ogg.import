@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cqt44axu4u6ox"
+path="res://.godot/imported/Footsteps_Metal_1.ogg-7fa7e44adf41cab4ee34130ef678ed9e.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Footsteps Sound Effects 1 - Universal Sound Effects/OGG/Footsteps_Metal_1.ogg"
+dest_files=["res://.godot/imported/Footsteps_Metal_1.ogg-7fa7e44adf41cab4ee34130ef678ed9e.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

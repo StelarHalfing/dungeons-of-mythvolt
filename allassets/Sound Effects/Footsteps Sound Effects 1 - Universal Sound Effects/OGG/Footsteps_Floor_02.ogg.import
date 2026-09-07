@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bgn2ngslr45q2"
+path="res://.godot/imported/Footsteps_Floor_02.ogg-3471cccaa7159516e722d782d236ff5c.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Footsteps Sound Effects 1 - Universal Sound Effects/OGG/Footsteps_Floor_02.ogg"
+dest_files=["res://.godot/imported/Footsteps_Floor_02.ogg-3471cccaa7159516e722d782d236ff5c.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

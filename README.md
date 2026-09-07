@@ -65,13 +65,16 @@ scripts/
 allassets/
   Third-party art and audio packs, one folder per pack. The original DG /
   Dungeon Gathering / Pixel Dungeon packs sit at the top level; the packs
-  added 2026-09-07 are grouped by family: Fantasy Dreamland/, Rogue
+  added 2026-09-07 are grouped by family: Fantasy Dreamland/ (with
+  Reborn/ tilesets and Enemies 4 Directions/ inside it), Rogue
   Adventure/ (both ElvGames - see their License (ElvGames).txt: credit
   required, no AI/NFT/resale), Monster Factory/, Sound Effects/ (OGG
-  only), Farming Game World/, Platformer World/, Extras/, and standalone
-  packs by name. Zips live in ../../Raw assets zip and are unpacked into
-  the staging folder ../../Assets first; only game-usable files are copied
-  here - engine packages (Unity/GameMaker/RPG Maker/Godot-project copies),
+  only), Farming Game World/, Platformer World/, Item Icons/, Tilesets/,
+  Extras/, and standalone packs by name (EvoMonsters, Pixel Battlers,
+  Tower Defense etc. hold one subfolder per numbered pack). Zips live
+  in ../../Raw assets zip and are unpacked into the staging folder
+  ../../Assets first; only game-usable files are copied here - engine
+  packages (Unity/GameMaker/RPG Maker/Godot-project copies),
   tool executables and the duplicate "World" bundles stay in staging.
 ```
 

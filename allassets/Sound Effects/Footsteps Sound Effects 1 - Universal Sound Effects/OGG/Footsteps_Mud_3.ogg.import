@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dbbkp7wmdghnc"
+path="res://.godot/imported/Footsteps_Mud_3.ogg-f2faf823c1a85028b8c61f782f8a2a30.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Footsteps Sound Effects 1 - Universal Sound Effects/OGG/Footsteps_Mud_3.ogg"
+dest_files=["res://.godot/imported/Footsteps_Mud_3.ogg-f2faf823c1a85028b8c61f782f8a2a30.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

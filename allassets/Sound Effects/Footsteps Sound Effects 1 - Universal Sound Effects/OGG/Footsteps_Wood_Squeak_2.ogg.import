@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://b6sdp3qa27v6t"
+path="res://.godot/imported/Footsteps_Wood_Squeak_2.ogg-91bbf1aa2b2d4e1a7d04a6f073ce79dd.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Footsteps Sound Effects 1 - Universal Sound Effects/OGG/Footsteps_Wood_Squeak_2.ogg"
+dest_files=["res://.godot/imported/Footsteps_Wood_Squeak_2.ogg-91bbf1aa2b2d4e1a7d04a6f073ce79dd.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

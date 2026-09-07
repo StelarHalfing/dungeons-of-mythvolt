@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dcfn3hxr1nh8a"
+path="res://.godot/imported/Footsteps_Dirt_04.ogg-7b227789d39c994e2b7ab1141d856842.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Footsteps Sound Effects 1 - Universal Sound Effects/OGG/Footsteps_Dirt_04.ogg"
+dest_files=["res://.godot/imported/Footsteps_Dirt_04.ogg-7b227789d39c994e2b7ab1141d856842.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

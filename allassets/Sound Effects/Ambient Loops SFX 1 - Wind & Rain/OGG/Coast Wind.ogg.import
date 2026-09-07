@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cuwhiarj4aes4"
+path="res://.godot/imported/Coast Wind.ogg-8b49aa7e2465b002383a441e9c41527d.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Ambient Loops SFX 1 - Wind & Rain/OGG/Coast Wind.ogg"
+dest_files=["res://.godot/imported/Coast Wind.ogg-8b49aa7e2465b002383a441e9c41527d.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

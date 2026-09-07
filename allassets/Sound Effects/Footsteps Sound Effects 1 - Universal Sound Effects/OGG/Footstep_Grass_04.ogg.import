@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bbuyd0ujn8ec0"
+path="res://.godot/imported/Footstep_Grass_04.ogg-8d2042c78eee85c7ccb60762cf91ea84.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Footsteps Sound Effects 1 - Universal Sound Effects/OGG/Footstep_Grass_04.ogg"
+dest_files=["res://.godot/imported/Footstep_Grass_04.ogg-8d2042c78eee85c7ccb60762cf91ea84.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

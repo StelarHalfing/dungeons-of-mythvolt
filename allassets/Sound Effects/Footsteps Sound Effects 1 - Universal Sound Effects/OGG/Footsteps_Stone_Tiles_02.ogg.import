@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://frbqhey4m5us"
+path="res://.godot/imported/Footsteps_Stone_Tiles_02.ogg-067bc3a0d130b824de05860f638b3e8b.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Footsteps Sound Effects 1 - Universal Sound Effects/OGG/Footsteps_Stone_Tiles_02.ogg"
+dest_files=["res://.godot/imported/Footsteps_Stone_Tiles_02.ogg-067bc3a0d130b824de05860f638b3e8b.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

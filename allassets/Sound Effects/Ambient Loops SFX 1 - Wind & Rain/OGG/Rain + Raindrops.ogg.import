@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cyj7004qxf08m"
+path="res://.godot/imported/Rain + Raindrops.ogg-b4200db7c556e2858e64a99b2ffa7d00.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Ambient Loops SFX 1 - Wind & Rain/OGG/Rain + Raindrops.ogg"
+dest_files=["res://.godot/imported/Rain + Raindrops.ogg-b4200db7c556e2858e64a99b2ffa7d00.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

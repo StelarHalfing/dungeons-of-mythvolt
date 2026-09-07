@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://8vm1axm8ndbs"
+path="res://.godot/imported/Rain (Inside Building).ogg-6e490160dd746c26d3d4cd16b5e4ae0f.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Ambient Loops SFX 1 - Wind & Rain/OGG/Rain (Inside Building).ogg"
+dest_files=["res://.godot/imported/Rain (Inside Building).ogg-6e490160dd746c26d3d4cd16b5e4ae0f.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
