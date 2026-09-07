@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://8fdlyak5safc"
+path="res://.godot/imported/SciFi_CPU_4.ogg-16f0be869d0c2b33e1cfa98b1169d86b.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Sci-Fi User Interface Sounds - Universal Sound Effects/OGG/SciFi_CPU_4.ogg"
+dest_files=["res://.godot/imported/SciFi_CPU_4.ogg-16f0be869d0c2b33e1cfa98b1169d86b.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

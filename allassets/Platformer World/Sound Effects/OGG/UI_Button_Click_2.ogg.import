@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cfykmk0ed330n"
+path="res://.godot/imported/UI_Button_Click_2.ogg-d39113fcef92235e396bdf06971ffb2d.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Platformer World/Sound Effects/OGG/UI_Button_Click_2.ogg"
+dest_files=["res://.godot/imported/UI_Button_Click_2.ogg-d39113fcef92235e396bdf06971ffb2d.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

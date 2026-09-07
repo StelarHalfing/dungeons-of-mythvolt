@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dk8unfd10t7tt"
+path="res://.godot/imported/UI_Keypad_1.ogg-ecb1316e781ca86199417b870ef04e9a.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/User Interface Pack 1 - Universal Sound Effects/OGG/UI_Keypad_1.ogg"
+dest_files=["res://.godot/imported/UI_Keypad_1.ogg-ecb1316e781ca86199417b870ef04e9a.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

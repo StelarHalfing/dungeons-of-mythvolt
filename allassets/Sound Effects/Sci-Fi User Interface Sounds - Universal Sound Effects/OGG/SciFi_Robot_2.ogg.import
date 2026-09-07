@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cevvx3o1ew2np"
+path="res://.godot/imported/SciFi_Robot_2.ogg-7ce1d501be3fdbbf8a60834fc2217d5c.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Sci-Fi User Interface Sounds - Universal Sound Effects/OGG/SciFi_Robot_2.ogg"
+dest_files=["res://.godot/imported/SciFi_Robot_2.ogg-7ce1d501be3fdbbf8a60834fc2217d5c.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

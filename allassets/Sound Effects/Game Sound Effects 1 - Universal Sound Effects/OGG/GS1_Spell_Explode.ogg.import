@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bmcrqv2rn5t34"
+path="res://.godot/imported/GS1_Spell_Explode.ogg-ec10370e62be04261873291b78e6b51b.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 1 - Universal Sound Effects/OGG/GS1_Spell_Explode.ogg"
+dest_files=["res://.godot/imported/GS1_Spell_Explode.ogg-ec10370e62be04261873291b78e6b51b.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

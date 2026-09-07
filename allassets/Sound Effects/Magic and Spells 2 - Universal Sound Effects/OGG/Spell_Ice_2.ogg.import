@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dv1r35jyn8a62"
+path="res://.godot/imported/Spell_Ice_2.ogg-c04adcd0dcfcd2825c41f1dfdd2a4670.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Magic and Spells 2 - Universal Sound Effects/OGG/Spell_Ice_2.ogg"
+dest_files=["res://.godot/imported/Spell_Ice_2.ogg-c04adcd0dcfcd2825c41f1dfdd2a4670.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

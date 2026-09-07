@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dsh21j7br2rrv"
+path="res://.godot/imported/UI_Accept_1.ogg-b7e9982007aa2ab5b094aa8f27eac74a.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Platformer World/Sound Effects/OGG/UI_Accept_1.ogg"
+dest_files=["res://.godot/imported/UI_Accept_1.ogg-b7e9982007aa2ab5b094aa8f27eac74a.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

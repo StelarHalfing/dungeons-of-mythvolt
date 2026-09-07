@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://5yy7uet84ffq"
+path="res://.godot/imported/Door_Close_1.ogg-10968da3093ac96c12b1aa6ce0215f58.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Platformer World/Sound Effects/OGG/Door_Close_1.ogg"
+dest_files=["res://.godot/imported/Door_Close_1.ogg-10968da3093ac96c12b1aa6ce0215f58.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

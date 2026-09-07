@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://deraklbgr3of0"
+path="res://.godot/imported/GS1_Beast_1.ogg-4b95bfae15bd271acfe725af0f313ebd.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 1 - Universal Sound Effects/OGG/GS1_Beast_1.ogg"
+dest_files=["res://.godot/imported/GS1_Beast_1.ogg-4b95bfae15bd271acfe725af0f313ebd.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

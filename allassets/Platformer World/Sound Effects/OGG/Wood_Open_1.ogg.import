@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://4s4pr7flnngt"
+path="res://.godot/imported/Wood_Open_1.ogg-0b0f9247d07bde20c5c3eb7e044e7e7a.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Platformer World/Sound Effects/OGG/Wood_Open_1.ogg"
+dest_files=["res://.godot/imported/Wood_Open_1.ogg-0b0f9247d07bde20c5c3eb7e044e7e7a.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cb5r3hcyhecho"
+path="res://.godot/imported/Footsteps_Grass_04.ogg-2ab3fe6491237a8b394c958b3dbdd33f.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Platformer World/Sound Effects/OGG/Footsteps_Grass_04.ogg"
+dest_files=["res://.godot/imported/Footsteps_Grass_04.ogg-2ab3fe6491237a8b394c958b3dbdd33f.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

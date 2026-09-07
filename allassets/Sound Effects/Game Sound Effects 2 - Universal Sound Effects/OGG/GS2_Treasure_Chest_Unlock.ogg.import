@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dhax72bxc0lym"
+path="res://.godot/imported/GS2_Treasure_Chest_Unlock.ogg-f9ab3b6a1a5149e40a9f5f7415f5af47.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 2 - Universal Sound Effects/OGG/GS2_Treasure_Chest_Unlock.ogg"
+dest_files=["res://.godot/imported/GS2_Treasure_Chest_Unlock.ogg-f9ab3b6a1a5149e40a9f5f7415f5af47.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

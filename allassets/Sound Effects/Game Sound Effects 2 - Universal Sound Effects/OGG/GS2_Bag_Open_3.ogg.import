@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cd124n7d3bgdy"
+path="res://.godot/imported/GS2_Bag_Open_3.ogg-3a7991050754d43fec57ae82c4ac0158.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 2 - Universal Sound Effects/OGG/GS2_Bag_Open_3.ogg"
+dest_files=["res://.godot/imported/GS2_Bag_Open_3.ogg-3a7991050754d43fec57ae82c4ac0158.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

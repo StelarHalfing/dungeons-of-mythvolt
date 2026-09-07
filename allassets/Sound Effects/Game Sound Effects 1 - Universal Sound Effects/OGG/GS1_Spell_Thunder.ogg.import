@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://ba8d825g7y5it"
+path="res://.godot/imported/GS1_Spell_Thunder.ogg-1cd468674158b750e77c6a84e746774d.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 1 - Universal Sound Effects/OGG/GS1_Spell_Thunder.ogg"
+dest_files=["res://.godot/imported/GS1_Spell_Thunder.ogg-1cd468674158b750e77c6a84e746774d.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

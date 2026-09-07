@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://q7puaryfrdxl"
+path="res://.godot/imported/UI_Decline_1.ogg-523d06641bec579fb65255f2b88c26a3.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Platformer World/Sound Effects/OGG/UI_Decline_1.ogg"
+dest_files=["res://.godot/imported/UI_Decline_1.ogg-523d06641bec579fb65255f2b88c26a3.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

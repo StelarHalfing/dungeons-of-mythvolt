@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dwdevgx84hluy"
+path="res://.godot/imported/Vases_Breaking_1.ogg-235cb9227e2102b67483cac181322c37.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Platformer World/Sound Effects/OGG/Vases_Breaking_1.ogg"
+dest_files=["res://.godot/imported/Vases_Breaking_1.ogg-235cb9227e2102b67483cac181322c37.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

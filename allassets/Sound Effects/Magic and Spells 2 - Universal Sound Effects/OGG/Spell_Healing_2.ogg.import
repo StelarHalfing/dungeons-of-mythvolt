@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://ccq8gbtxwmlgl"
+path="res://.godot/imported/Spell_Healing_2.ogg-3ef1d36b23caabfe0cc32b7489644b24.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Magic and Spells 2 - Universal Sound Effects/OGG/Spell_Healing_2.ogg"
+dest_files=["res://.godot/imported/Spell_Healing_2.ogg-3ef1d36b23caabfe0cc32b7489644b24.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bmsv2r5m7cbpq"
+path="res://.godot/imported/GS2_Wood_Breaking_1.ogg-a51cf7922e1273fd0e171a5646e62334.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 2 - Universal Sound Effects/OGG/GS2_Wood_Breaking_1.ogg"
+dest_files=["res://.godot/imported/GS2_Wood_Breaking_1.ogg-a51cf7922e1273fd0e171a5646e62334.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://csoff1gt3qni5"
+path="res://.godot/imported/GS1_Spell_Misc_1.ogg-21a74adfd1b7373ccaa97fefb875db27.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 1 - Universal Sound Effects/OGG/GS1_Spell_Misc_1.ogg"
+dest_files=["res://.godot/imported/GS1_Spell_Misc_1.ogg-21a74adfd1b7373ccaa97fefb875db27.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

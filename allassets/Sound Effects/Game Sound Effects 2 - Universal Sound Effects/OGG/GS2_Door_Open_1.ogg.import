@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bjakrwdg5rhbr"
+path="res://.godot/imported/GS2_Door_Open_1.ogg-7a0d3a8dfe0df63c136bff8368c698e3.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 2 - Universal Sound Effects/OGG/GS2_Door_Open_1.ogg"
+dest_files=["res://.godot/imported/GS2_Door_Open_1.ogg-7a0d3a8dfe0df63c136bff8368c698e3.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

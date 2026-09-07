@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://qvukbtfv1lqm"
+path="res://.godot/imported/Spell_Water_1.ogg-b0cf4a46f2afd12dae5af9b974123359.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Magic and Spells 2 - Universal Sound Effects/OGG/Spell_Water_1.ogg"
+dest_files=["res://.godot/imported/Spell_Water_1.ogg-b0cf4a46f2afd12dae5af9b974123359.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://brhyvgn0og5hv"
+path="res://.godot/imported/GS2_Wood_Open_2.ogg-e4c4e17c5ad4188ef415860bf872d754.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 2 - Universal Sound Effects/OGG/GS2_Wood_Open_2.ogg"
+dest_files=["res://.godot/imported/GS2_Wood_Open_2.ogg-e4c4e17c5ad4188ef415860bf872d754.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

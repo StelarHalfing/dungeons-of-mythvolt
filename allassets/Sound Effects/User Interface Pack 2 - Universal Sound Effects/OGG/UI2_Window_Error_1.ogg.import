@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://brs267ankv4p2"
+path="res://.godot/imported/UI2_Window_Error_1.ogg-51cabe53817a65b51697fc9131949acd.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/User Interface Pack 2 - Universal Sound Effects/OGG/UI2_Window_Error_1.ogg"
+dest_files=["res://.godot/imported/UI2_Window_Error_1.ogg-51cabe53817a65b51697fc9131949acd.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

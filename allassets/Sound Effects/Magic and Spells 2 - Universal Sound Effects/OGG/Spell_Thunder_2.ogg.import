@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://8jsnbt5ha8e"
+path="res://.godot/imported/Spell_Thunder_2.ogg-5abeb4d754e97f413322ff40e38aeb2d.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Magic and Spells 2 - Universal Sound Effects/OGG/Spell_Thunder_2.ogg"
+dest_files=["res://.godot/imported/Spell_Thunder_2.ogg-5abeb4d754e97f413322ff40e38aeb2d.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

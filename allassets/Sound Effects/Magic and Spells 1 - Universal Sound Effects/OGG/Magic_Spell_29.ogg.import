@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bpx6322f778d6"
+path="res://.godot/imported/Magic_Spell_29.ogg-7094f798d509c1b57850b2aa712578fc.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Magic and Spells 1 - Universal Sound Effects/OGG/Magic_Spell_29.ogg"
+dest_files=["res://.godot/imported/Magic_Spell_29.ogg-7094f798d509c1b57850b2aa712578fc.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

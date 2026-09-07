@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://b4vuf1g6yqdf"
+path="res://.godot/imported/GS1_Hit_4.ogg-080c7cac9065378f07d3deae7de8041e.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 1 - Universal Sound Effects/OGG/GS1_Hit_4.ogg"
+dest_files=["res://.godot/imported/GS1_Hit_4.ogg-080c7cac9065378f07d3deae7de8041e.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bhalmlnov8tei"
+path="res://.godot/imported/UI2_Trophy_1.ogg-472faacad51a103a00c8f2b09e73875b.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/User Interface Pack 2 - Universal Sound Effects/OGG/UI2_Trophy_1.ogg"
+dest_files=["res://.godot/imported/UI2_Trophy_1.ogg-472faacad51a103a00c8f2b09e73875b.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

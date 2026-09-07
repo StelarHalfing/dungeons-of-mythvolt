@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://i1iysu65j6hi"
+path="res://.godot/imported/Footsteps_Grass_04.wav-641d1be68a6cf2cf20891f9ac8f3af1f.sample"
+
+[deps]
+
+source_file="res://allassets/Platformer World/Sound Effects/WAV/Footsteps_Grass_04.wav"
+dest_files=["res://.godot/imported/Footsteps_Grass_04.wav-641d1be68a6cf2cf20891f9ac8f3af1f.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

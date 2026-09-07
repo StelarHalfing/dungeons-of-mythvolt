@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://crmkaibho0xmm"
+path="res://.godot/imported/GS2_Traps_Arrow_1.ogg-fd493dc329c29deb9fcab12d2e97e7cd.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 2 - Universal Sound Effects/OGG/GS2_Traps_Arrow_1.ogg"
+dest_files=["res://.godot/imported/GS2_Traps_Arrow_1.ogg-fd493dc329c29deb9fcab12d2e97e7cd.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

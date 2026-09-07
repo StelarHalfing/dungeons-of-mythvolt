@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://c4j3sdcnswfp1"
+path="res://.godot/imported/Bag_Close_3.ogg-b78c3e72578e54328f812f43ca1d4189.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Platformer World/Sound Effects/OGG/Bag_Close_3.ogg"
+dest_files=["res://.godot/imported/Bag_Close_3.ogg-b78c3e72578e54328f812f43ca1d4189.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

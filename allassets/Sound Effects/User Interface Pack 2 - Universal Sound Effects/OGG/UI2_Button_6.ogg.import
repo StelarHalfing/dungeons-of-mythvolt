@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://w2v3p8dh4ulq"
+path="res://.godot/imported/UI2_Button_6.ogg-e2caecef27486151e92e208c678db5b3.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/User Interface Pack 2 - Universal Sound Effects/OGG/UI2_Button_6.ogg"
+dest_files=["res://.godot/imported/UI2_Button_6.ogg-e2caecef27486151e92e208c678db5b3.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

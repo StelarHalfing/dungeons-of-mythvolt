@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dvbqp5opnxmwv"
+path="res://.godot/imported/GS2_Bag_Close_2.ogg-928be31181df5c952e91b63f8a2478d3.oggvorbisstr"
+
+[deps]
+
+source_file="res://allassets/Sound Effects/Game Sound Effects 2 - Universal Sound Effects/OGG/GS2_Bag_Close_2.ogg"
+dest_files=["res://.godot/imported/GS2_Bag_Close_2.ogg-928be31181df5c952e91b63f8a2478d3.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
