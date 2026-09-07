@@ -27,7 +27,7 @@ as you can.
 
 ```
 scenes/
-  MainMenu.tscn     - entry point: Play / Settings / Upgrades / Saves (+ Quit)
+  MainMenu.tscn     - entry point: Play / Settings / Upgrades / Saves (+ Quit, Unlocks)
   RunSetup.tscn     - character select then map select (two SelectPage.tscn
                       instances of SelectCard.tscn cards), then Main.tscn
   Main.tscn        - root gameplay scene: Player + EnemySpawner + HUD
@@ -60,7 +60,10 @@ a damage-numbers toggle, and a fullscreen toggle (also present in
 the in-run pause menu's Settings); **Upgrades** lets you spend saved
 coins on permanent bonuses (see below). **Quit** sits as its own
 button in the bottom-left corner rather than in the main button
-stack, and calls `get_tree().quit()`.
+stack, and calls `get_tree().quit()`; **Unlocks** mirrors it in the
+bottom-right corner and opens a panel listing every `UNLOCK_DEFS`
+achievement (condition, reward, and Locked/Unlocked for the active
+save - rows built by `MainMenu._build_unlock_rows()`).
 
 All visuals are drawn with `_draw()` as plain colored circles
 (blue = player, red = enemy, yellow = projectile, green = gem) so

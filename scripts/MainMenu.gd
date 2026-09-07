@@ -33,6 +33,19 @@ var delete_buttons: Array[Button] = []
 # Slot awaiting the delete confirmation (0 = none).
 var pending_delete_slot: int = 0
 
+# Unlocks panel (the "Unlocks" button in the bottom-right corner): one
+# row per GameManager.UNLOCK_DEFS entry, built in _build_unlock_rows(),
+# showing the condition, the reward and whether the active save has
+# earned it - the same check icon as elsewhere when it has, the grid's
+# lock glyph when it hasn't.
+const WeaponIconScript := preload("res://scripts/WeaponIcon.gd")
+const UNLOCK_ICON_SIZE := Vector2(40, 40)
+@onready var unlocks_button: Button = $UnlocksButton
+@onready var unlocks_panel: Panel = $UnlocksPanel
+@onready var unlock_list: VBoxContainer = $UnlocksPanel/VBoxContainer/ScrollContainer/UnlockList
+# Unlock id -> {"check": TextureRect, "lock": Control, "status": Label}
+var unlock_rows: Dictionary = {}
+
 # Upgrade id -> {"info": Label, "button": Button}, one row per
 # GameManager.PERMANENT_UPGRADE_DEFS entry, built in _build_upgrade_rows()
 # in table order - a new permanent upgrade is a table entry only.
@@ -58,6 +71,11 @@ func _ready() -> void:
 	# first, so it gets the same row-snapping handler.
 	upgrade_scroll.gui_input.connect(_on_upgrade_scroll_input)
 	upgrade_scroll.get_v_scroll_bar().gui_input.connect(_on_upgrade_scroll_input)
+
+	unlocks_panel.visible = false
+	unlocks_button.pressed.connect(_on_unlocks_pressed)
+	$UnlocksPanel/VBoxContainer/BackButton.pressed.connect(_on_unlocks_back_pressed)
+	_build_unlock_rows()
 
 	save_panel.visible = false
 	confirm_overlay.visible = false
@@ -96,8 +114,68 @@ func _set_menu_visible(shown: bool) -> void:
 	main_buttons.visible = shown
 	$TitleLabel.visible = shown
 	save_slot_button.visible = shown
+	unlocks_button.visible = shown
 	if shown:
 		_refresh_slots()
+
+func _on_unlocks_pressed() -> void:
+	_set_menu_visible(false)
+	unlocks_panel.visible = true
+	_refresh_unlocks()
+
+func _on_unlocks_back_pressed() -> void:
+	unlocks_panel.visible = false
+	_set_menu_visible(true)
+
+func _build_unlock_rows() -> void:
+	for id in GameManager.UNLOCK_DEFS.keys():
+		var def: Dictionary = GameManager.UNLOCK_DEFS[id]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 14)
+		unlock_list.add_child(row)
+
+		# Status picture: the check icon once earned, the lock glyph until
+		# then (both the same size, so the text never shifts).
+		var check := TextureRect.new()
+		check.texture = CHECK_ICON
+		check.custom_minimum_size = UNLOCK_ICON_SIZE
+		check.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		check.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(check)
+		var lock := Control.new()
+		lock.set_script(WeaponIconScript)
+		lock.custom_minimum_size = UNLOCK_ICON_SIZE
+		lock.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(lock)
+		# Full-strength glyph: the dimmed one all but vanishes on the panel.
+		lock.configure("", false)
+
+		var text := VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(text)
+		var name_label := Label.new()
+		name_label.text = def["display_name"]
+		name_label.add_theme_font_size_override("font_size", 20)
+		text.add_child(name_label)
+		var desc_label := Label.new()
+		desc_label.text = "%s Reward: %s." % [def["description"], GameManager.unlock_reward_text(id)]
+		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.add_child(desc_label)
+
+		var status := Label.new()
+		status.custom_minimum_size = Vector2(110, 0)
+		status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		status.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(status)
+		unlock_rows[id] = {"check": check, "lock": lock, "status": status}
+
+func _refresh_unlocks() -> void:
+	for id in unlock_rows.keys():
+		var earned: bool = GameManager.unlocks.get(id, false)
+		unlock_rows[id]["check"].visible = earned
+		unlock_rows[id]["lock"].visible = not earned
+		unlock_rows[id]["status"].text = "Unlocked" if earned else "Locked"
+		unlock_rows[id]["status"].modulate = Color(1, 1, 1, 1) if earned else Color(1, 1, 1, 0.6)
 
 func _on_settings_pressed() -> void:
 	_set_menu_visible(false)

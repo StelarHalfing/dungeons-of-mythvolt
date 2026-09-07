@@ -564,6 +564,17 @@ func get_weapon_slots() -> int:
 func get_passive_slots() -> int:
 	return BASE_PASSIVE_SLOTS + int(get_permanent_bonus("passive_slots")) + _unlocked_slots("passive_slots")
 
+# What an unlock grants, for the Unlocks panel: "+1 weapon slot",
+# "+1 weapon slot, +2 passive slots".
+func unlock_reward_text(id: String) -> String:
+	var def: Dictionary = UNLOCK_DEFS[id]
+	var parts: PackedStringArray = []
+	for kind in ["weapon", "passive"]:
+		var count: int = def[kind + "_slots"]
+		if count > 0:
+			parts.append("+%d %s slot%s" % [count, kind, "" if count == 1 else "s"])
+	return ", ".join(parts)
+
 # Slots of one kind granted by every earned unlock.
 func _unlocked_slots(kind: String) -> int:
 	var total: int = 0
