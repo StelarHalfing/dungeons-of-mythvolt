@@ -13,6 +13,7 @@ const ICON_TEXTURES := {
 	"forcefield": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Shield.png"),
 	"grenade": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Fire Orb.png"),
 	"fireball": preload("res://assets/projectile/fireball-1.png"),
+	"sword": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Sword.png"),
 	"attraction_tome": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Book.png"),
 	"power_emblem": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Emblem.png"),
 	# The XP gem's own green orb sprite (an AtlasTexture slice of the orbs

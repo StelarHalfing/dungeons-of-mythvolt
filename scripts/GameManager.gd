@@ -310,6 +310,20 @@ const WEAPON_DEFS := {
 		"speed_label": "speed",
 		"max_level": 12,
 	},
+	"sword": {
+		"display_name": "Sword",
+		"description": "Swings a slash at the nearest enemy in reach.",
+		"start_level": 0,
+		# Melee, swung by SwordCaster.gd: size is the reach (pixels), speed
+		# is swings/sec (cooldown = 1/speed: 0.9s at level 1, ~0.56s at
+		# 12), damage one-shots a Zombie (20 HP) from the first pick and
+		# reaches 64 at max. projectile_count adds a second slash at the
+		# next-nearest enemy in reach every 3rd level.
+		"base": {"damage": 20.0, "size": 60.0, "speed": 1.0 / 0.9, "projectile_count": 1.0},
+		"gain": {"damage": 4.0, "size": 5.0, "speed": 0.06},
+		"speed_label": "cooldown",
+		"max_level": 12,
+	},
 }
 
 # Live per-weapon stats: weapons[id] = {"level": int, "damage": float, "size": float, "speed": float}
@@ -422,7 +436,7 @@ const CHARACTER_DEFS := {
 			"Health: 100",
 			"Move speed: 140",
 			"Starting weapon: Laser Pistol",
-			"Can unlock: Forcefield, Tornado, Grenade, Fireball",
+			"Can unlock: Forcefield, Tornado, Grenade, Fireball, Sword",
 			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin",
 			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00, a 5th passive slot for 15:00)",
 		],
@@ -819,6 +833,8 @@ func _get_weapon_choice_text(weapon_id: String) -> Dictionary:
 				desc += ", +1 tornado"
 			"grenade":
 				desc += ", +1 grenade"
+			"sword":
+				desc += ", +1 slash"
 	return {
 		"name": "%s (Lv %d)" % [def["display_name"], next_level],
 		"desc": desc,

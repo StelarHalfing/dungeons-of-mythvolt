@@ -105,6 +105,14 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     `size` is the ring's radius, `speed` is ticks-per-second
     (`1.0 / speed` = seconds between ticks). No projectile count -
     the every-3-levels bonus is exclusive to the Laser Pistol.
+  - **Sword** (`SwordCaster.gd`, a child of Player): melee. Once its
+    cooldown is up it waits for the nearest enemy to come within
+    `size` (its reach), then spawns a `Slash.gd` fan aimed at it that
+    damages every enemy inside a 110-degree arc on its first frame
+    (a geometric check, like Fireball's blast) and draws a sweeping
+    crescent that fades out. `speed` is swings per second, and
+    `projectile_count` (+1 every 3rd level) adds a slash at the
+    next-nearest enemy in reach.
 - **Icons come from one script.** `WeaponIcon.gd` is a `Control`
   keyed by an `icon_id` string (the exact keys used in
   `GameManager.weapons`/`.passives`): ids in its `ICON_TEXTURES`
