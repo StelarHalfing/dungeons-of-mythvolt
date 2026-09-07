@@ -9,15 +9,26 @@ extends Control
 
 @onready var coins_label: Label = $UpgradesPanel/VBoxContainer/CoinsLabel
 
-# Save-slot picker along the bottom: one button per GameManager slot,
-# the active one marked with the same check icon the select screens use.
+# Save-slot picker: the "Save Slot N" button along the bottom opens a
+# panel with one button per GameManager slot (the active one marked with
+# the same check icon the select screens use) and a Delete button under
+# each, which asks for confirmation before wiping the slot.
 const CHECK_ICON: Texture2D = preload("res://assets/ui/icon_check.tres")
-@onready var save_slots: VBoxContainer = $SaveSlots
+@onready var save_slot_button: Button = $SaveSlotButton
+@onready var save_panel: Panel = $SavePanel
+@onready var confirm_panel: Panel = $ConfirmPanel
 @onready var slot_buttons: Array = [
-	$SaveSlots/SlotRow/Slot1,
-	$SaveSlots/SlotRow/Slot2,
-	$SaveSlots/SlotRow/Slot3,
+	$SavePanel/VBoxContainer/SlotRow/Slot1Col/Slot1,
+	$SavePanel/VBoxContainer/SlotRow/Slot2Col/Slot2,
+	$SavePanel/VBoxContainer/SlotRow/Slot3Col/Slot3,
 ]
+@onready var delete_buttons: Array = [
+	$SavePanel/VBoxContainer/SlotRow/Slot1Col/Delete1,
+	$SavePanel/VBoxContainer/SlotRow/Slot2Col/Delete2,
+	$SavePanel/VBoxContainer/SlotRow/Slot3Col/Delete3,
+]
+# Slot awaiting the delete confirmation (0 = none).
+var pending_delete_slot: int = 0
 
 # Maps upgrade id -> {info_label, buy_button}. Add a row here (plus
 # matching nodes in the .tscn) to add a new permanent upgrade without
@@ -51,8 +62,15 @@ func _ready() -> void:
 	for id in upgrade_rows.keys():
 		upgrade_rows[id]["button"].pressed.connect(_on_upgrade_buy_pressed.bind(id))
 
+	save_panel.visible = false
+	confirm_panel.visible = false
+	save_slot_button.pressed.connect(_on_save_pressed)
+	$SavePanel/VBoxContainer/BackButton.pressed.connect(_on_save_back_pressed)
 	for i in range(slot_buttons.size()):
 		slot_buttons[i].pressed.connect(_on_slot_pressed.bind(i + 1))
+		delete_buttons[i].pressed.connect(_on_delete_pressed.bind(i + 1))
+	$ConfirmPanel/VBoxContainer/ButtonRow/ConfirmButton.pressed.connect(_on_confirm_delete)
+	$ConfirmPanel/VBoxContainer/ButtonRow/CancelButton.pressed.connect(_on_cancel_delete)
 	_refresh_slots()
 
 	var bus_idx := AudioServer.get_bus_index("Master")
@@ -82,7 +100,7 @@ func _on_play_pressed() -> void:
 func _set_menu_visible(shown: bool) -> void:
 	main_buttons.visible = shown
 	$TitleLabel.visible = shown
-	save_slots.visible = shown
+	save_slot_button.visible = shown
 	if shown:
 		_refresh_slots()
 
@@ -103,11 +121,37 @@ func _on_upgrades_back_pressed() -> void:
 	upgrades_panel.visible = false
 	_set_menu_visible(true)
 
+func _on_save_pressed() -> void:
+	_set_menu_visible(false)
+	save_panel.visible = true
+	_refresh_slots()
+
+func _on_save_back_pressed() -> void:
+	confirm_panel.visible = false
+	save_panel.visible = false
+	_set_menu_visible(true)
+
 func _on_slot_pressed(slot: int) -> void:
 	GameManager.select_slot(slot)
 	_refresh_slots()
 
+func _on_delete_pressed(slot: int) -> void:
+	pending_delete_slot = slot
+	confirm_panel.visible = true
+
+func _on_confirm_delete() -> void:
+	if pending_delete_slot > 0:
+		GameManager.delete_slot(pending_delete_slot)
+	pending_delete_slot = 0
+	confirm_panel.visible = false
+	_refresh_slots()
+
+func _on_cancel_delete() -> void:
+	pending_delete_slot = 0
+	confirm_panel.visible = false
+
 func _refresh_slots() -> void:
+	save_slot_button.text = "Save Slot %d" % GameManager.active_slot
 	for i in range(slot_buttons.size()):
 		var slot: int = i + 1
 		var summary: Dictionary = GameManager.slot_summary(slot)
@@ -115,6 +159,8 @@ func _refresh_slots() -> void:
 		var detail: String = "%d coins" % summary["coins"] if summary["exists"] else "Empty"
 		button.text = "Slot %d\n%s" % [slot, detail]
 		button.icon = CHECK_ICON if slot == GameManager.active_slot else null
+		# Nothing to delete in an empty slot.
+		delete_buttons[i].disabled = not summary["exists"]
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()

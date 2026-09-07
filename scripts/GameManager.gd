@@ -477,7 +477,7 @@ func format_time() -> String:
 
 func add_coins(amount: int) -> void:
 	coins += amount
-	_save_persistent_data()
+	_save_slot()
 
 func get_upgrade_level(id: String) -> int:
 	return permanent_upgrades.get(id, 0)
@@ -498,7 +498,7 @@ func purchase_upgrade(id: String) -> bool:
 		return false
 	coins -= cost
 	permanent_upgrades[id] = get_upgrade_level(id) + 1
-	_save_persistent_data()
+	_save_slot()
 	return true
 
 # Total HP/sec granted by the Health Regeneration upgrade right now.
@@ -581,13 +581,18 @@ func _load_slot(slot: int) -> void:
 		if permanent_upgrades.has(id):
 			permanent_upgrades[id] = int(saved_upgrades[id])
 
-func _save_persistent_data() -> void:
+# Preferences and progression are written separately so that changing a
+# setting never (re)creates the active slot's file - a freshly deleted
+# or never-used slot keeps reading as "Empty" until coins are earned.
+func _save_settings() -> void:
 	_write_json(SETTINGS_PATH, {
 		"show_damage_numbers": show_damage_numbers,
 		"is_fullscreen": is_fullscreen,
 		"fps_cap": fps_cap,
 		"active_slot": active_slot,
 	})
+
+func _save_slot() -> void:
 	_write_json(slot_path(active_slot), {
 		"coins": coins,
 		"permanent_upgrades": permanent_upgrades,
@@ -595,15 +600,25 @@ func _save_persistent_data() -> void:
 
 # Switches to another slot: loads its progression (progression is saved
 # on every change, so nothing of the old slot is lost) and remembers the
-# choice. Also writes the slot file, so a never-used slot stops reading
-# as "Empty" the moment it's picked.
+# choice.
 func select_slot(slot: int) -> void:
 	slot = clamp(slot, 1, SLOT_COUNT)
 	if slot == active_slot:
 		return
 	active_slot = slot
 	_load_slot(slot)
-	_save_persistent_data()
+	_save_settings()
+
+# Wipes a slot's file (the main menu asks for confirmation first). If it
+# is the active slot, the in-memory progression resets to a fresh start
+# as well; its file is only recreated once coins are earned again.
+func delete_slot(slot: int) -> void:
+	var path: String = slot_path(slot)
+	var dir := DirAccess.open("user://")
+	if dir != null and FileAccess.file_exists(path):
+		dir.remove(path.get_file())
+	if slot == active_slot:
+		_load_slot(slot)
 
 # What the main menu shows on a slot button without loading the slot.
 func slot_summary(slot: int) -> Dictionary:
@@ -638,14 +653,14 @@ func _migrate_legacy_save() -> void:
 
 func set_show_damage_numbers(enabled: bool) -> void:
 	show_damage_numbers = enabled
-	_save_persistent_data()
+	_save_settings()
 
 # Sets the fullscreen preference, applies it to the actual window,
 # and saves it so it's remembered next launch.
 func set_fullscreen(enabled: bool) -> void:
 	is_fullscreen = enabled
 	_apply_fullscreen()
-	_save_persistent_data()
+	_save_settings()
 
 func _apply_fullscreen() -> void:
 	var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if is_fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
@@ -655,7 +670,7 @@ func _apply_fullscreen() -> void:
 func set_fps_cap(value: int) -> void:
 	fps_cap = value if FPS_CAP_OPTIONS.has(value) else 0
 	_apply_fps_cap()
-	_save_persistent_data()
+	_save_settings()
 
 # Steps to the next FPS_CAP_OPTIONS entry (wrapping around) - what the
 # settings panels' FPS button does on each press. Returns the new cap.

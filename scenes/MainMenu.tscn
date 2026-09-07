@@ -61,40 +61,138 @@ offset_right = 170.0
 offset_bottom = -20.0
 text = "Quit"
 
-[node name="SaveSlots" type="VBoxContainer" parent="."]
+[node name="SaveSlotButton" type="Button" parent="."]
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -372.0
-offset_top = -128.0
-offset_right = 372.0
+offset_left = -130.0
+offset_top = -80.0
+offset_right = 130.0
 offset_bottom = -20.0
-theme_override_constants/separation = 6
+text = "Save Slot 1"
 
-[node name="SlotLabel" type="Label" parent="SaveSlots"]
+[node name="SavePanel" type="Panel" parent="."]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -370.0
+offset_top = -172.0
+offset_right = 370.0
+offset_bottom = 172.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SavePanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = -14.0
+offset_bottom = -12.0
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="SavePanel/VBoxContainer"]
 layout_mode = 2
-text = "Save Slot"
+theme_override_font_sizes/font_size = 24
+text = "Save Slots"
 horizontal_alignment = 1
 
-[node name="SlotRow" type="HBoxContainer" parent="SaveSlots"]
+[node name="SlotRow" type="HBoxContainer" parent="SavePanel/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="Slot1Col" type="VBoxContainer" parent="SavePanel/VBoxContainer/SlotRow"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Slot1" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot1Col"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 92)
+text = "Slot 1"
+
+[node name="Delete1" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot1Col"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 54)
+text = "Delete Save"
+
+[node name="Slot2Col" type="VBoxContainer" parent="SavePanel/VBoxContainer/SlotRow"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Slot2" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot2Col"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 92)
+text = "Slot 2"
+
+[node name="Delete2" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot2Col"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 54)
+text = "Delete Save"
+
+[node name="Slot3Col" type="VBoxContainer" parent="SavePanel/VBoxContainer/SlotRow"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Slot3" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot3Col"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 92)
+text = "Slot 3"
+
+[node name="Delete3" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot3Col"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 54)
+text = "Delete Save"
+
+[node name="BackButton" type="Button" parent="SavePanel/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 56)
+text = "Back"
+
+[node name="ConfirmPanel" type="Panel" parent="."]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -110.0
+offset_right = 260.0
+offset_bottom = 110.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ConfirmPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = -14.0
+offset_bottom = -12.0
+theme_override_constants/separation = 12
+
+[node name="MessageLabel" type="Label" parent="ConfirmPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Resetting save will delete all data. Are you sure?"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="ConfirmPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Slot1" type="Button" parent="SaveSlots/SlotRow"]
+[node name="ConfirmButton" type="Button" parent="ConfirmPanel/VBoxContainer/ButtonRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(240, 72)
-text = "Slot 1"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 56)
+text = "Yes, Delete"
 
-[node name="Slot2" type="Button" parent="SaveSlots/SlotRow"]
+[node name="CancelButton" type="Button" parent="ConfirmPanel/VBoxContainer/ButtonRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(240, 72)
-text = "Slot 2"
-
-[node name="Slot3" type="Button" parent="SaveSlots/SlotRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(240, 72)
-text = "Slot 3"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 56)
+text = "Cancel"
 
 [node name="SettingsPanel" type="Panel" parent="."]
 anchor_left = 0.5
