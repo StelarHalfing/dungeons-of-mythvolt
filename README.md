@@ -241,6 +241,3 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   bottleneck. The next step is `MultiMeshInstance2D` for rendering
   and a flat array (no per-enemy nodes) for position/health, with
   manual broad-phase collision (e.g. a spatial hash grid).
-- **Background**: currently just black. A simple repeating
-  `TextureRect`/`ParallaxBackground` or `TileMapLayer` under the
-  action goes a long way visually.
