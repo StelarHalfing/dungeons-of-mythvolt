@@ -189,18 +189,23 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `enemies_defeated % 10` - Minotaur inherits this unchanged) drops a
   `CoinPickup` — same magnet/pickup code as `XPGem`, just paying out
   `GameManager.add_coins()` instead of `add_xp()`.
-  - There are five permanent upgrades right now, all `level *
-    per_level_value` via `get_permanent_bonus(id)`. Three are stat
+  - There are six permanent upgrades right now, all `level *
+    per_level_value` via `get_permanent_bonus(id)`. Four are stat
     bonuses: Health
     Regeneration (+0.2 HP/sec/level, applied in `Player.gd`'s
     `_physics_process()` via `get_health_regen_rate()`, which also adds
     the run-only Vitality Elixir passive), Damage (+10%/level, flat/
     additive not compounding, capped at +50% at level 5 - folded into
-    `get_damage_mult()`, the one multiplier every weapon applies) and
+    `get_damage_mult()`, the one multiplier every weapon applies),
     XP Gain (same +10%/level curve, folded into `get_xp_mult()` next to
-    the Wisdom Orb passive). Damage's and XP Gain's `costs` are exactly
-    double Health Regeneration's (`[200, 400, 1000, 2000, 5000]` vs
-    `[100, 200, 500, 1000, 2500]`). Two more are whole-number perks
+    the Wisdom Orb passive) and Gold Gain (same curve again, folded
+    into `get_coin_mult()` next to the Lucky Coin passive - but those
+    two ADD rather than multiply, so both maxed is exactly x2: two
+    gold per coin, applied in `add_coins()` with the same integer
+    hundredths carry `add_xp()` uses). Damage's, XP Gain's and Gold
+    Gain's `costs` are exactly double Health Regeneration's
+    (`[200, 400, 1000, 2000, 5000]` vs `[100, 200, 500, 1000, 2500]`).
+    Two more are whole-number perks
     for the level-up panel (`"format": "count"`), two levels each at
     1000 then 5000 coins: Rerolls (+1 free reroll per run on top of
     the one everyone gets, via `get_free_rerolls()`) and Bans (+1 ban

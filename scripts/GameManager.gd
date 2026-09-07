@@ -101,6 +101,17 @@ const PERMANENT_UPGRADE_DEFS := {
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
 	},
+	# Damage's costs and curve (+10%/level, +50% at max). Unlike Damage and
+	# XP Gain this ADDS to the Lucky Coin passive rather than multiplying,
+	# so both maxed is exactly x2: two gold per coin - see get_coin_mult().
+	"coin_gain": {
+		"display_name": "Gold Gain",
+		"description": "Permanently earn more gold from every coin.",
+		"stat_label": "gold gain",
+		"per_level_value": 0.10,
+		"max_level": 5,
+		"costs": [200, 400, 1000, 2000, 5000],
+	},
 	# Whole-number perks for the level-up panel (format "count": shown as
 	# "+1"). Two expensive levels each, so they're a late investment.
 	"rerolls": {
@@ -144,6 +155,12 @@ var regen_bonus: float = 0.0
 # 1.19999..., so floor() would hand out one XP a gem late at x1.2.
 var xp_mult: float = 1.0
 var xp_carry: int = 0
+# Lucky Coin's stat: this run's extra gold per coin as a fraction (0.5 =
+# +50%), added to the permanent Gold Gain bonus in get_coin_mult(). Coins
+# are integer like XP, so the boosted fraction is carried in hundredths
+# too (coin_carry) - ten coins at x1.1 really do give 11 gold.
+var coin_gain_bonus: float = 0.0
+var coin_carry: int = 0
 
 # Static definition of every weapon: its starting level (0 = not yet
 # owned, must be picked once to unlock), base stats, and the flat
@@ -294,6 +311,18 @@ const PASSIVE_DEFS := {
 		"per_level_value": 0.2,
 		"max_level": 5,
 	},
+	"lucky_coin": {
+		"display_name": "Lucky Coin",
+		"description": "Every coin is worth more gold.",
+		"stat": "coin_gain_bonus",
+		"stat_label": "gold gain",
+		# Stored as the bonus fraction (base 0, +0.1/level, +50% at max)
+		# rather than a multiplier, because it ADDS to the permanent Gold
+		# Gain upgrade in get_coin_mult(): both maxed = x2 gold per coin.
+		"base": 0.0,
+		"per_level_value": 0.1,
+		"max_level": 5,
+	},
 }
 
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
@@ -314,7 +343,7 @@ const CHARACTER_DEFS := {
 			"Move speed: 140",
 			"Starting weapon: Laser Pistol",
 			"Can unlock: Forcefield, Tornado, Grenade, Fireball",
-			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir",
+			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin",
 		],
 		"portrait": "res://assets/ui/portrait_knight.tres",
 	},
@@ -392,6 +421,8 @@ func reset() -> void:
 	regen_bonus = 0.0
 	xp_mult = 1.0
 	xp_carry = 0
+	coin_gain_bonus = 0.0
+	coin_carry = 0
 	_init_weapons()
 	_init_passives()
 	# A new run is starting: make sure the last run's coins are on disk.
@@ -648,13 +679,18 @@ func format_time() -> String:
 
 # --- Meta-progression: coins and permanent (coin-bought) upgrades ---
 
+# Gold from a coin pickup, boosted by get_coin_mult() with an integer
+# hundredths carry (see coin_carry), the same scheme as add_xp().
+#
 # Coins are only marked dirty here, not written: a Magnet can land
 # dozens of coins in one physics tick, and a file write per coin would
 # stall that frame. The slot is flushed by _process() a second later
 # and, so nothing is lost, on end_run()/reset(), slot switch/delete,
 # purchase, and quit (see _flush_slot()).
 func add_coins(amount: int) -> void:
-	coins += amount
+	coin_carry += amount * get_coin_mult_percent()
+	coins += coin_carry / 100
+	coin_carry %= 100
 	_slot_dirty = true
 
 func get_upgrade_level(id: String) -> int:
@@ -707,6 +743,15 @@ func get_xp_mult() -> float:
 # get_xp_mult() in whole percent (110 = x1.1), the form add_xp() uses.
 func get_xp_mult_percent() -> int:
 	return int(round(get_xp_mult() * 100.0))
+
+# Gold per coin: the permanent Gold Gain bonus plus this run's Lucky
+# Coin bonus, ADDED (not multiplied like damage/XP) so the two maxed
+# +50%s make exactly x2 - two gold per coin, never a fraction over.
+func get_coin_mult() -> float:
+	return 1.0 + get_permanent_bonus("coin_gain") + coin_gain_bonus
+
+func get_coin_mult_percent() -> int:
+	return int(round(get_coin_mult() * 100.0))
 
 # --- Persistence: one global settings file + one file per save slot ---
 #

@@ -19,6 +19,9 @@ const ICON_TEXTURES := {
 	# sheet) - the passive makes those gems worth more.
 	"wisdom_orb": preload("res://assets/ui/icon_wisdom_orb.tres"),
 	"vitality_elixir": preload("res://assets/ui/icon_vitality_elixir.tres"),
+	# The gold emblem coin from the item sheet - the passive makes coins
+	# worth more gold.
+	"lucky_coin": preload("res://assets/ui/icon_lucky_coin.tres"),
 }
 
 var icon_id: String = ""
