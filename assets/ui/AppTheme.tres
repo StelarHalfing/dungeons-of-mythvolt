@@ -1,11 +1,7 @@
-[gd_resource type="Theme" load_steps=21 format=3]
+[gd_resource type="Theme" load_steps=20 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/ui_sheet.png" id="1"]
 [ext_resource type="FontFile" path="res://allassets/m5x7.ttf" id="2"]
-
-[sub_resource type="FontVariation" id="font_bold"]
-base_font = ExtResource("2")
-variation_embolden = 0.6
 
 [sub_resource type="StyleBoxTexture" id="btn_normal"]
 texture = ExtResource("1")
@@ -163,7 +159,7 @@ content_margin_right = 9.0
 modulate_color = Color(0.8, 0.8, 0.8, 1)
 
 [resource]
-default_font = SubResource("font_bold")
+default_font = ExtResource("2")
 default_font_size = 24
 Button/colors/font_color = Color(1, 1, 1, 1)
 Button/colors/font_disabled_color = Color(0.6, 0.62, 0.7, 1)

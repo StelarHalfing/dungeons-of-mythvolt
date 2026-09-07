@@ -1,5 +1,13 @@
 extends Control
 
+# The four panels and the delete-confirm dialog carry
+# assets/ui/MenuPanelTheme.tres, a one-line Theme whose only job is
+# default_font_size = 32. It sits closer to the panel contents than the
+# textured AppTheme on the scene root, so every label and button inside
+# a panel inherits the larger body size while still finding its styles
+# in AppTheme further up the tree. Panel heights in the .tscn are tuned
+# to that size (the Upgrades panel shows exactly three shop rows).
+
 @onready var main_buttons: VBoxContainer = $MainButtons
 @onready var settings_panel: Panel = $SettingsPanel
 @onready var upgrades_panel: Panel = $UpgradesPanel
@@ -13,13 +21,14 @@ extends Control
 # with one column per GameManager slot (built in _build_slot_columns()
 # from SLOT_COUNT, so the menu can't disagree with the save code about
 # how many slots exist): a slot button marked with the same check icon
-# the select screens use when it is the active one, and a Delete button
+# the select screens use when it is the active one (in its top-right
+# corner, clear of the three centred text lines), and a Delete button
 # under it. Delete opens ConfirmOverlay, a full-screen input blocker
 # with the confirmation dialog in the middle, so nothing behind it can
 # be clicked until the player answers.
 const CHECK_ICON: Texture2D = preload("res://assets/ui/icon_check.tres")
-const SLOT_BUTTON_SIZE := Vector2(220, 92)
-const DELETE_BUTTON_SIZE := Vector2(220, 54)
+const SLOT_BUTTON_SIZE := Vector2(230, 130)
+const DELETE_BUTTON_SIZE := Vector2(230, 78)
 @onready var save_slot_button: Button = $SaveSlotButton
 @onready var save_panel: Panel = $SavePanel
 @onready var slot_row: HBoxContainer = $SavePanel/VBoxContainer/SlotRow
@@ -223,11 +232,11 @@ func _build_slot_columns() -> void:
 		var check := TextureRect.new()
 		check.texture = CHECK_ICON
 		check.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		check.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		check.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 		check.offset_left = -46.0
-		check.offset_top = -46.0
+		check.offset_top = 6.0
 		check.offset_right = -6.0
-		check.offset_bottom = -6.0
+		check.offset_bottom = 46.0
 		slot_button.add_child(check)
 		slot_checks.append(check)
 
@@ -298,8 +307,8 @@ func _build_upgrade_rows() -> void:
 		info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		upgrade_list.add_child(info)
-		# Height comes from the theme's button style (68px with the
-		# 16px font), the same as every other themed button.
+		# Height comes from the theme's button style (77px with the
+		# panel's 32px font), the same as every other themed button.
 		var buy := Button.new()
 		buy.pressed.connect(_on_upgrade_buy_pressed.bind(id))
 		upgrade_list.add_child(buy)
