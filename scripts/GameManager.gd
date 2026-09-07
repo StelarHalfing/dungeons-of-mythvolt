@@ -134,8 +134,8 @@ const PERMANENT_UPGRADE_DEFS := {
 	},
 	# Each level turns one locked box in the HUD's collection grid into an
 	# open slot (see get_weapon_slots() / get_passive_slots()): 2 base
-	# slots + 2 levels = 4 of the row's 6 boxes. The last two boxes are
-	# reserved for a different unlock, not coins.
+	# slots + 2 levels = 4 of the row's 6 boxes; the rest come from
+	# UNLOCK_DEFS (earned in play, not bought).
 	"weapon_slots": {
 		"display_name": "Weapon Slots",
 		"description": "Unlock another weapon slot for every run.",
@@ -158,16 +158,33 @@ const PERMANENT_UPGRADE_DEFS := {
 
 # Weapon and passive slots: how many different weapons (passives) a run
 # can hold. Every run has BASE_*_SLOTS; the permanent Weapon Slots /
-# Passive Slots upgrades add one each per level (to 4). The HUD grid
-# shows GRID_SLOTS_PER_ROW boxes per row - open ones first, a lock on
-# each of the rest, so buying a level visibly removes one - and the two
-# boxes beyond the shop's reach are for a future, non-coin unlock: add
-# its source to get_weapon_slots()/get_passive_slots() when it exists.
-# A slot is a real cap: _upgrade_pool() only offers a weapon (passive)
-# you don't own yet while a slot is free for it.
+# Passive Slots upgrades add one each per level (to 4), and the boxes
+# beyond the shop's reach come from UNLOCK_DEFS below (earned in play,
+# not bought). The HUD grid shows GRID_SLOTS_PER_ROW boxes per row -
+# open ones first, a lock on each of the rest, so an upgrade or unlock
+# visibly removes one. A slot is a real cap: _upgrade_pool() only
+# offers a weapon (passive) you don't own yet while a slot is free.
 const BASE_WEAPON_SLOTS := 2
 const BASE_PASSIVE_SLOTS := 2
 const GRID_SLOTS_PER_ROW := 6
+
+# Unlocks earned by playing, saved with the slot's progression. Each
+# names a survival time and the slots it grants once reached in a
+# single run; _check_unlocks() awards it the moment the clock gets
+# there (and the slot opens in that same run).
+const UNLOCK_DEFS := {
+	"weapon_slot_10min": {
+		"display_name": "Fifth weapon slot",
+		"description": "Survive 10:00 in a single run.",
+		"survive_time": 600.0,
+		"weapon_slots": 1,
+		"passive_slots": 0,
+	},
+}
+# unlocks[id] = earned, one entry per UNLOCK_DEFS key (filled by
+# _apply_slot()).
+var unlocks: Dictionary = {}
+signal unlock_earned(id: String)
 
 # The weapons and passives owned this run, in the order they were
 # picked up - what the HUD grid's open boxes show, left to right.
@@ -384,7 +401,7 @@ const CHARACTER_DEFS := {
 			"Starting weapon: Laser Pistol",
 			"Can unlock: Forcefield, Tornado, Grenade, Fireball",
 			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin",
-			"Slots: 2 weapons, 2 passives (more from the Upgrades shop)",
+			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00)",
 		],
 		"portrait": "res://assets/ui/portrait_knight.tres",
 	},
@@ -443,6 +460,7 @@ func _apply_passive(id: String) -> void:
 func _process(delta: float) -> void:
 	if not is_paused_for_upgrade and not is_menu_paused and not is_game_over:
 		game_time += delta
+		_check_unlocks()
 	_tick_slot_save(delta)
 
 func reset() -> void:
@@ -541,10 +559,30 @@ func _owned_count(registry: Dictionary) -> int:
 	return count
 
 func get_weapon_slots() -> int:
-	return BASE_WEAPON_SLOTS + int(get_permanent_bonus("weapon_slots"))
+	return BASE_WEAPON_SLOTS + int(get_permanent_bonus("weapon_slots")) + _unlocked_slots("weapon_slots")
 
 func get_passive_slots() -> int:
-	return BASE_PASSIVE_SLOTS + int(get_permanent_bonus("passive_slots"))
+	return BASE_PASSIVE_SLOTS + int(get_permanent_bonus("passive_slots")) + _unlocked_slots("passive_slots")
+
+# Slots of one kind granted by every earned unlock.
+func _unlocked_slots(kind: String) -> int:
+	var total: int = 0
+	for id in UNLOCK_DEFS.keys():
+		if unlocks.get(id, false):
+			total += UNLOCK_DEFS[id][kind]
+	return total
+
+# Awards any unlock whose survival time this run has just reached.
+# Called from _process() right after the run clock advances, so it
+# can't fire while paused or after death.
+func _check_unlocks() -> void:
+	for id in UNLOCK_DEFS.keys():
+		if unlocks.get(id, false) or game_time < UNLOCK_DEFS[id]["survive_time"]:
+			continue
+		unlocks[id] = true
+		# An achievement, not a coin trickle: write it now.
+		_save_slot()
+		unlock_earned.emit(id)
 
 # Up to CHOICE_COUNT random ids from the pool, taking ones not in
 # `avoid` (the set being rerolled) first, so a reroll shows all-new
@@ -825,7 +863,8 @@ func get_coin_mult_percent() -> int:
 # --- Persistence: one global settings file + one file per save slot ---
 #
 # Preferences (damage numbers, fullscreen, FPS cap) and which slot is
-# active live in SETTINGS_PATH; progression (coins, permanent upgrades)
+# active live in SETTINGS_PATH; progression (coins, permanent upgrades,
+# earned unlocks)
 # lives in the active slot's file. Before slots existed everything was
 # in one save_data.json - _migrate_legacy_save() turns that into
 # settings + slot 1 the first time this build runs, and leaves the old
@@ -897,6 +936,9 @@ func _apply_slot(data: Dictionary) -> void:
 	for id in PERMANENT_UPGRADE_DEFS.keys():
 		var max_level: int = PERMANENT_UPGRADE_DEFS[id]["max_level"]
 		permanent_upgrades[id] = clampi(_as_int(saved_upgrades.get(id), 0), 0, max_level)
+	var saved_unlocks: Dictionary = _as_dict(data.get("unlocks"))
+	for id in UNLOCK_DEFS.keys():
+		unlocks[id] = saved_unlocks.get(id, false) == true
 
 func _load_slot(slot: int) -> void:
 	_apply_slot(_read_json(slot_path(slot)))
@@ -920,6 +962,7 @@ func _save_slot() -> void:
 	_write_json(slot_path(active_slot), {
 		"coins": coins,
 		"permanent_upgrades": permanent_upgrades,
+		"unlocks": unlocks,
 	})
 
 # Writes the active slot if any coins are waiting to be saved.

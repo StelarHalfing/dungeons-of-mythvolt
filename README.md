@@ -119,9 +119,12 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   frame and the lock glyph. Runs start with
   `BASE_WEAPON_SLOTS`/`BASE_PASSIVE_SLOTS` (2 each, so four locks per
   row) and each level of the permanent Weapon Slots / Passive Slots
-  upgrades opens one more, to four; the last two boxes of each row
-  are reserved for a different, non-coin unlock (not built yet - its
-  source plugs into `get_weapon_slots()`/`get_passive_slots()`). A slot is a
+  upgrades opens one more, to four; the boxes beyond that come from
+  `UNLOCK_DEFS`, earned in play and saved with the slot - today one
+  entry, a fifth weapon slot for surviving 10:00 in a single run
+  (`_check_unlocks()` awards it the moment the clock gets there, the
+  HUD rebuilds the grid so the lock vanishes mid-run and shows a
+  banner under the timer, and `_save_slot()` writes it at once). A slot is a
   real cap: `_upgrade_pool()` only offers a weapon or passive you
   don't own yet while a slot is free for it, so with two base slots a
   run holds the Laser Pistol plus one more weapon until the upgrades
@@ -158,7 +161,7 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   which are per-run) and persist across launches as JSON (via
   `FileAccess` + `JSON.stringify`), split into two kinds of file:
   preferences plus the active slot number in `user://settings.json`,
-  and progression (coins + upgrade levels) in one file per save slot,
+  and progression (coins, upgrade levels, earned unlocks) in one file per save slot,
   `user://save_slot_N.json` (N = 1..`SLOT_COUNT`, 3 slots). Settings
   are written the moment they change - through setters like
   `set_fullscreen()`/`set_show_damage_numbers()`, not direct field

@@ -39,6 +39,12 @@ const IconSlotScene := preload("res://scenes/IconSlot.tscn")
 @onready var weapon_grid: GridContainer = $WeaponGrid
 var weapon_slots: Array = []
 var passive_slots: Array = []
+# Banner under the run clock announcing an unlock earned mid-run
+# (GameManager.unlock_earned); fades out after TOAST_HOLD seconds.
+@onready var unlock_toast: Label = $UnlockToast
+const TOAST_HOLD := 3.0
+const TOAST_FADE := 1.0
+var toast_tween: Tween
 @onready var game_over_panel: Panel = $GameOverPanel
 @onready var pause_panel: Panel = $PausePanel
 @onready var game_settings_panel: Panel = $GameSettingsPanel
@@ -57,6 +63,7 @@ func _ready() -> void:
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.level_up_choices.connect(_on_level_up_choices)
 	GameManager.player_died.connect(_on_player_died)
+	GameManager.unlock_earned.connect(_on_unlock_earned)
 	_build_collection_grid()
 
 	for i in range(upgrade_buttons.size()):
@@ -91,10 +98,28 @@ func _ready() -> void:
 	)
 
 func _build_collection_grid() -> void:
+	for slot in weapon_grid.get_children():
+		weapon_grid.remove_child(slot)
+		slot.queue_free()
 	weapon_grid.columns = GameManager.GRID_SLOTS_PER_ROW
 	weapon_slots = _add_slot_row(true, GameManager.get_weapon_slots())
 	passive_slots = _add_slot_row(false, GameManager.get_passive_slots())
 	_refresh_collection_grid()
+
+# An unlock earned this run opens its slot right away: rebuild the grid
+# so the lock disappears, and say why.
+func _on_unlock_earned(id: String) -> void:
+	_build_collection_grid()
+	var def: Dictionary = GameManager.UNLOCK_DEFS[id]
+	unlock_toast.text = "%s unlocked - %s" % [def["display_name"], def["description"].trim_suffix(".").to_lower()]
+	unlock_toast.modulate.a = 1.0
+	unlock_toast.visible = true
+	if toast_tween != null:
+		toast_tween.kill()
+	toast_tween = create_tween()
+	toast_tween.tween_interval(TOAST_HOLD)
+	toast_tween.tween_property(unlock_toast, "modulate:a", 0.0, TOAST_FADE)
+	toast_tween.tween_callback(func(): unlock_toast.visible = false)
 
 # Returns the row's open (unlocked) slots, left to right.
 func _add_slot_row(is_weapon: bool, open_slots: int) -> Array:
