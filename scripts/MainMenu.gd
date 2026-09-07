@@ -39,7 +39,9 @@ var pending_delete_slot: int = 0
 @onready var upgrade_list: VBoxContainer = $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList
 @onready var upgrade_scroll: ScrollContainer = $UpgradesPanel/VBoxContainer/ScrollContainer
 var upgrade_rows: Dictionary = {}
-const BUY_BUTTON_HEIGHT := 48.0
+# Wheel travel not yet turned into a row step (precision touchpads send
+# many small-factor wheel events per flick; they add up to whole rows).
+var _shop_wheel_accum: float = 0.0
 
 func _ready() -> void:
 	settings_panel.visible = false
@@ -52,7 +54,10 @@ func _ready() -> void:
 	$SettingsPanel/VBoxContainer/BackButton.pressed.connect(_on_settings_back_pressed)
 	$UpgradesPanel/VBoxContainer/BackButton.pressed.connect(_on_upgrades_back_pressed)
 	_build_upgrade_rows()
+	# The bar is a child of the container and handles the wheel itself
+	# first, so it gets the same row-snapping handler.
 	upgrade_scroll.gui_input.connect(_on_upgrade_scroll_input)
+	upgrade_scroll.get_v_scroll_bar().gui_input.connect(_on_upgrade_scroll_input)
 
 	save_panel.visible = false
 	confirm_overlay.visible = false
@@ -215,8 +220,9 @@ func _build_upgrade_rows() -> void:
 		info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		upgrade_list.add_child(info)
+		# Height comes from the theme's button style (68px with the
+		# 16px font), the same as every other themed button.
 		var buy := Button.new()
-		buy.custom_minimum_size = Vector2(0, BUY_BUTTON_HEIGHT)
 		buy.pressed.connect(_on_upgrade_buy_pressed.bind(id))
 		upgrade_list.add_child(buy)
 		upgrade_rows[id] = {"info": info, "button": buy}
@@ -225,26 +231,35 @@ func _build_upgrade_rows() -> void:
 # row per notch - snapping to the next row's top (rows can differ in
 # height when a label wraps) instead of ScrollContainer's default eighth
 # of a page. Handled on the gui_input signal, which fires before the
-# container's own handling, so accept_event() replaces it.
+# control's own handling, so accept_event() replaces it. A notch is a
+# wheel event with factor 1; touchpads send fractions, which accumulate.
 func _on_upgrade_scroll_input(event: InputEvent) -> void:
 	if not (event is InputEventMouseButton and event.pressed):
 		return
+	if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		_shop_wheel_accum += event.factor
+	elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		_shop_wheel_accum -= event.factor
+	else:
+		return
+	upgrade_scroll.accept_event()
+	while absf(_shop_wheel_accum) >= 1.0:
+		var direction: float = signf(_shop_wheel_accum)
+		_shop_wheel_accum -= direction
+		_scroll_shop_by_row(direction > 0.0)
+
+func _scroll_shop_by_row(down: bool) -> void:
 	var current: int = upgrade_scroll.scroll_vertical
 	var target: int = -1
-	if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		for id in upgrade_rows.keys():
-			var top: int = int(upgrade_rows[id]["info"].position.y)
-			if top > current:
-				target = top
-				break
-	elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
-		for id in upgrade_rows.keys():
-			var top: int = int(upgrade_rows[id]["info"].position.y)
-			if top < current:
-				target = top
+	for id in upgrade_rows.keys():
+		var top: int = int(upgrade_rows[id]["info"].position.y)
+		if down and top > current:
+			target = top
+			break
+		if not down and top < current:
+			target = top
 	if target >= 0:
 		upgrade_scroll.scroll_vertical = target
-		upgrade_scroll.accept_event()
 
 func _refresh_upgrades() -> void:
 	coins_label.text = "Coins: %d" % GameManager.coins

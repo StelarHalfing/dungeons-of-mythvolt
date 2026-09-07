@@ -184,7 +184,7 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   static-table-plus-live-state pattern as `WEAPON_DEFS`: each entry
   has a `costs` array (cost of each level), a `max_level`, and the
   `stat_label`/`format` keys `format_bonus()` uses to write the bonus
-  ("+10%" or "+0.2", the same formatter the level-up cards use for
+  ("+10%", "+0.2" or "+1", the same formatter the level-up cards use for
   passives). Every 10th kill (`Goblin.gd`, checking
   `enemies_defeated % 10` - Minotaur inherits this unchanged) drops a
   `CoinPickup` — same magnet/pickup code as `XPGem`, just paying out

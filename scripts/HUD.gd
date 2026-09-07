@@ -129,8 +129,9 @@ func _refresh_action_buttons() -> void:
 		reroll_button.text = "Reroll (%d free)" % free_left
 	else:
 		reroll_button.text = "Reroll (Free)"
-	# Greyed out when unaffordable or when nothing new is left to show.
-	reroll_button.disabled = not GameManager.can_reroll()
+	# Greyed out when unaffordable, when nothing new is left to show, or
+	# while a ban is being chosen (a reroll would silently end ban mode).
+	reroll_button.disabled = not GameManager.can_reroll() or ban_mode
 
 	if ban_mode:
 		ban_button.text = "Cancel ban"
