@@ -22,7 +22,7 @@ offset_top = 80.0
 offset_right = 400.0
 offset_bottom = 160.0
 theme_override_font_sizes/font_size = 64
-theme_override_constants/outline_size = 3
+theme_override_constants/outline_size = 6
 text = "THE DUNGEONS OF MYTHVOLT"
 horizontal_alignment = 1
 
