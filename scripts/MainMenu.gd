@@ -55,7 +55,8 @@ func _ready() -> void:
 	)
 
 func _on_play_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/Main.tscn")
+	# Character select -> map select -> the game (see RunSetup.gd).
+	get_tree().change_scene_to_file("res://scenes/RunSetup.tscn")
 
 func _on_settings_pressed() -> void:
 	main_buttons.visible = false

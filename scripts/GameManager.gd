@@ -220,6 +220,42 @@ const PASSIVE_DEFS := {
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
 var passives: Dictionary = {}
 
+# Playable characters and maps offered on the run-setup screens
+# (RunSetup.tscn builds one card per entry). `traits` are the lines shown
+# in the description panel - keep them true to the actual numbers in
+# Player.tscn / EnemySpawner.gd. Only the Knight and Level 1 exist so
+# far; selected_character / selected_map record the choice for when
+# Main.tscn has more than one of each to load.
+const CHARACTER_DEFS := {
+	"knight": {
+		"display_name": "Knight",
+		"flavor": "A steadfast dungeon delver in blue plate - the all-rounder.",
+		"traits": [
+			"Health: 100",
+			"Move speed: 140",
+			"Starting weapon: Laser Pistol",
+			"Can unlock: Forcefield, Tornado, Grenade, Fireball",
+			"Passives: Attraction Tome, Power Emblem, Wisdom Orb",
+		],
+		"portrait": "res://assets/ui/portrait_knight.tres",
+	},
+}
+const MAP_DEFS := {
+	"level_1": {
+		"display_name": "Level 1",
+		"flavor": "An endless flagstone dungeon floor. Survive as long as you can.",
+		"traits": [
+			"Zombies from the start, spawning faster over time",
+			"Tank Zombies join at 1:30 (dash attack, 300 HP)",
+			"Skeletons take over from 1:45",
+			"Spawn surge at 6:00 (double rate)",
+		],
+		"preview": "res://assets/ui/preview_level1.tres",
+	},
+}
+var selected_character: String = "knight"
+var selected_map: String = "level_1"
+
 func _ready() -> void:
 	# Keep ticking (and keep the level-up UI responsive) while the
 	# tree is paused for an upgrade choice.
