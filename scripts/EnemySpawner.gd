@@ -3,6 +3,7 @@ extends Node2D
 @export var zombie_scene: PackedScene = preload("res://scenes/Zombie.tscn")
 @export var tank_zombie_scene: PackedScene = preload("res://scenes/TankZombie.tscn")
 @export var skeleton_scene: PackedScene = preload("res://scenes/Skeleton.tscn")
+@export var slime_scene: PackedScene = preload("res://scenes/Slime.tscn")
 @export var spawn_radius: float = 500.0
 @export var initial_interval: float = 1.2
 
@@ -28,6 +29,15 @@ const SURGE_START_TIME := 360.0  # 6:00
 const SURGE_RAMP_DURATION := 30.0
 const SURGE_INTERVAL_MULT := 0.5
 
+# The third step trades numbers for toughness: from 8:00 Slimes (120
+# HP, slow) take a growing share of the base chaser slot, up to
+# SLIME_MAX_SHARE by 8:30, and over the same 30 seconds the surge eases
+# back off, so the spawn rate returns to its pre-6:00 level (~6.7/s)
+# with far more HP per spawn. Tank Zombies keep their own schedule.
+const SLIME_START_TIME := 480.0  # 8:00
+const SLIME_RAMP_DURATION := 30.0
+const SLIME_MAX_SHARE := 0.35
+
 var spawn_timer: float = 0.0
 var enemies_spawned: int = 0
 
@@ -45,10 +55,12 @@ func current_interval() -> float:
 	return base * _surge_interval_mult()
 
 # 1.0 before SURGE_START_TIME, easing linearly to SURGE_INTERVAL_MULT
-# over SURGE_RAMP_DURATION seconds, then staying there.
+# over SURGE_RAMP_DURATION seconds, holding there until SLIME_START_TIME,
+# then easing back to 1.0 over SLIME_RAMP_DURATION as the Slimes arrive.
 func _surge_interval_mult() -> float:
-	var t: float = clamp((GameManager.game_time - SURGE_START_TIME) / SURGE_RAMP_DURATION, 0.0, 1.0)
-	return lerp(1.0, SURGE_INTERVAL_MULT, t)
+	var surge_in: float = clamp((GameManager.game_time - SURGE_START_TIME) / SURGE_RAMP_DURATION, 0.0, 1.0)
+	var surge_out: float = clamp((GameManager.game_time - SLIME_START_TIME) / SLIME_RAMP_DURATION, 0.0, 1.0)
+	return lerp(1.0, SURGE_INTERVAL_MULT, surge_in * (1.0 - surge_out))
 
 func spawn_enemy() -> void:
 	var players := get_tree().get_nodes_in_group("player")
@@ -66,6 +78,8 @@ func spawn_enemy() -> void:
 	var scene: PackedScene
 	if spawn_tank_zombie:
 		scene = tank_zombie_scene
+	elif randf() < _slime_spawn_chance():
+		scene = slime_scene
 	else:
 		scene = skeleton_scene if randf() < _skeleton_spawn_chance() else zombie_scene
 
@@ -81,3 +95,9 @@ func spawn_enemy() -> void:
 func _skeleton_spawn_chance() -> float:
 	var elapsed: float = GameManager.game_time - SKELETON_START_TIME
 	return clamp(elapsed / SKELETON_RAMP_DURATION, 0.0, 1.0)
+
+# 0.0 before SLIME_START_TIME, ramping linearly to SLIME_MAX_SHARE over
+# SLIME_RAMP_DURATION seconds, then staying there.
+func _slime_spawn_chance() -> float:
+	var elapsed: float = GameManager.game_time - SLIME_START_TIME
+	return clamp(elapsed / SLIME_RAMP_DURATION, 0.0, 1.0) * SLIME_MAX_SHARE

@@ -479,6 +479,7 @@ const MAP_DEFS := {
 			"Tank Zombies join at 1:30 (dash attack, 300 HP)",
 			"Skeletons take over from 1:45",
 			"Spawn surge at 6:00 (double rate)",
+			"Slimes join at 8:00 (120 HP) as the surge eases back off",
 		],
 		"preview": "res://assets/ui/preview_level1.tres",
 	},

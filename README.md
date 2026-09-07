@@ -169,7 +169,13 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   over time. Each Goblin/Minotaur always spawns at its scene's fixed
   base `max_hp`/`speed` — the only thing that changes with time is
   how often `EnemySpawner.gd` spawns one
-  (`initial_interval - game_time * 0.01`, floored at 0.15s).
+  (`initial_interval - game_time * 0.01`, floored at 0.15s), and
+  which: the surge from 6:00 halves the interval (double the rate),
+  and from 8:00 Slimes (`Slime.tscn`, 120 HP, slow, reusing
+  `Zombie.gd` with the Slimes Pack bounce frames for every facing)
+  take up to 35% of the base chaser slot while the surge eases back
+  off over the same 30 seconds - the spawn rate returns to its
+  pre-6:00 level, but with far more HP per spawn.
 - **Minotaur extends Goblin via GDScript inheritance**
   (`extends "res://scripts/Goblin.gd"`), not a from-scratch script.
   `Goblin.gd` splits its behavior into small overridable pieces
