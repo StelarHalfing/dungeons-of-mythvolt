@@ -21,7 +21,7 @@ offset_left = -400.0
 offset_top = 80.0
 offset_right = 400.0
 offset_bottom = 160.0
-theme_override_font_sizes/font_size = 48
+theme_override_font_sizes/font_size = 64
 theme_override_constants/outline_size = 3
 text = "THE DUNGEONS OF MYTHVOLT"
 horizontal_alignment = 1
@@ -40,19 +40,19 @@ theme_override_constants/separation = 8
 [node name="PlayButton" type="Button" parent="MainButtons"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 72)
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 48
 text = "Play"
 
 [node name="SettingsButton" type="Button" parent="MainButtons"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 72)
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 48
 text = "Settings"
 
 [node name="UpgradesButton" type="Button" parent="MainButtons"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 72)
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 48
 text = "Upgrades"
 
 [node name="QuitButton" type="Button" parent="."]
@@ -62,7 +62,7 @@ offset_left = 20.0
 offset_top = -84.0
 offset_right = 180.0
 offset_bottom = -20.0
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 32
 text = "Quit"
 
 [node name="SaveSlotButton" type="Button" parent="."]
@@ -74,7 +74,7 @@ offset_left = -130.0
 offset_top = -84.0
 offset_right = 130.0
 offset_bottom = -20.0
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 32
 text = "Saves"
 
 [node name="UnlocksButton" type="Button" parent="."]
@@ -86,7 +86,7 @@ offset_left = -200.0
 offset_top = -84.0
 offset_right = -20.0
 offset_bottom = -20.0
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 32
 text = "Unlocks"
 
 [node name="UnlocksPanel" type="Panel" parent="."]
@@ -111,7 +111,7 @@ theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="Label" parent="UnlocksPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Unlocks"
 horizontal_alignment = 1
 
@@ -152,7 +152,7 @@ theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="Label" parent="SavePanel/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Save Slots"
 horizontal_alignment = 1
 
@@ -186,7 +186,7 @@ offset_bottom = -12.0
 
 [node name="SettingsLabel" type="Label" parent="SettingsPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Settings"
 horizontal_alignment = 1
 
@@ -236,9 +236,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -260.0
-offset_top = -274.0
+offset_top = -248.0
 offset_right = 260.0
-offset_bottom = 274.0
+offset_bottom = 248.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UpgradesPanel"]
 anchor_right = 1.0
@@ -250,7 +250,7 @@ offset_bottom = -12.0
 
 [node name="TitleLabel" type="Label" parent="UpgradesPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Upgrades"
 horizontal_alignment = 1
 

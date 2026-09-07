@@ -155,7 +155,7 @@ func _build_unlock_rows() -> void:
 		row.add_child(text)
 		var name_label := Label.new()
 		name_label.text = def["display_name"]
-		name_label.add_theme_font_size_override("font_size", 20)
+		name_label.add_theme_font_size_override("font_size", 32)
 		text.add_child(name_label)
 		var desc_label := Label.new()
 		desc_label.text = "%s Reward: %s." % [def["description"], GameManager.unlock_reward_text(id)]

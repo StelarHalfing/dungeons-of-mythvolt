@@ -1,6 +1,7 @@
-[gd_resource type="Theme" load_steps=19 format=3]
+[gd_resource type="Theme" load_steps=20 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/ui_sheet.png" id="1"]
+[ext_resource type="FontFile" path="res://allassets/m5x7.ttf" id="2"]
 
 [sub_resource type="StyleBoxTexture" id="btn_normal"]
 texture = ExtResource("1")
@@ -158,7 +159,8 @@ content_margin_right = 9.0
 modulate_color = Color(0.8, 0.8, 0.8, 1)
 
 [resource]
-default_font_size = 16
+default_font = ExtResource("2")
+default_font_size = 24
 Button/colors/font_color = Color(1, 1, 1, 1)
 Button/colors/font_disabled_color = Color(0.6, 0.62, 0.7, 1)
 Button/colors/font_focus_color = Color(1, 1, 1, 1)
@@ -199,7 +201,7 @@ IconSlot/styles/panel = SubResource("slot")
 IconSlotLocked/base_type = &"Panel"
 IconSlotLocked/styles/panel = SubResource("slot_dark")
 Label/colors/font_outline_color = Color(0, 0, 0, 1)
-Label/constants/outline_size = 3
+Label/constants/outline_size = 2
 Panel/styles/panel = SubResource("panel")
 VScrollBar/styles/grabber = SubResource("vscroll_grabber")
 VScrollBar/styles/grabber_highlight = SubResource("vscroll_grabber_hl")
