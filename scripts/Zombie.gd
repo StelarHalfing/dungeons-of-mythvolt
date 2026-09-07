@@ -17,6 +17,7 @@ extends Area2D
 @export var coin_pickup_scene: PackedScene = preload("res://scenes/CoinPickup.tscn")
 @export var damage_number_scene: PackedScene = preload("res://scenes/DamageNumber.tscn")
 @export var magnet_pickup_scene: PackedScene = preload("res://scenes/MagnetPickup.tscn")
+@export var death_burst_scene: PackedScene = preload("res://scenes/DeathBurst.tscn")
 
 const MAGNET_DROP_CHANCE := 0.001  # 0.1% chance per kill
 
@@ -112,6 +113,7 @@ func take_damage(amount: float) -> void:
 	hp -= amount
 	if GameManager.show_damage_numbers:
 		_spawn_damage_number(amount)
+	_flash()
 	# take_damage() can run mid physics-query-flush (a Projectile's
 	# area_entered fires from inside it) - spawning loot and freeing
 	# this node right here would change collision state while the
@@ -142,6 +144,16 @@ func die() -> void:
 		get_parent().add_child(magnet)
 		magnet.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
 
+	# Spark burst at the corpse: one one-shot CPUParticles2D that frees
+	# itself (see DeathBurst.tscn) rather than 8 ColorRects + 8 Tweens
+	# per kill on the hottest path in the game.
+	var burst = death_burst_scene.instantiate()
+	# Positioned before add_child(): the burst starts emitting in its
+	# _ready(), and particles spawned at the origin would sit on the
+	# player instead of the corpse.
+	burst.position = global_position
+	get_parent().add_child(burst)
+
 	queue_free()
 
 # Overridden by TankZombie to drop a RedXPGem instead. xp_gem_count
@@ -163,3 +175,20 @@ func _on_body_entered(body: Node2D) -> void:
 func _on_body_exited(body: Node2D) -> void:
 	if body.is_in_group("player"):
 		overlapping_player = null
+
+# Brief red tint on hit. A Tween rather than call_deferred(): a deferred
+# call runs at the end of the *same* tick, before anything is drawn, so
+# a deferred reset made the flash invisible. Tweens this node's modulate
+# (not the sprite's) so it stays independent of TankZombie's orange
+# telegraph tint, which lives on sprite.modulate. Works unchanged for
+# TankZombie even though it overrides _process(): nothing here depends
+# on the per-frame loop.
+const HIT_FLASH_TIME := 0.1
+var _flash_tween: Tween = null
+
+func _flash() -> void:
+	if _flash_tween != null and _flash_tween.is_valid():
+		_flash_tween.kill()
+	modulate = Color(1.0, 0.35, 0.35)
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(self, "modulate", Color.WHITE, HIT_FLASH_TIME)

@@ -99,7 +99,7 @@ is_weapon = true
 
 [node name="WeaponSlot5" parent="WeaponGrid" instance=ExtResource("2")]
 layout_mode = 2
-icon_id = ""
+icon_id = "fireball"
 is_weapon = true
 
 [node name="WeaponSlot6" parent="WeaponGrid" instance=ExtResource("2")]

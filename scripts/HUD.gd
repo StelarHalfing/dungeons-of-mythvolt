@@ -82,6 +82,11 @@ func _on_level_changed(new_level: int) -> void:
 	level_label.text = "Lv %d" % new_level
 
 func _on_level_up_choices(choices: Array) -> void:
+	if choices.is_empty():
+		# Nothing to pick (GameManager guards this, but never show a
+		# panel with no buttons - there'd be no way to close it).
+		upgrade_panel.visible = false
+		return
 	current_choices = choices
 	for i in range(upgrade_buttons.size()):
 		if i < choices.size():

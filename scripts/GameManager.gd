@@ -96,6 +96,7 @@ const WEAPON_DEFS := {
 		# speed here is ticks/sec (interval = 1/speed), same as
 		# Tornado - see _get_weapon_choice_text().
 		"speed_label": "cooldown",
+		"max_level": 12,
 	},
 	"tornado": {
 		"display_name": "Tornado",
@@ -137,6 +138,19 @@ const WEAPON_DEFS := {
 		"base": {"damage": 35.0, "size": 60.0, "speed": 1.0 / 15.0, "projectile_count": 1.0},
 		"gain": {"damage": 15.0, "size": 5.0, "speed": 13.0 / 330.0},
 		"speed_label": "cooldown",
+		"max_level": 12,
+	},
+	"fireball": {
+		"display_name": "Fireball",
+		"description": "Launches slow fireballs that explode on impact.",
+		"start_level": 0,
+		# Fired by FireballCaster.gd on its own fixed cooldown; speed here
+		# is projectile speed, size is the fireball's radius (blast radius
+		# and blast damage derive from size/damage - see Fireball.gd).
+		# projectile_count gets +1 every 3rd level like the Laser Pistol.
+		"base": {"damage": 25.0, "size": 8.0, "speed": 100.0, "projectile_count": 1.0},
+		"gain": {"damage": 5.0, "size": 2.0, "speed": 10.0},
+		"speed_label": "speed",
 		"max_level": 12,
 	},
 }
@@ -209,8 +223,8 @@ func _init_passives() -> void:
 # level - the single place the level -> stat math lives.
 func _apply_passive(id: String) -> void:
 	var def: Dictionary = PASSIVE_DEFS[id]
-	var level: int = passives[id]["level"]
-	set(def["stat"], def["base"] + level * def["per_level_value"])
+	var passive_level: int = passives[id]["level"]
+	set(def["stat"], def["base"] + passive_level * def["per_level_value"])
 
 func _process(delta: float) -> void:
 	if not is_paused_for_upgrade and not is_menu_paused and not is_game_over:
@@ -251,9 +265,11 @@ func add_xp(amount: int) -> void:
 	if pending_level_ups > 0 and not is_paused_for_upgrade:
 		offer_upgrades()
 
-func offer_upgrades() -> void:
-	is_paused_for_upgrade = true
-	get_tree().paused = true
+# Pauses the game and puts up a choice panel. Returns false (and does
+# nothing) when every weapon and passive is already at max level: with
+# nothing left to offer, pausing would leave the player stuck on an
+# empty panel - the pending level-ups are simply dropped instead.
+func offer_upgrades() -> bool:
 	var ids: Array = []
 	for id in weapons.keys():
 		var max_level: int = WEAPON_DEFS[id].get("max_level", -1)
@@ -262,10 +278,16 @@ func offer_upgrades() -> void:
 	for id in passives.keys():
 		if passives[id]["level"] < PASSIVE_DEFS[id]["max_level"]:
 			ids.append(id)
+	if ids.is_empty():
+		pending_level_ups = 0
+		return false
+	is_paused_for_upgrade = true
+	get_tree().paused = true
 	ids.shuffle()
 	var count: int = min(3, ids.size())
 	var choices: Array = ids.slice(0, count)
 	level_up_choices.emit(choices)
+	return true
 
 func choose_upgrade(id: String) -> void:
 	if PASSIVE_DEFS.has(id):
@@ -273,10 +295,9 @@ func choose_upgrade(id: String) -> void:
 	else:
 		level_up_weapon(id)
 	pending_level_ups = max(pending_level_ups - 1, 0)
-	if pending_level_ups > 0:
-		# Another level-up is still owed a pick: stay paused and put up
-		# the next set of choices right away.
-		offer_upgrades()
+	# Another level-up still owed a pick: stay paused and put up the next
+	# set of choices right away (unless the pool just ran dry).
+	if pending_level_ups > 0 and offer_upgrades():
 		return
 	is_paused_for_upgrade = false
 	get_tree().paused = false
@@ -313,14 +334,14 @@ func get_choice_text(id: String) -> Dictionary:
 
 func _get_passive_choice_text(id: String) -> Dictionary:
 	var def: Dictionary = PASSIVE_DEFS[id]
-	var level: int = passives[id]["level"]
+	var passive_level: int = passives[id]["level"]
 	var step_pct: float = def["per_level_value"] * 100.0
-	if level <= 0:
+	if passive_level <= 0:
 		return {
 			"name": "%s (NEW)" % def["display_name"],
 			"desc": "%s +%.0f%% %s." % [def["description"], step_pct, def["stat_label"]],
 		}
-	var next_level: int = level + 1
+	var next_level: int = passive_level + 1
 	return {
 		"name": "%s (Lv %d)" % [def["display_name"], next_level],
 		"desc": "+%.0f%% %s (total +%.0f%%)" % [step_pct, def["stat_label"], next_level * step_pct],
@@ -382,10 +403,10 @@ func get_upgrade_level(id: String) -> int:
 # Coin cost of the *next* level, or -1 if already maxed out.
 func get_upgrade_cost(id: String) -> int:
 	var def: Dictionary = PERMANENT_UPGRADE_DEFS[id]
-	var level: int = get_upgrade_level(id)
-	if level >= def["max_level"]:
+	var upgrade_level: int = get_upgrade_level(id)
+	if upgrade_level >= def["max_level"]:
 		return -1
-	return def["costs"][level]
+	return def["costs"][upgrade_level]
 
 # Spends coins and levels the upgrade up if affordable. Returns
 # whether the purchase went through.

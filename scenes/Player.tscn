@@ -1,4 +1,4 @@
-[gd_scene load_steps=58 format=3]
+[gd_scene load_steps=59 format=3]
 
 [ext_resource type="Script" path="res://scripts/Player.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/ForcefieldWeapon.gd" id="2"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" path="res://allassets/DG Knight Expansion Pack Full Ver/-No Shield - Sprite Sheet/Blue/Blue Knight idle Sprite-sheet 16x16.png" id="4"]
 [ext_resource type="Script" path="res://scripts/GrenadeCaster.gd" id="5"]
 [ext_resource type="Texture2D" path="res://allassets/DG Knight Expansion Pack Full Ver/-No Shield - Sprite Sheet/Blue/Blue Knight run Sprite-sheet 16x17.png" id="6"]
+[ext_resource type="Script" path="res://scripts/FireballCaster.gd" id="7"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 11.2
@@ -409,3 +410,6 @@ script = ExtResource("3")
 
 [node name="GrenadeCaster" type="Node2D" parent="."]
 script = ExtResource("5")
+
+[node name="FireballCaster" type="Node2D" parent="."]
+script = ExtResource("7")

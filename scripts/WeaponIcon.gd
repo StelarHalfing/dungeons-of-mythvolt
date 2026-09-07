@@ -12,6 +12,7 @@ const ICON_TEXTURES := {
 	"laser_pistol": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Magic wand.png"),
 	"forcefield": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Shield.png"),
 	"grenade": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Fire Orb.png"),
+	"fireball": preload("res://assets/projectile/fireball-1.png"),
 	"attraction_tome": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Book.png"),
 	"power_emblem": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Emblem.png"),
 }

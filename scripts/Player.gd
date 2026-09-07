@@ -10,6 +10,7 @@ var invuln_timer: float = 0.0
 var fire_timer: float = 0.0
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var camera: Camera2D = $Camera2D
 
 func _ready() -> void:
 	add_to_group("player")
@@ -41,6 +42,7 @@ func _physics_process(delta: float) -> void:
 		modulate.a = 0.5 if int(invuln_timer * 10) % 2 == 0 else 1.0
 	else:
 		modulate.a = 1.0
+	_update_shake(delta)
 
 	fire_timer -= delta
 	if fire_timer <= 0:
@@ -101,7 +103,14 @@ func try_fire() -> void:
 		return global_position.distance_squared_to(a.global_position) < global_position.distance_squared_to(b.global_position)
 	)
 
+	# Only the Laser Pistol fires from here. Every other weapon has its
+	# own caster node under Player (Forcefield, TornadoCaster,
+	# GrenadeCaster, FireballCaster) with its own cooldown and its own
+	# scene - iterating GameManager.weapons here would fire a second,
+	# broken copy of each of those as a laser projectile.
 	var stats: Dictionary = GameManager.weapons["laser_pistol"]
+	if stats["level"] <= 0:
+		return
 	var projectile_count: int = int(stats.get("projectile_count", 1.0))
 	var shots: int = min(projectile_count, enemies.size())
 	var damage: float = stats["damage"] * GameManager.get_damage_mult()
@@ -124,11 +133,41 @@ func try_fire() -> void:
 		get_parent().add_child(proj)
 		proj.global_position = global_position
 
+# Hit feedback. The flash tweens the *sprite's* modulate so it stays
+# independent of the invulnerability blink, which writes this node's
+# modulate.a every physics frame. Both use real time: a call_deferred()
+# reset runs at the end of the same tick, before anything is drawn, so
+# the effect would never be visible.
+const HIT_FLASH_TIME := 0.1
+const SHAKE_DURATION := 0.15
+const SHAKE_STRENGTH := 5.0
+var shake_time: float = 0.0
+var _flash_tween: Tween = null
+
+func _flash() -> void:
+	if _flash_tween != null and _flash_tween.is_valid():
+		_flash_tween.kill()
+	sprite.modulate = Color(1.0, 0.35, 0.35)
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(sprite, "modulate", Color.WHITE, HIT_FLASH_TIME)
+
+# Random camera offset that decays to zero over SHAKE_DURATION; driven
+# from _physics_process so it actually plays out over several frames.
+func _update_shake(delta: float) -> void:
+	if shake_time > 0.0:
+		shake_time -= delta
+		var strength: float = SHAKE_STRENGTH * max(shake_time, 0.0) / SHAKE_DURATION
+		camera.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * strength
+	elif camera.offset != Vector2.ZERO:
+		camera.offset = Vector2.ZERO
+
 func take_damage(amount: float) -> void:
 	if invuln_timer > 0 or GameManager.is_paused_for_upgrade:
 		return
 	hp -= amount
 	invuln_timer = 0.5
+	_flash()
+	shake_time = SHAKE_DURATION
 	if hp <= 0:
 		die()
 
