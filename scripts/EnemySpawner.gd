@@ -47,11 +47,25 @@ const SECOND_SURGE_START_TIME := 630.0  # 10:30
 const SECOND_SURGE_RAMP_DURATION := 30.0
 const SECOND_SURGE_INTERVAL_MULT := 0.25
 
+# The end of the road, for now: at REAPER_TIME every enemy on the field
+# is wiped, spawning stops for good and one Reaper (Reaper.tscn, see
+# Reaper.gd) is summoned to run the player down and end the run. A
+# placeholder finale until more of the game exists - move REAPER_TIME
+# later when it does. 15:01 rather than 15:00 so the 15-minute survival
+# unlock (GameManager.UNLOCK_DEFS) is earned first.
+const REAPER_TIME := 901.0  # 15:01
+@export var reaper_scene: PackedScene = preload("res://scenes/Reaper.tscn")
+var reaper_summoned: bool = false
+
 var spawn_timer: float = 0.0
 var enemies_spawned: int = 0
 
 func _process(delta: float) -> void:
 	if GameManager.is_paused_for_upgrade:
+		return
+	if GameManager.game_time >= REAPER_TIME:
+		if not reaper_summoned:
+			_summon_reaper()
 		return
 	spawn_timer -= delta
 	if spawn_timer <= 0:
@@ -106,6 +120,20 @@ func spawn_enemy() -> void:
 	var enemy = scene.instantiate()
 	get_parent().add_child(enemy)
 	enemy.global_position = pos
+
+# Wipes the field and brings on the Reaper at the player's spawn
+# distance in a random direction, like any other spawn. The wiped
+# enemies drop nothing.
+func _summon_reaper() -> void:
+	reaper_summoned = true
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		enemy.queue_free()
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty():
+		return
+	var reaper = reaper_scene.instantiate()
+	get_parent().add_child(reaper)
+	reaper.global_position = players[0].global_position + Vector2.RIGHT.rotated(randf() * TAU) * spawn_radius
 
 # 0.0 before SKELETON_START_TIME, ramping linearly to 1.0 over
 # SKELETON_RAMP_DURATION seconds, then staying at 1.0 forever after.
