@@ -6,15 +6,19 @@ extends Node2D
 # weapon's duration stat times GameManager.get_duration_mult()) before
 # fading out. Every frame it damages any enemy inside its fan (ARC degrees out
 # to `reach` from the crescent's current position) that it hasn't hit
-# yet - once per enemy - so a slash cleaves through a line of enemies
-# rather than stopping at the first. The hit test is geometric against
-# the "enemies" group, like Fireball.gd's blast; no physics shape.
-# Drawn in code like the Tornado and ExplosionFlash.
+# yet - once per enemy, and shoves it `knockback` px along the slash's
+# direction (Zombie.apply_knockback()) - so a slash cleaves through a
+# line of enemies rather than stopping at the first. The hit test is
+# geometric against the "enemies" group, like Fireball.gd's blast; no
+# physics shape. Drawn in code like the Tornado and ExplosionFlash.
 
 var direction: Vector2 = Vector2.RIGHT
 var reach: float = 60.0
-var damage: float = 20.0
+var damage: float = 10.0
 var duration: float = 0.2
+# Pixels each hit enemy is shoved (0 = none); SwordCaster sets it with
+# GameManager.get_knockback_mult() already applied.
+var knockback: float = 0.0
 
 const SPEED := 450.0
 const ARC := deg_to_rad(110.0)
@@ -61,6 +65,8 @@ func _deal_damage() -> void:
 			continue
 		hit.append(enemy)
 		enemy.take_damage(damage)
+		if knockback > 0.0 and enemy.has_method("apply_knockback"):
+			enemy.apply_knockback(direction, knockback)
 
 func _draw() -> void:
 	var half_arc: float = ARC / 2.0

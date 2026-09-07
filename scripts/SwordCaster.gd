@@ -8,9 +8,10 @@ extends Node2D
 # weapon's "speed" stat is swings per second (cooldown = 1 / speed),
 # "size" is the reach, "duration" is how long the slash flies (at
 # Slash.SPEED, stretched by GameManager.get_duration_mult()) - so a
-# max-level sword with Duration bonuses cleaves deep into a wave - and
-# every 3rd level adds a projectile_count slash aimed at the next-nearest
-# enemy in depth.
+# max-level sword with Duration bonuses cleaves deep into a wave -
+# "knockback" is how far each hit shoves the enemy (pixels, times
+# GameManager.get_knockback_mult()), and every 3rd level adds a
+# projectile_count slash aimed at the next-nearest enemy in depth.
 
 const SlashScript := preload("res://scripts/Slash.gd")
 
@@ -63,6 +64,7 @@ func _try_swing(stats: Dictionary) -> bool:
 		slash.reach = stats["size"]
 		slash.duration = slash_duration(stats)
 		slash.damage = damage
+		slash.knockback = stats.get("knockback", 0.0) * GameManager.get_knockback_mult()
 		world.add_child(slash)
 		slash.global_position = origin
 	return true

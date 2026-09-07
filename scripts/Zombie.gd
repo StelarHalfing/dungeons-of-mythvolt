@@ -47,12 +47,36 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if slow_timer > 0.0:
 		slow_timer -= delta
-	_move_toward_player(delta)
+	if not _update_knockback(delta):
+		_move_toward_player(delta)
 	_update_facing()
 	_update_contact_damage(delta)
 
 func apply_slow(duration: float = 0.25) -> void:
 	slow_timer = duration
+
+# Knockback (a sword slash, today): the enemy is shoved `distance` px
+# along `direction` as an impulse velocity that decelerates at
+# KNOCKBACK_DECEL - its starting speed is whatever covers exactly that
+# distance (v^2 / 2a) - and chases again once it stops. A second hit
+# mid-shove restarts the shove rather than stacking onto it.
+const KNOCKBACK_DECEL := 1200.0
+var knockback_velocity: Vector2 = Vector2.ZERO
+
+func apply_knockback(direction: Vector2, distance: float) -> void:
+	if distance <= 0.0 or direction == Vector2.ZERO:
+		return
+	knockback_velocity = direction.normalized() * sqrt(2.0 * KNOCKBACK_DECEL * distance)
+
+# Moves the enemy along its knockback; true while one is in progress,
+# during which it replaces normal chasing (see _process() here and
+# TankZombie's).
+func _update_knockback(delta: float) -> bool:
+	if knockback_velocity == Vector2.ZERO:
+		return false
+	global_position += knockback_velocity * delta
+	knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, KNOCKBACK_DECEL * delta)
+	return true
 
 func _move_toward_player(delta: float) -> void:
 	var players := get_tree().get_nodes_in_group("player")

@@ -31,9 +31,13 @@ func _process(delta: float) -> void:
 		slow_timer -= delta
 	var speed_mult: float = SLOWED_SPEED_MULT if slow_timer > 0.0 else 1.0
 
+	# A knockback shoves it in every state: it replaces chasing, and
+	# displaces a telegraph or dash without cancelling them.
+	var knocked: bool = _update_knockback(delta)
 	match state:
 		State.CHASE:
-			_move_toward_player(delta)
+			if not knocked:
+				_move_toward_player(delta)
 			dash_timer -= delta
 			if dash_timer <= 0.0:
 				# Reset now so "once every 8 seconds" measures

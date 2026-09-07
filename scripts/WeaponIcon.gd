@@ -24,6 +24,9 @@ const ICON_TEXTURES := {
 	# worth more gold.
 	"lucky_coin": preload("res://assets/ui/icon_lucky_coin.tres"),
 	"hourglass": preload("res://assets/ui/icon_hourglass.tres"),
+	# The iron hammer from the item sheet - the passive shoves enemies
+	# further with every hit.
+	"war_hammer": preload("res://assets/ui/icon_war_hammer.tres"),
 	# The consolation picks offered once every upgrade is maxed.
 	"heal": preload("res://assets/ui/icon_heal.tres"),
 	"coins": preload("res://allassets/2D Pixel Dungeon Asset Pack/items and trap_animation/coin/coin_1.png"),

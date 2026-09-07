@@ -124,6 +124,17 @@ const PERMANENT_UPGRADE_DEFS := {
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
 	},
+	# Damage's curve and costs once more; ADDS to the War Hammer passive
+	# in get_knockback_mult() (both maxed = exactly x2), scaling how far
+	# a hit shoves an enemy - only the sword's slash knocks back so far.
+	"knockback": {
+		"display_name": "Knockback",
+		"description": "Permanently push enemies further with every hit.",
+		"stat_label": "knockback",
+		"per_level_value": 0.10,
+		"max_level": 5,
+		"costs": [200, 400, 1000, 2000, 5000],
+	},
 	# Whole-number perks for the level-up panel (format "count": shown as
 	# "+1"). Two expensive levels each, so they're a late investment.
 	"rerolls": {
@@ -224,7 +235,7 @@ var damage_mult: float = 1.0
 var regen_bonus: float = 0.0
 # Wisdom Orb's stat (this run's XP multiplier; the permanent XP Gain
 # upgrade multiplies on top - see get_xp_mult()). XP is integer (1 per
-# gem, 5 per red gem), so the boosted value's fraction is carried
+# gem, 3 per a Slime's blue gem, 5 per red), so the boosted value's fraction is carried
 # across pickups instead of rounded away - ten 1-XP gems at x1.1 really
 # do give 11 XP. The carry is kept in whole hundredths of an XP (see
 # add_xp()) because a float carry isn't exact: 1.2 is really
@@ -240,6 +251,9 @@ var coin_carry: int = 0
 # Hourglass's stat: this run's extra duration as a fraction (0.5 =
 # +50%), added to the permanent Duration bonus in get_duration_mult().
 var duration_bonus: float = 0.0
+# War Hammer's stat: this run's extra knockback as a fraction (0.5 =
+# +50%), added to the permanent Knockback bonus in get_knockback_mult().
+var knockback_bonus: float = 0.0
 # Gold Dream (the GoldDreamPickup power-up): while gold_dream_timer is
 # running, every kill drops a coin (Zombie.die()) and gold is worth
 # GOLD_DREAM_COIN_BONUS more (get_coin_mult()). Picking up another
@@ -331,17 +345,20 @@ const WEAPON_DEFS := {
 	},
 	"sword": {
 		"display_name": "Sword",
-		"description": "Slashes at the nearest enemy; the slash flies on, cleaving through everything it passes.",
+		"description": "Slashes at the nearest enemy and knocks it back; the slash flies on, cleaving through everything it passes.",
 		# Swung by SwordCaster.gd: size is the reach (pixels); duration is
 		# how long the slash flies (seconds, at Slash.SPEED px/s, times
 		# get_duration_mult()) - 90px at level 1 and ~240px at 12 before
 		# any Duration bonus, on top of the reach; speed is swings/sec
-		# (cooldown = 1/speed: 0.9s at level 1, ~0.56s at 12); damage
-		# one-shots a Zombie (20 HP) from the first pick and reaches 64 at
-		# max, hitting each enemy once as it passes. projectile_count adds
-		# a second slash at the next-nearest enemy every 3rd level.
-		"base": {"damage": 20.0, "size": 60.0, "speed": 1.0 / 0.9, "duration": 0.2, "projectile_count": 1.0},
-		"gain": {"damage": 4.0, "size": 5.0, "speed": 0.06, "duration": 0.03},
+		# (cooldown = 1/speed: 0.9s at level 1, ~0.56s at 12); damage is
+		# 10 at level 1 (two slashes for a 20 HP Zombie) and 32 at max -
+		# half of what it was, because every hit also shoves the enemy
+		# `knockback` px along the slash (Zombie.apply_knockback(), times
+		# get_knockback_mult(); no per-level gain), hitting each enemy once
+		# as it passes. projectile_count adds a second slash at the
+		# next-nearest enemy every 3rd level.
+		"base": {"damage": 10.0, "size": 60.0, "speed": 1.0 / 0.9, "duration": 0.2, "knockback": 40.0, "projectile_count": 1.0},
+		"gain": {"damage": 2.0, "size": 5.0, "speed": 0.06, "duration": 0.03},
 		"speed_label": "cooldown",
 		"max_level": 12,
 	},
@@ -434,6 +451,18 @@ const PASSIVE_DEFS := {
 		"per_level_value": 0.1,
 		"max_level": 5,
 	},
+	"war_hammer": {
+		"display_name": "War Hammer",
+		"description": "Every hit shoves enemies further back.",
+		"stat": "knockback_bonus",
+		"stat_label": "knockback",
+		# Stored as the bonus fraction (base 0, +0.1/level, +50% at max),
+		# ADDED to the permanent Knockback upgrade in get_knockback_mult():
+		# both maxed = exactly x2 the shove distance.
+		"base": 0.0,
+		"per_level_value": 0.1,
+		"max_level": 5,
+	},
 }
 
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
@@ -470,7 +499,7 @@ const CHARACTER_DEFS := {
 			"Move speed: 140",
 			"Starting weapon: Sword",
 			"Can unlock: Laser Pistol, Forcefield, Tornado, Grenade, Fireball",
-			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin, Hourglass",
+			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin, Hourglass, War Hammer",
 			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00, a 5th passive slot for 15:00)",
 		],
 		"starting_weapon": "sword",
@@ -575,6 +604,7 @@ func reset() -> void:
 	coin_gain_bonus = 0.0
 	coin_carry = 0
 	duration_bonus = 0.0
+	knockback_bonus = 0.0
 	gold_dream_timer = 0.0
 	_init_weapons()
 	_init_passives()
@@ -978,6 +1008,13 @@ func get_xp_mult_percent() -> int:
 # like damage) so the two maxed +50%s make exactly x2.
 func get_duration_mult() -> float:
 	return 1.0 + get_permanent_bonus("duration") + duration_bonus
+
+# How far a hit shoves an enemy, as a multiplier on the weapon's
+# `knockback` stat (only the sword's slash has one so far): the
+# permanent Knockback bonus plus this run's War Hammer bonus, ADDED like
+# duration so the two maxed +50%s make exactly x2.
+func get_knockback_mult() -> float:
+	return 1.0 + get_permanent_bonus("knockback") + knockback_bonus
 
 # Gold per coin: the permanent Gold Gain bonus plus this run's Lucky
 # Coin bonus, ADDED (not multiplied like damage/XP) so the two maxed
