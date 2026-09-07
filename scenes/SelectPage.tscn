@@ -1,0 +1,73 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/SelectPage.gd" id="1"]
+
+[node name="SelectPage" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Title" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 40.0
+offset_right = 400.0
+offset_bottom = 90.0
+theme_override_font_sizes/font_size = 32
+theme_override_constants/outline_size = 3
+text = "Choose"
+horizontal_alignment = 1
+
+[node name="CardScroll" type="ScrollContainer" parent="."]
+offset_left = 80.0
+offset_top = 140.0
+offset_right = 700.0
+offset_bottom = 480.0
+horizontal_scroll_mode = 1
+vertical_scroll_mode = 0
+
+[node name="Cards" type="HBoxContainer" parent="CardScroll"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="DescPanel" type="Panel" parent="."]
+offset_left = 740.0
+offset_top = 140.0
+offset_right = 1200.0
+offset_bottom = 480.0
+
+[node name="VBox" type="VBoxContainer" parent="DescPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 14.0
+offset_right = -16.0
+offset_bottom = -14.0
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="DescPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
+[node name="FlavorLabel" type="Label" parent="DescPanel/VBox"]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="TraitsLabel" type="Label" parent="DescPanel/VBox"]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="BackButton" type="Button" parent="."]
+offset_left = 80.0
+offset_top = 560.0
+offset_right = 280.0
+offset_bottom = 620.0
+text = "Back"
+
+[node name="ActionButton" type="Button" parent="."]
+offset_left = 1000.0
+offset_top = 560.0
+offset_right = 1200.0
+offset_bottom = 620.0
+text = "Next"

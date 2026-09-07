@@ -1,70 +1,56 @@
 extends Control
 
 # Run setup between the main menu and the game: pick a character, then a
-# map. Both pages are built from GameManager.CHARACTER_DEFS / MAP_DEFS,
-# so a new character or map is one table entry (plus its portrait) -
-# this scene grows a card for it automatically. Clicking a card selects
-# it (check mark bottom-right, description panel filled with its traits)
-# and stores the choice in GameManager.selected_character / selected_map.
+# map. Both pages are instances of SelectPage.tscn built from
+# GameManager.CHARACTER_DEFS / MAP_DEFS, so a new character or map is one
+# table entry (plus its portrait) - the page grows a card for it
+# automatically. This script only routes: it stores the choice in
+# GameManager.selected_character / selected_map and moves between the
+# pages, the menu and the game.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
 const MENU_SCENE := "res://scenes/MainMenu.tscn"
-const CardScene := preload("res://scenes/SelectCard.tscn")
 
-@onready var character_page: Control = $CharacterPage
-@onready var map_page: Control = $MapPage
-
-var character_cards: Dictionary = {}
-var map_cards: Dictionary = {}
+# Untyped on purpose: SelectPage.gd has no class_name, and its
+# build()/select() are called through the instance.
+@onready var character_page = $CharacterPage
+@onready var map_page = $MapPage
 
 func _ready() -> void:
-	_build_cards(GameManager.CHARACTER_DEFS, $CharacterPage/Cards, character_cards, "portrait", _select_character)
-	_build_cards(GameManager.MAP_DEFS, $MapPage/Cards, map_cards, "preview", _select_map)
-
-	$CharacterPage/BackButton.pressed.connect(func(): get_tree().change_scene_to_file(MENU_SCENE))
-	$CharacterPage/NextButton.pressed.connect(_show_map_page)
-	$MapPage/BackButton.pressed.connect(_show_character_page)
-	$MapPage/StartButton.pressed.connect(_start_run)
+	character_page.build(GameManager.CHARACTER_DEFS, "portrait")
+	map_page.build(GameManager.MAP_DEFS, "preview")
+	character_page.selected.connect(_select_character)
+	map_page.selected.connect(_select_map)
+	character_page.back_pressed.connect(func(): get_tree().change_scene_to_file(MENU_SCENE))
+	character_page.action_pressed.connect(_show_page.bind(map_page))
+	map_page.back_pressed.connect(_show_page.bind(character_page))
+	map_page.action_pressed.connect(_start_run)
 
 	# Reflect the current (or default) choices so the sole option starts
 	# checked and the description is never empty.
 	_select_character(GameManager.selected_character)
 	_select_map(GameManager.selected_map)
-	_show_character_page()
-
-func _build_cards(defs: Dictionary, container: Container, cards: Dictionary, image_key: String, on_chosen: Callable) -> void:
-	for id in defs.keys():
-		var card = CardScene.instantiate()
-		container.add_child(card)
-		card.setup(id, defs[id]["display_name"], load(defs[id][image_key]))
-		card.chosen.connect(on_chosen)
-		cards[id] = card
+	_show_page(character_page)
 
 func _select_character(id: String) -> void:
+	id = _valid_id(GameManager.CHARACTER_DEFS, id)
 	GameManager.selected_character = id
-	_refresh_page(character_cards, id, GameManager.CHARACTER_DEFS[id], $CharacterPage/DescPanel)
+	character_page.select(id, GameManager.CHARACTER_DEFS[id])
 
 func _select_map(id: String) -> void:
+	id = _valid_id(GameManager.MAP_DEFS, id)
 	GameManager.selected_map = id
-	_refresh_page(map_cards, id, GameManager.MAP_DEFS[id], $MapPage/DescPanel)
+	map_page.select(id, GameManager.MAP_DEFS[id])
 
-func _refresh_page(cards: Dictionary, selected_id: String, def: Dictionary, panel: Control) -> void:
-	for id in cards.keys():
-		cards[id].set_selected(id == selected_id)
-	panel.get_node("VBox/NameLabel").text = def["display_name"]
-	panel.get_node("VBox/FlavorLabel").text = def["flavor"]
-	var lines: PackedStringArray = []
-	for line in def["traits"]:
-		lines.append("- " + line)
-	panel.get_node("VBox/TraitsLabel").text = "\n".join(lines)
+# A stored choice that no longer matches a table entry (a renamed key)
+# falls back to the table's first entry instead of erroring out and
+# leaving the page with nothing checked.
+func _valid_id(defs: Dictionary, id: String) -> String:
+	return id if defs.has(id) else defs.keys()[0]
 
-func _show_character_page() -> void:
-	character_page.visible = true
-	map_page.visible = false
-
-func _show_map_page() -> void:
-	character_page.visible = false
-	map_page.visible = true
+func _show_page(page: Control) -> void:
+	character_page.visible = page == character_page
+	map_page.visible = page == map_page
 
 func _start_run() -> void:
 	get_tree().change_scene_to_file(GAME_SCENE)

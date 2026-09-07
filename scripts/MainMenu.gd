@@ -9,24 +9,27 @@ extends Control
 
 @onready var coins_label: Label = $UpgradesPanel/VBoxContainer/CoinsLabel
 
-# Save-slot picker: the "Saves" button along the bottom opens a
-# panel with one button per GameManager slot (the active one marked with
-# the same check icon the select screens use) and a Delete button under
-# each, which asks for confirmation before wiping the slot.
+# Save-slot picker: the "Saves" button along the bottom opens a panel
+# with one column per GameManager slot (built in _build_slot_columns()
+# from SLOT_COUNT, so the menu can't disagree with the save code about
+# how many slots exist): a slot button marked with the same check icon
+# the select screens use when it is the active one, and a Delete button
+# under it. Delete opens ConfirmOverlay, a full-screen input blocker
+# with the confirmation dialog in the middle, so nothing behind it can
+# be clicked until the player answers.
 const CHECK_ICON: Texture2D = preload("res://assets/ui/icon_check.tres")
+const SLOT_BUTTON_SIZE := Vector2(220, 92)
+const DELETE_BUTTON_SIZE := Vector2(220, 54)
 @onready var save_slot_button: Button = $SaveSlotButton
 @onready var save_panel: Panel = $SavePanel
-@onready var confirm_panel: Panel = $ConfirmPanel
-@onready var slot_buttons: Array = [
-	$SavePanel/VBoxContainer/SlotRow/Slot1Col/Slot1,
-	$SavePanel/VBoxContainer/SlotRow/Slot2Col/Slot2,
-	$SavePanel/VBoxContainer/SlotRow/Slot3Col/Slot3,
-]
-@onready var delete_buttons: Array = [
-	$SavePanel/VBoxContainer/SlotRow/Slot1Col/Delete1,
-	$SavePanel/VBoxContainer/SlotRow/Slot2Col/Delete2,
-	$SavePanel/VBoxContainer/SlotRow/Slot3Col/Delete3,
-]
+@onready var slot_row: HBoxContainer = $SavePanel/VBoxContainer/SlotRow
+@onready var confirm_overlay: Control = $ConfirmOverlay
+@onready var confirm_message: Label = $ConfirmOverlay/ConfirmPanel/VBoxContainer/MessageLabel
+@onready var cancel_button: Button = $ConfirmOverlay/ConfirmPanel/VBoxContainer/ButtonRow/CancelButton
+# Index i is slot i + 1.
+var slot_buttons: Array[Button] = []
+var slot_checks: Array[TextureRect] = []
+var delete_buttons: Array[Button] = []
 # Slot awaiting the delete confirmation (0 = none).
 var pending_delete_slot: int = 0
 
@@ -63,14 +66,12 @@ func _ready() -> void:
 		upgrade_rows[id]["button"].pressed.connect(_on_upgrade_buy_pressed.bind(id))
 
 	save_panel.visible = false
-	confirm_panel.visible = false
+	confirm_overlay.visible = false
 	save_slot_button.pressed.connect(_on_save_pressed)
 	$SavePanel/VBoxContainer/BackButton.pressed.connect(_on_save_back_pressed)
-	for i in range(slot_buttons.size()):
-		slot_buttons[i].pressed.connect(_on_slot_pressed.bind(i + 1))
-		delete_buttons[i].pressed.connect(_on_delete_pressed.bind(i + 1))
-	$ConfirmPanel/VBoxContainer/ButtonRow/ConfirmButton.pressed.connect(_on_confirm_delete)
-	$ConfirmPanel/VBoxContainer/ButtonRow/CancelButton.pressed.connect(_on_cancel_delete)
+	$ConfirmOverlay/ConfirmPanel/VBoxContainer/ButtonRow/ConfirmButton.pressed.connect(_on_confirm_delete)
+	cancel_button.pressed.connect(_on_cancel_delete)
+	_build_slot_columns()
 	_refresh_slots()
 
 	var bus_idx := AudioServer.get_bus_index("Master")
@@ -127,9 +128,43 @@ func _on_save_pressed() -> void:
 	_refresh_slots()
 
 func _on_save_back_pressed() -> void:
-	confirm_panel.visible = false
+	_close_confirm()
 	save_panel.visible = false
 	_set_menu_visible(true)
+
+# One column per slot: the slot button (with a check-mark overlay in its
+# bottom-right corner, shown while it is the active slot) and a Delete
+# button under it.
+func _build_slot_columns() -> void:
+	for i in range(GameManager.SLOT_COUNT):
+		var slot: int = i + 1
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override("separation", 6)
+		slot_row.add_child(column)
+
+		var slot_button := Button.new()
+		slot_button.custom_minimum_size = SLOT_BUTTON_SIZE
+		slot_button.pressed.connect(_on_slot_pressed.bind(slot))
+		column.add_child(slot_button)
+		slot_buttons.append(slot_button)
+
+		var check := TextureRect.new()
+		check.texture = CHECK_ICON
+		check.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		check.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		check.offset_left = -46.0
+		check.offset_top = -46.0
+		check.offset_right = -6.0
+		check.offset_bottom = -6.0
+		slot_button.add_child(check)
+		slot_checks.append(check)
+
+		var delete_button := Button.new()
+		delete_button.custom_minimum_size = DELETE_BUTTON_SIZE
+		delete_button.text = "Delete Save"
+		delete_button.pressed.connect(_on_delete_pressed.bind(slot))
+		column.add_child(delete_button)
+		delete_buttons.append(delete_button)
 
 func _on_slot_pressed(slot: int) -> void:
 	GameManager.select_slot(slot)
@@ -137,27 +172,38 @@ func _on_slot_pressed(slot: int) -> void:
 
 func _on_delete_pressed(slot: int) -> void:
 	pending_delete_slot = slot
-	confirm_panel.visible = true
+	confirm_message.text = "Resetting Slot %d will delete all of its data. Are you sure?" % slot
+	confirm_overlay.visible = true
+	# Keyboard/gamepad focus starts on the safe answer, and the two
+	# dialog buttons' focus neighbours point only at each other (see the
+	# .tscn), so focus can't wander to the buttons under the overlay.
+	cancel_button.grab_focus()
 
 func _on_confirm_delete() -> void:
 	if pending_delete_slot > 0:
 		GameManager.delete_slot(pending_delete_slot)
-	pending_delete_slot = 0
-	confirm_panel.visible = false
+	_close_confirm()
 	_refresh_slots()
 
 func _on_cancel_delete() -> void:
+	_close_confirm()
+
+func _close_confirm() -> void:
 	pending_delete_slot = 0
-	confirm_panel.visible = false
+	confirm_overlay.visible = false
 
 func _refresh_slots() -> void:
 	for i in range(slot_buttons.size()):
 		var slot: int = i + 1
 		var summary: Dictionary = GameManager.slot_summary(slot)
-		var button: Button = slot_buttons[i]
-		var detail: String = "%d coins" % summary["coins"] if summary["exists"] else "Empty"
-		button.text = "Slot %d\n%s" % [slot, detail]
-		button.icon = CHECK_ICON if slot == GameManager.active_slot else null
+		var lines: PackedStringArray = ["Slot %d" % slot]
+		if summary["exists"]:
+			lines.append("%d coins" % summary["coins"])
+			lines.append("Upgrades: %d" % summary["upgrade_levels"])
+		else:
+			lines.append("Empty")
+		slot_buttons[i].text = "\n".join(lines)
+		slot_checks[i].visible = slot == GameManager.active_slot
 		# Nothing to delete in an empty slot.
 		delete_buttons[i].disabled = not summary["exists"]
 
@@ -179,6 +225,9 @@ func _refresh_upgrades() -> void:
 	for id in upgrade_rows.keys():
 		_refresh_upgrade_row(id)
 
+# Row text comes from the upgrade's def (stat_label/format) through the
+# same GameManager.format_bonus() the level-up cards use, e.g.
+# "+10% damage now (next level: +10%)" / "+0.2 HP/sec now (next level: +0.2)".
 func _refresh_upgrade_row(id: String) -> void:
 	var info_label: Label = upgrade_rows[id]["info"]
 	var buy_button: Button = upgrade_rows[id]["button"]
@@ -186,26 +235,19 @@ func _refresh_upgrade_row(id: String) -> void:
 	var def: Dictionary = GameManager.PERMANENT_UPGRADE_DEFS[id]
 	var level: int = GameManager.get_upgrade_level(id)
 	var max_level: int = def["max_level"]
-	var per_level: float = def["per_level_value"]
-	var current_bonus: String = _format_bonus(id, level * per_level)
+	var current_bonus: String = GameManager.format_bonus(def, GameManager.get_permanent_bonus(id))
+	var stat_label: String = def["stat_label"]
 
 	if level >= max_level:
-		info_label.text = "%s - Lv %d/%d (MAX)\n+%s now" % [def["display_name"], level, max_level, current_bonus]
+		info_label.text = "%s - Lv %d/%d (MAX)\n%s %s now" % [def["display_name"], level, max_level, current_bonus, stat_label]
 		buy_button.text = "Maxed"
 		buy_button.disabled = true
 	else:
 		var cost: int = GameManager.get_upgrade_cost(id)
-		var next_bonus: String = _format_bonus(id, per_level)
-		info_label.text = "%s - Lv %d/%d\n+%s now (next level: +%s)" % [def["display_name"], level, max_level, current_bonus, next_bonus]
+		var next_bonus: String = GameManager.format_bonus(def, def["per_level_value"])
+		info_label.text = "%s - Lv %d/%d\n%s %s now (next level: %s)" % [def["display_name"], level, max_level, current_bonus, stat_label, next_bonus]
 		buy_button.text = "Buy Lv %d (%d coins)" % [level + 1, cost]
 		buy_button.disabled = GameManager.coins < cost
-
-# Health Regeneration is a flat HP/sec value; Damage and XP Gain are
-# percentages.
-func _format_bonus(id: String, value: float) -> String:
-	if id == "damage" or id == "xp_gain":
-		return "%d%%" % int(round(value * 100.0))
-	return "%.1f HP/sec" % value
 
 func _on_upgrade_buy_pressed(id: String) -> void:
 	if GameManager.purchase_upgrade(id):

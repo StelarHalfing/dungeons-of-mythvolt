@@ -103,96 +103,10 @@ layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 12
 
-[node name="Slot1Col" type="VBoxContainer" parent="SavePanel/VBoxContainer/SlotRow"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="Slot1" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot1Col"]
-layout_mode = 2
-custom_minimum_size = Vector2(220, 92)
-text = "Slot 1"
-
-[node name="Delete1" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot1Col"]
-layout_mode = 2
-custom_minimum_size = Vector2(220, 54)
-text = "Delete Save"
-
-[node name="Slot2Col" type="VBoxContainer" parent="SavePanel/VBoxContainer/SlotRow"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="Slot2" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot2Col"]
-layout_mode = 2
-custom_minimum_size = Vector2(220, 92)
-text = "Slot 2"
-
-[node name="Delete2" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot2Col"]
-layout_mode = 2
-custom_minimum_size = Vector2(220, 54)
-text = "Delete Save"
-
-[node name="Slot3Col" type="VBoxContainer" parent="SavePanel/VBoxContainer/SlotRow"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="Slot3" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot3Col"]
-layout_mode = 2
-custom_minimum_size = Vector2(220, 92)
-text = "Slot 3"
-
-[node name="Delete3" type="Button" parent="SavePanel/VBoxContainer/SlotRow/Slot3Col"]
-layout_mode = 2
-custom_minimum_size = Vector2(220, 54)
-text = "Delete Save"
-
 [node name="BackButton" type="Button" parent="SavePanel/VBoxContainer"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 56)
 text = "Back"
-
-[node name="ConfirmPanel" type="Panel" parent="."]
-visible = false
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -110.0
-offset_right = 260.0
-offset_bottom = 110.0
-
-[node name="VBoxContainer" type="VBoxContainer" parent="ConfirmPanel"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 14.0
-offset_top = 12.0
-offset_right = -14.0
-offset_bottom = -12.0
-theme_override_constants/separation = 12
-
-[node name="MessageLabel" type="Label" parent="ConfirmPanel/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-text = "Resetting save will delete all data. Are you sure?"
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 2
-
-[node name="ButtonRow" type="HBoxContainer" parent="ConfirmPanel/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="ConfirmButton" type="Button" parent="ConfirmPanel/VBoxContainer/ButtonRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 56)
-text = "Yes, Delete"
-
-[node name="CancelButton" type="Button" parent="ConfirmPanel/VBoxContainer/ButtonRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 56)
-text = "Cancel"
 
 [node name="SettingsPanel" type="Panel" parent="."]
 anchor_left = 0.5
@@ -333,3 +247,70 @@ text = "Buy Lv 1 (200 coins)"
 layout_mode = 2
 custom_minimum_size = Vector2(0, 56)
 text = "Back"
+
+[node name="ConfirmOverlay" type="Control" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+
+[node name="Dim" type="ColorRect" parent="ConfirmOverlay"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.55)
+
+[node name="ConfirmPanel" type="Panel" parent="ConfirmOverlay"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -110.0
+offset_right = 260.0
+offset_bottom = 110.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ConfirmOverlay/ConfirmPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = -14.0
+offset_bottom = -12.0
+theme_override_constants/separation = 12
+
+[node name="MessageLabel" type="Label" parent="ConfirmOverlay/ConfirmPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Resetting this slot will delete all of its data. Are you sure?"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="ConfirmOverlay/ConfirmPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ConfirmButton" type="Button" parent="ConfirmOverlay/ConfirmPanel/VBoxContainer/ButtonRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 56)
+focus_neighbor_left = NodePath("../CancelButton")
+focus_neighbor_top = NodePath(".")
+focus_neighbor_right = NodePath("../CancelButton")
+focus_neighbor_bottom = NodePath(".")
+focus_next = NodePath("../CancelButton")
+focus_previous = NodePath("../CancelButton")
+text = "Yes, Delete"
+
+[node name="CancelButton" type="Button" parent="ConfirmOverlay/ConfirmPanel/VBoxContainer/ButtonRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 56)
+focus_neighbor_left = NodePath("../ConfirmButton")
+focus_neighbor_top = NodePath(".")
+focus_neighbor_right = NodePath("../ConfirmButton")
+focus_neighbor_bottom = NodePath(".")
+focus_next = NodePath("../ConfirmButton")
+focus_previous = NodePath("../ConfirmButton")
+text = "Cancel"

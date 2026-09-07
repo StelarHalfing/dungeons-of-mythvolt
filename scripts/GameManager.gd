@@ -39,7 +39,9 @@ var is_fullscreen: bool = false
 var fps_cap: int = 0
 const FPS_CAP_OPTIONS := [60, 120, 144, 240, 540, 0]
 var coins: int = 0
-var permanent_upgrades: Dictionary = {"health_regen": 0, "damage": 0, "xp_gain": 0}
+# permanent_upgrades[id] = level, one entry per PERMANENT_UPGRADE_DEFS key
+# (filled in by _apply_slot() before anything reads it).
+var permanent_upgrades: Dictionary = {}
 
 const SETTINGS_PATH := "user://settings.json"
 const LEGACY_SAVE_PATH := "user://save_data.json"
@@ -49,13 +51,17 @@ const SLOT_COUNT := 3
 var active_slot: int = 1
 
 # Static definition of every permanent (coin-bought) upgrade: display
-# info, how much each level is worth, its level cap, and the coin
-# cost to buy each level (costs[0] = cost of level 1, costs[1] = cost
-# of level 2, etc).
+# info, how much each level is worth (level * per_level_value is the
+# bonus - see get_permanent_bonus()), its level cap, and the coin cost
+# to buy each level (costs[0] = cost of level 1, costs[1] = cost of
+# level 2, etc). stat_label/format are read by format_bonus(), the same
+# way PASSIVE_DEFS' are, so the shop text needs no per-id code.
 const PERMANENT_UPGRADE_DEFS := {
 	"health_regen": {
 		"display_name": "Health Regeneration",
 		"description": "Permanently regenerate health during every run.",
+		"stat_label": "HP/sec",
+		"format": "flat",
 		"per_level_value": 0.2,
 		"max_level": 5,
 		"costs": [100, 200, 500, 1000, 2500],
@@ -63,6 +69,7 @@ const PERMANENT_UPGRADE_DEFS := {
 	"damage": {
 		"display_name": "Damage",
 		"description": "Permanently increase all weapon damage.",
+		"stat_label": "damage",
 		"per_level_value": 0.10,
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
@@ -72,6 +79,7 @@ const PERMANENT_UPGRADE_DEFS := {
 	"xp_gain": {
 		"display_name": "XP Gain",
 		"description": "Permanently earn more XP from every gem.",
+		"stat_label": "XP gain",
 		"per_level_value": 0.10,
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
@@ -92,11 +100,13 @@ var damage_mult: float = 1.0
 var regen_bonus: float = 0.0
 # Wisdom Orb's stat (this run's XP multiplier; the permanent XP Gain
 # upgrade multiplies on top - see get_xp_mult()). XP is integer (1 per
-# gem, 5 per red gem), so the boosted value's fraction is carried in
-# xp_carry across pickups instead of rounded away - ten 1-XP gems at
-# x1.1 really do give 11 XP.
+# gem, 5 per red gem), so the boosted value's fraction is carried
+# across pickups instead of rounded away - ten 1-XP gems at x1.1 really
+# do give 11 XP. The carry is kept in whole hundredths of an XP (see
+# add_xp()) because a float carry isn't exact: 1.2 is really
+# 1.19999..., so floor() would hand out one XP a gem late at x1.2.
 var xp_mult: float = 1.0
-var xp_carry: float = 0.0
+var xp_carry: int = 0
 
 # Static definition of every weapon: its starting level (0 = not yet
 # owned, must be picked once to unlock), base stats, and the flat
@@ -322,6 +332,7 @@ func _apply_passive(id: String) -> void:
 func _process(delta: float) -> void:
 	if not is_paused_for_upgrade and not is_menu_paused and not is_game_over:
 		game_time += delta
+	_tick_slot_save(delta)
 
 func reset() -> void:
 	level = 1
@@ -339,19 +350,24 @@ func reset() -> void:
 	damage_mult = 1.0
 	regen_bonus = 0.0
 	xp_mult = 1.0
-	xp_carry = 0.0
+	xp_carry = 0
 	_init_weapons()
 	_init_passives()
+	# A new run is starting: make sure the last run's coins are on disk.
+	_flush_slot()
 
 func end_run() -> void:
 	is_game_over = true
+	_flush_slot()
 	player_died.emit()
 
 func add_xp(amount: int) -> void:
-	# Apply the XP multiplier with fractional carry (see xp_carry).
-	var boosted: float = amount * get_xp_mult() + xp_carry
-	var gained: int = int(floor(boosted))
-	xp_carry = boosted - gained
+	# Apply the XP multiplier in whole percent with an integer carry (see
+	# xp_carry): every multiplier is a product of +10% steps, so the
+	# percent value is exact where the float product isn't.
+	xp_carry += amount * get_xp_mult_percent()
+	var gained: int = xp_carry / 100
+	xp_carry %= 100
 	xp += gained
 	while xp >= xp_to_next:
 		xp -= xp_to_next
@@ -439,20 +455,22 @@ func _get_passive_choice_text(id: String) -> Dictionary:
 	if passive_level <= 0:
 		return {
 			"name": "%s (NEW)" % def["display_name"],
-			"desc": "%s %s." % [def["description"], _passive_bonus_text(def, step)],
+			"desc": "%s %s %s." % [def["description"], format_bonus(def, step), def["stat_label"]],
 		}
 	var next_level: int = passive_level + 1
 	return {
 		"name": "%s (Lv %d)" % [def["display_name"], next_level],
-		"desc": "%s (total %s)" % [_passive_bonus_text(def, step), _passive_bonus_text(def, next_level * step)],
+		"desc": "%s %s (total %s)" % [format_bonus(def, step), def["stat_label"], format_bonus(def, next_level * step)],
 	}
 
-# "+10% XP gain" for percentage passives, "+0.2 HP/sec" for flat ones
-# (format "flat", where stat_label is the unit).
-func _passive_bonus_text(def: Dictionary, value: float) -> String:
+# The one way a bonus value is written, for passives and permanent
+# upgrades alike: "+10%" for percentage bonuses, "+0.2" for flat ones
+# (def["format"] == "flat", where def["stat_label"] names the unit).
+# Callers append the stat_label once where it reads best.
+func format_bonus(def: Dictionary, value: float) -> String:
 	if def.get("format", "percent") == "flat":
-		return "+%.1f %s" % [value, def["stat_label"]]
-	return "+%.0f%% %s" % [value * 100.0, def["stat_label"]]
+		return "+%.1f" % value
+	return "+%d%%" % int(round(value * 100.0))
 
 func _get_weapon_choice_text(weapon_id: String) -> Dictionary:
 	var def: Dictionary = WEAPON_DEFS[weapon_id]
@@ -500,9 +518,14 @@ func format_time() -> String:
 
 # --- Meta-progression: coins and permanent (coin-bought) upgrades ---
 
+# Coins are only marked dirty here, not written: a Magnet can land
+# dozens of coins in one physics tick, and a file write per coin would
+# stall that frame. The slot is flushed by _process() a second later
+# and, so nothing is lost, on end_run()/reset(), slot switch/delete,
+# purchase, and quit (see _flush_slot()).
 func add_coins(amount: int) -> void:
 	coins += amount
-	_save_slot()
+	_slot_dirty = true
 
 func get_upgrade_level(id: String) -> int:
 	return permanent_upgrades.get(id, 0)
@@ -526,35 +549,34 @@ func purchase_upgrade(id: String) -> bool:
 	_save_slot()
 	return true
 
+# A permanent upgrade's current bonus: level * per_level_value (flat,
+# not compounding - Damage tops out at +0.5, i.e. x1.5, at level 5).
+# The single place the level -> bonus math lives, for the run and for
+# the shop's "+X now" label alike.
+func get_permanent_bonus(id: String) -> float:
+	var per_level: float = PERMANENT_UPGRADE_DEFS[id]["per_level_value"]
+	return get_upgrade_level(id) * per_level
+
 # Total HP/sec right now: the permanent Health Regeneration upgrade plus
 # this run's Vitality Elixir passive (both flat, so they add).
 func get_health_regen_rate() -> float:
-	var per_level: float = PERMANENT_UPGRADE_DEFS["health_regen"]["per_level_value"]
-	return get_upgrade_level("health_regen") * per_level + regen_bonus
-
-# Damage multiplier from the permanent Damage upgrade (1.0 = no
-# bonus, up to 1.5 at max level - flat +10%/level, not compounding).
-func get_permanent_damage_mult() -> float:
-	var per_level: float = PERMANENT_UPGRADE_DEFS["damage"]["per_level_value"]
-	return 1.0 + get_upgrade_level("damage") * per_level
+	return get_permanent_bonus("health_regen") + regen_bonus
 
 # The one multiplier every weapon applies to its base damage: the
 # permanent (coin-bought) bonus times this run's Power Emblem passive.
 # Weapons call this rather than either piece so a new global damage
 # source only has to be added here.
 func get_damage_mult() -> float:
-	return get_permanent_damage_mult() * damage_mult
-
-# XP multiplier from the permanent XP Gain upgrade (1.0 = no bonus, up
-# to 1.5 at max level - flat +10%/level, not compounding).
-func get_permanent_xp_mult() -> float:
-	var per_level: float = PERMANENT_UPGRADE_DEFS["xp_gain"]["per_level_value"]
-	return 1.0 + get_upgrade_level("xp_gain") * per_level
+	return (1.0 + get_permanent_bonus("damage")) * damage_mult
 
 # The one multiplier add_xp() applies: the permanent XP Gain bonus times
 # this run's Wisdom Orb passive.
 func get_xp_mult() -> float:
-	return get_permanent_xp_mult() * xp_mult
+	return (1.0 + get_permanent_bonus("xp_gain")) * xp_mult
+
+# get_xp_mult() in whole percent (110 = x1.1), the form add_xp() uses.
+func get_xp_mult_percent() -> int:
+	return int(round(get_xp_mult() * 100.0))
 
 # --- Persistence: one global settings file + one file per save slot ---
 #
@@ -562,7 +584,20 @@ func get_xp_mult() -> float:
 # active live in SETTINGS_PATH; progression (coins, permanent upgrades)
 # lives in the active slot's file. Before slots existed everything was
 # in one save_data.json - _migrate_legacy_save() turns that into
-# settings + slot 1 on first launch, keeping the old file as a backup.
+# settings + slot 1 the first time this build runs, and leaves the old
+# file untouched as a backup.
+#
+# Reading goes through _apply_settings()/_apply_slot() and writing
+# through _save_settings()/_save_slot(), so each persisted key is spelled
+# in exactly one reader and one writer; anything on disk is treated as
+# untrusted (wrong types, out-of-range values) and coerced back into
+# range, since a hand-edited or half-written file must never break the
+# menu.
+
+# Coins earned since the slot file was last written (see add_coins()).
+var _slot_dirty: bool = false
+var _slot_save_timer: float = 0.0
+const SLOT_SAVE_INTERVAL := 1.0
 
 func slot_path(slot: int) -> String:
 	return "user://save_slot_%d.json" % slot
@@ -584,28 +619,45 @@ func _write_json(path: String, data: Dictionary) -> void:
 	file.store_string(JSON.stringify(data))
 	file.close()
 
+# JSON numbers come back as floats and any key may hold the wrong type;
+# these coerce a loaded value or fall back to the default.
+func _as_int(value, default: int) -> int:
+	if value is int or value is float:
+		return int(value)
+	return default
+
+func _as_dict(value) -> Dictionary:
+	return value if value is Dictionary else {}
+
 func _load_persistent_data() -> void:
 	_migrate_legacy_save()
-	var settings := _read_json(SETTINGS_PATH)
-	show_damage_numbers = bool(settings.get("show_damage_numbers", true))
-	is_fullscreen = bool(settings.get("is_fullscreen", false))
-	var saved_cap: int = int(settings.get("fps_cap", 0))
-	fps_cap = saved_cap if FPS_CAP_OPTIONS.has(saved_cap) else 0
-	active_slot = clamp(int(settings.get("active_slot", 1)), 1, SLOT_COUNT)
+	_apply_settings(_read_json(SETTINGS_PATH))
 	_load_slot(active_slot)
 
-# Replaces the in-memory progression with the given slot's (an empty or
-# missing slot means a fresh start: 0 coins, no upgrades).
-func _load_slot(slot: int) -> void:
-	coins = 0
+# Sets every preference from a settings dictionary (missing keys keep
+# their defaults; unknown values are dropped).
+func _apply_settings(data: Dictionary) -> void:
+	show_damage_numbers = bool(data.get("show_damage_numbers", true))
+	is_fullscreen = bool(data.get("is_fullscreen", false))
+	var saved_cap: int = _as_int(data.get("fps_cap"), 0)
+	fps_cap = saved_cap if FPS_CAP_OPTIONS.has(saved_cap) else 0
+	active_slot = clampi(_as_int(data.get("active_slot"), 1), 1, SLOT_COUNT)
+
+# Replaces the in-memory progression with a slot dictionary's (an empty
+# one means a fresh start: 0 coins, no upgrades). Levels are clamped to
+# 0..max_level so get_upgrade_cost() can never index costs[] out of
+# range and no bonus can exceed its documented cap.
+func _apply_slot(data: Dictionary) -> void:
+	coins = maxi(_as_int(data.get("coins"), 0), 0)
+	var saved_upgrades: Dictionary = _as_dict(data.get("permanent_upgrades"))
 	for id in PERMANENT_UPGRADE_DEFS.keys():
-		permanent_upgrades[id] = 0
-	var data := _read_json(slot_path(slot))
-	coins = int(data.get("coins", 0))
-	var saved_upgrades: Dictionary = data.get("permanent_upgrades", {})
-	for id in saved_upgrades.keys():
-		if permanent_upgrades.has(id):
-			permanent_upgrades[id] = int(saved_upgrades[id])
+		var max_level: int = PERMANENT_UPGRADE_DEFS[id]["max_level"]
+		permanent_upgrades[id] = clampi(_as_int(saved_upgrades.get(id), 0), 0, max_level)
+
+func _load_slot(slot: int) -> void:
+	_apply_slot(_read_json(slot_path(slot)))
+	_slot_dirty = false
+	_slot_save_timer = 0.0
 
 # Preferences and progression are written separately so that changing a
 # setting never (re)creates the active slot's file - a freshly deleted
@@ -619,26 +671,53 @@ func _save_settings() -> void:
 	})
 
 func _save_slot() -> void:
+	_slot_dirty = false
+	_slot_save_timer = 0.0
 	_write_json(slot_path(active_slot), {
 		"coins": coins,
 		"permanent_upgrades": permanent_upgrades,
 	})
 
-# Switches to another slot: loads its progression (progression is saved
-# on every change, so nothing of the old slot is lost) and remembers the
-# choice.
+# Writes the active slot if any coins are waiting to be saved.
+func _flush_slot() -> void:
+	if _slot_dirty:
+		_save_slot()
+
+# Debounced coin save: at most one write per SLOT_SAVE_INTERVAL while
+# coins keep arriving. Runs even while the tree is paused (this node is
+# PROCESS_MODE_ALWAYS), so a pause right after a pickup still saves.
+func _tick_slot_save(delta: float) -> void:
+	if not _slot_dirty:
+		return
+	_slot_save_timer += delta
+	if _slot_save_timer >= SLOT_SAVE_INTERVAL:
+		_save_slot()
+
+func _notification(what: int) -> void:
+	# Closing the window or quitting from the menu: don't lose the last
+	# second of coins.
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_EXIT_TREE:
+		_flush_slot()
+
+# Switches to another slot: writes anything the old slot still owes,
+# loads the new slot's progression and remembers the choice.
 func select_slot(slot: int) -> void:
-	slot = clamp(slot, 1, SLOT_COUNT)
+	slot = clampi(slot, 1, SLOT_COUNT)
 	if slot == active_slot:
 		return
+	_flush_slot()
 	active_slot = slot
 	_load_slot(slot)
 	_save_settings()
 
 # Wipes a slot's file (the main menu asks for confirmation first). If it
 # is the active slot, the in-memory progression resets to a fresh start
-# as well; its file is only recreated once coins are earned again.
+# as well - including any unsaved coins, which are deliberately dropped
+# rather than flushed into the slot that was just wiped; its file is
+# only recreated once coins are earned again.
 func delete_slot(slot: int) -> void:
+	if slot < 1 or slot > SLOT_COUNT:
+		return
 	var path: String = slot_path(slot)
 	var dir := DirAccess.open("user://")
 	if dir != null and FileAccess.file_exists(path):
@@ -647,35 +726,38 @@ func delete_slot(slot: int) -> void:
 		_load_slot(slot)
 
 # What the main menu shows on a slot button without loading the slot.
+# "exists" follows the file, not whether it parsed: a damaged file still
+# shows up (as 0 coins) so the Delete button can clear it.
 func slot_summary(slot: int) -> Dictionary:
-	var data := _read_json(slot_path(slot))
-	if data.is_empty():
+	if slot == active_slot:
+		_flush_slot()
+	var path: String = slot_path(slot)
+	if not FileAccess.file_exists(path):
 		return {"exists": false, "coins": 0, "upgrade_levels": 0}
+	var data := _read_json(path)
 	var levels: int = 0
-	for value in data.get("permanent_upgrades", {}).values():
-		levels += int(value)
-	return {"exists": true, "coins": int(data.get("coins", 0)), "upgrade_levels": levels}
+	for value in _as_dict(data.get("permanent_upgrades")).values():
+		levels += maxi(_as_int(value, 0), 0)
+	return {"exists": true, "coins": maxi(_as_int(data.get("coins"), 0), 0), "upgrade_levels": levels}
 
+# One-time upgrade of the pre-slot save_data.json into settings.json +
+# slot 1. Gated on the settings file rather than on the legacy file, so
+# it runs exactly once per install: a save_data.json that shows up later
+# (an older build sharing this user:// folder, a restored backup) is
+# ignored instead of re-migrated over the player's current slot 1. The
+# legacy file itself is never touched - it *is* the backup.
 func _migrate_legacy_save() -> void:
-	if not FileAccess.file_exists(LEGACY_SAVE_PATH):
+	if FileAccess.file_exists(SETTINGS_PATH) or not FileAccess.file_exists(LEGACY_SAVE_PATH):
 		return
 	var legacy := _read_json(LEGACY_SAVE_PATH)
-	if not FileAccess.file_exists(SETTINGS_PATH):
-		_write_json(SETTINGS_PATH, {
-			"show_damage_numbers": bool(legacy.get("show_damage_numbers", true)),
-			"is_fullscreen": bool(legacy.get("is_fullscreen", false)),
-			"fps_cap": int(legacy.get("fps_cap", 0)),
-			"active_slot": 1,
-		})
-	if not FileAccess.file_exists(slot_path(1)):
-		_write_json(slot_path(1), {
-			"coins": int(legacy.get("coins", 0)),
-			"permanent_upgrades": legacy.get("permanent_upgrades", {}),
-		})
-	# Keep the original as a backup rather than deleting it.
-	var dir := DirAccess.open("user://")
-	if dir != null:
-		dir.rename(LEGACY_SAVE_PATH.get_file(), LEGACY_SAVE_PATH.get_file() + ".migrated")
+	_apply_settings(legacy)
+	active_slot = 1
+	_save_settings()
+	# A legacy file that didn't parse (legacy == {}) has no progression
+	# to carry over; leave slot 1 empty rather than writing a 0-coin save.
+	if legacy.has("coins") and not FileAccess.file_exists(slot_path(1)):
+		_apply_slot(legacy)
+		_save_slot()
 
 func set_show_damage_numbers(enabled: bool) -> void:
 	show_damage_numbers = enabled

@@ -23,7 +23,9 @@ as you can.
 
 ```
 scenes/
-  MainMenu.tscn     - entry point: Play / Settings / Upgrades (+ Quit)
+  MainMenu.tscn     - entry point: Play / Settings / Upgrades / Saves (+ Quit)
+  RunSetup.tscn     - character select then map select (two SelectPage.tscn
+                      instances of SelectCard.tscn cards), then Main.tscn
   Main.tscn        - root gameplay scene: Player + EnemySpawner + HUD
   Player.tscn       - CharacterBody2D, movement + auto-fire weapon
   Goblin.tscn       - Area2D, base enemy: chases player, contact damage
@@ -45,8 +47,11 @@ scripts/
 ```
 
 `MainMenu.tscn` is the scene Godot boots into (`run/main_scene` in
-`project.godot`). **Play** loads `Main.tscn` via
-`change_scene_to_file`; **Settings** exposes a master volume slider,
+`project.godot`). **Play** opens `RunSetup.tscn` (character select,
+then map select - built from `CHARACTER_DEFS`/`MAP_DEFS` in
+`GameManager.gd`), whose Start button loads `Main.tscn` via
+`change_scene_to_file`; **Saves** opens the save-slot picker (see
+below); **Settings** exposes a master volume slider,
 a damage-numbers toggle, and a fullscreen toggle (also present in
 the in-run pause menu's Settings); **Upgrades** lets you spend saved
 coins on permanent bonuses (see below). **Quit** sits as its own
@@ -152,28 +157,54 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   near-duplicate one.
 - **Coins and permanent upgrades are real save data**, not just
   in-memory state. `GameManager.coins`, `.permanent_upgrades`,
-  `.show_damage_numbers`, and `.is_fullscreen` are deliberately left
-  untouched by `reset()` (unlike XP/level/weapons, which are per-run)
-  and are written to `user://save_data.json` (via `FileAccess` +
-  `JSON.stringify`) every time they change - through setters like
+  `.show_damage_numbers`, `.is_fullscreen` and `.fps_cap` are
+  deliberately left untouched by `reset()` (unlike XP/level/weapons,
+  which are per-run) and persist across launches as JSON (via
+  `FileAccess` + `JSON.stringify`), split into two kinds of file:
+  preferences plus the active slot number in `user://settings.json`,
+  and progression (coins + upgrade levels) in one file per save slot,
+  `user://save_slot_N.json` (N = 1..`SLOT_COUNT`, 3 slots). Settings
+  are written the moment they change - through setters like
   `set_fullscreen()`/`set_show_damage_numbers()`, not direct field
-  assignment, so the save actually happens - then reloaded once in
-  `GameManager._ready()` at startup. `PERMANENT_UPGRADE_DEFS` follows
-  the same static-table-plus-live-state pattern as `WEAPON_DEFS`:
-  each entry has a `costs` array (cost of each level) and a
-  `max_level`. Every 10th kill (`Goblin.gd`, checking
+  assignment, so the save actually happens. Coins only mark the slot
+  dirty (`add_coins()`), and the slot is written at most once a second
+  plus on death, run start, slot switch/delete, purchase and quit, so a
+  Magnet pulling in dozens of coins in one tick doesn't do dozens of
+  file writes. Everything is reloaded once in `GameManager._ready()`;
+  loaded values are type-checked and clamped (a hand-edited or
+  half-written file can't put an upgrade above `max_level` or break
+  the menu). The pre-slot `user://save_data.json` is migrated into
+  `settings.json` + slot 1 the first time this build runs (gated on
+  `settings.json` not existing yet) and then left in place untouched
+  as a backup. `PERMANENT_UPGRADE_DEFS` follows the same
+  static-table-plus-live-state pattern as `WEAPON_DEFS`: each entry
+  has a `costs` array (cost of each level), a `max_level`, and the
+  `stat_label`/`format` keys `format_bonus()` uses to write the bonus
+  ("+10%" or "+0.2", the same formatter the level-up cards use for
+  passives). Every 10th kill (`Goblin.gd`, checking
   `enemies_defeated % 10` - Minotaur inherits this unchanged) drops a
   `CoinPickup` — same magnet/pickup code as `XPGem`, just paying out
   `GameManager.add_coins()` instead of `add_xp()`.
-  - There are two permanent upgrades right now: Health Regeneration
-    (+0.2 HP/sec/level, applied in `Player.gd`'s `_physics_process()`
-    via `get_health_regen_rate()`) and Damage (+10%/level, flat/
-    additive not compounding, capped at +50% at level 5 - applied via
-    `get_permanent_damage_mult()` everywhere weapon damage is dealt:
-    `Player.try_fire()` for the Laser Pistol and
-    `ForcefieldWeapon._process()` for the Forcefield tick). Damage's
-    `costs` are exactly double Health Regeneration's
-    (`[200, 400, 1000, 2000, 5000]` vs `[100, 200, 500, 1000, 2500]`).
+  - There are three permanent upgrades right now, all `level *
+    per_level_value` via `get_permanent_bonus(id)`: Health
+    Regeneration (+0.2 HP/sec/level, applied in `Player.gd`'s
+    `_physics_process()` via `get_health_regen_rate()`, which also adds
+    the run-only Vitality Elixir passive), Damage (+10%/level, flat/
+    additive not compounding, capped at +50% at level 5 - folded into
+    `get_damage_mult()`, the one multiplier every weapon applies) and
+    XP Gain (same +10%/level curve, folded into `get_xp_mult()` next to
+    the Wisdom Orb passive). Damage's and XP Gain's `costs` are exactly
+    double Health Regeneration's (`[200, 400, 1000, 2000, 5000]` vs
+    `[100, 200, 500, 1000, 2500]`).
+  - The **Saves** button on the main menu opens a picker with one
+    column per slot (built in `MainMenu._build_slot_columns()` from
+    `GameManager.SLOT_COUNT`): the slot button shows coins and total
+    upgrade levels and a check mark on the active slot, and the Delete
+    button under it wipes that slot's file after a full-screen
+    confirmation (`ConfirmOverlay` blocks every click behind it until
+    you answer). Selecting a slot only records the choice in
+    `settings.json`; a slot's file is first created when it earns
+    coins, so unused slots keep reading "Empty".
   - `MainMenu.gd`'s `upgrade_rows` dictionary maps an upgrade id to
     its info `Label`/buy `Button` node pair, so `_refresh_upgrade_row()`
     and the purchase handler work for any number of upgrades without
@@ -184,10 +215,11 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     inside a `ScrollContainer` for the same reason as the level-up
     panel (see below) - more upgrades than fit on screen scroll
     instead of overflowing the panel.
-  - To wipe your save during testing, delete
-    `user://save_data.json` — its actual on-disk path depends on OS
-    (Godot's docs page "File paths in Godot projects" has the exact
-    location per platform), or just call
+  - To wipe a save during testing, use Saves > Delete Save on the
+    main menu, or delete `user://save_slot_N.json` by hand (and
+    `user://settings.json` to reset preferences) — the actual on-disk
+    path depends on OS (Godot's docs page "File paths in Godot
+    projects" has the exact location per platform), or just call
     `OS.shell_open(OS.get_user_data_dir())` from a debug script to
     open the folder.
 - **Display/fullscreen setup**: `project.godot`'s `[display]` section
@@ -226,11 +258,12 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `take_damage`), screen shake on player hit, a particle burst on
   enemy death.
 - **More permanent upgrades**: add an entry to
-  `PERMANENT_UPGRADE_DEFS` in `GameManager.gd` (display info, per-
-  level value, `max_level`, `costs`), a `get_..._rate()`/
-  `get_..._mult()`-style accessor if the effect needs computing (see
-  `get_health_regen_rate()` and `get_permanent_damage_mult()`), plus
-  wherever that effect actually applies. Then add the two nodes
+  `PERMANENT_UPGRADE_DEFS` in `GameManager.gd` (display info,
+  `stat_label` and, for a flat bonus, `"format": "flat"`, per-level
+  value, `max_level`, `costs`), then apply
+  `get_permanent_bonus("your_id")` wherever the effect actually
+  matters (see `get_health_regen_rate()` and `get_damage_mult()`) -
+  the shop text comes from the def automatically. Then add the two nodes
   (info `Label` + buy `Button`) under `UpgradeList` in
   `MainMenu.tscn` and one entry in `MainMenu.gd`'s `upgrade_rows`
   dictionary — `_refresh_upgrade_row()` and the purchase handler

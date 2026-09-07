@@ -27,7 +27,8 @@ func _physics_process(delta: float) -> void:
 		hp += (new_max - max_hp)
 		max_hp = new_max
 
-	# Permanent (coin-bought) health regeneration upgrade.
+	# HP/sec from the permanent Health Regeneration upgrade plus this
+	# run's Vitality Elixir passive - the one place regen is applied.
 	var regen_rate: float = GameManager.get_health_regen_rate()
 	if regen_rate > 0.0 and hp < max_hp:
 		hp = min(hp + regen_rate * delta, max_hp)
