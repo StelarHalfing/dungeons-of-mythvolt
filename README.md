@@ -1,8 +1,9 @@
 # The Dungeons of Mythvolt (Godot 4.3)
 
 A Vampire Survivors–style auto-battler survival game. Move with
-WASD or arrow keys. You start with the Laser Pistol (auto-fires at
-the nearest enemy); kill Goblins to drop XP gems, and level up to
+WASD or arrow keys. The Knight starts with the Sword (a melee slash
+at the nearest enemy in reach - `starting_weapon` in
+`CHARACTER_DEFS`); kill Goblins to drop XP gems, and level up to
 pick from 3 weapon choices — leveling up a weapon you already own
 boosts its damage/size/speed, and picking the Forcefield for the
 first time unlocks it (an aura that ticks damage to enemies around
@@ -86,10 +87,12 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `WEAPON_DEFS` is a static table (base stats + per-level flat
   gains); `weapons[id]` holds the *live* stats for an owned weapon
   (`level`, `damage`, `size`, `speed`). Leveling up just adds the
-  `gain` amounts to the current stats — no min/max caps yet. A
-  weapon with `level == 0` (currently only Forcefield at the start)
-  is "not yet owned"; picking it in the level-up screen is what sets
-  it to level 1 and activates it.
+  `gain` amounts to the current stats — no min/max caps yet. Every
+  weapon starts a run at `level == 0` ("not yet owned") except the
+  selected character's `starting_weapon` (`CHARACTER_DEFS`; the
+  Knight's is the Sword), which `_init_weapons()` sets to level 1;
+  picking an unowned weapon in the level-up screen is what sets it
+  to level 1 and activates it.
   - **Laser Pistol** (`Player.try_fire()`): `damage` per hit, `size`
     is the projectile's radius (collision + visuals), `speed` is
     projectile travel speed. Fire rate is a fixed 0.6s cooldown —

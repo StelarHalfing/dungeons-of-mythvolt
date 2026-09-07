@@ -226,14 +226,15 @@ var xp_carry: int = 0
 var coin_gain_bonus: float = 0.0
 var coin_carry: int = 0
 
-# Static definition of every weapon: its starting level (0 = not yet
-# owned, must be picked once to unlock), base stats, and the flat
-# amount added to each stat every time it levels up.
+# Static definition of every weapon: base stats and the flat amount
+# added to each stat every time it levels up. Every weapon starts a run
+# at level 0 (not owned, must be picked once to unlock) except the
+# selected character's "starting_weapon" (CHARACTER_DEFS), which starts
+# at level 1 - see _init_weapons().
 const WEAPON_DEFS := {
 	"laser_pistol": {
 		"display_name": "Laser Pistol",
 		"description": "Auto-fires at the nearest enemy.",
-		"start_level": 1,
 		"base": {"damage": 10.0, "size": 4.0, "speed": 400.0, "projectile_count": 1.0},
 		# damage gain tuned so that at max level (12), projectile_count
 		# (5, from +1 every 3rd level) times damage clears a Tank Zombie's
@@ -247,7 +248,6 @@ const WEAPON_DEFS := {
 	"forcefield": {
 		"display_name": "Forcefield",
 		"description": "A ring around you that damages nearby enemies every tick.",
-		"start_level": 0,
 		"base": {"damage": 10.0, "size": 50.0, "speed": 1.0},
 		"gain": {"damage": 4.0, "size": 8.0, "speed": 0.15},
 		# speed here is ticks/sec (interval = 1/speed), same as
@@ -258,7 +258,6 @@ const WEAPON_DEFS := {
 	"tornado": {
 		"display_name": "Tornado",
 		"description": "Conjures a wandering vortex on a nearby enemy that damages and drags in everything caught inside.",
-		"start_level": 0,
 		# duration is base-only (not in gain) - it's deliberately fixed
 		# across levels; every 3rd level instead casts an extra
 		# simultaneous tornado (projectile_count), same mechanic as
@@ -280,7 +279,6 @@ const WEAPON_DEFS := {
 	"grenade": {
 		"display_name": "Grenade",
 		"description": "Lobs a grenade onto a nearby enemy that explodes once for heavy AoE damage.",
-		"start_level": 0,
 		# damage tuned so a single un-upgraded throw (base raised from 22.0
 		# to 35.0 for a punchier early game; first pick applies no gain,
 		# see level_up_weapon()) one-shots a Zombie (20 HP), and max level
@@ -300,7 +298,6 @@ const WEAPON_DEFS := {
 	"fireball": {
 		"display_name": "Fireball",
 		"description": "Launches slow fireballs that explode on impact.",
-		"start_level": 0,
 		# Fired by FireballCaster.gd on its own fixed cooldown; speed here
 		# is projectile speed, size is the fireball's radius (blast radius
 		# and blast damage derive from size/damage - see Fireball.gd).
@@ -313,7 +310,6 @@ const WEAPON_DEFS := {
 	"sword": {
 		"display_name": "Sword",
 		"description": "Swings a slash at the nearest enemy in reach.",
-		"start_level": 0,
 		# Melee, swung by SwordCaster.gd: size is the reach (pixels), speed
 		# is swings/sec (cooldown = 1/speed: 0.9s at level 1, ~0.56s at
 		# 12), damage one-shots a Zombie (20 HP) from the first pick and
@@ -435,11 +431,12 @@ const CHARACTER_DEFS := {
 		"traits": [
 			"Health: 100",
 			"Move speed: 140",
-			"Starting weapon: Laser Pistol",
-			"Can unlock: Forcefield, Tornado, Grenade, Fireball, Sword",
+			"Starting weapon: Sword",
+			"Can unlock: Laser Pistol, Forcefield, Tornado, Grenade, Fireball",
 			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin",
 			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00, a 5th passive slot for 15:00)",
 		],
+		"starting_weapon": "sword",
 		"portrait": "res://assets/ui/portrait_knight.tres",
 	},
 }
@@ -472,13 +469,21 @@ func _ready() -> void:
 func _init_weapons() -> void:
 	weapons.clear()
 	weapon_order.clear()
+	var starting: String = get_starting_weapon()
 	for id in WEAPON_DEFS.keys():
 		var def: Dictionary = WEAPON_DEFS[id]
 		var stats: Dictionary = def["base"].duplicate()
-		stats["level"] = def["start_level"]
+		stats["level"] = 1 if id == starting else 0
 		weapons[id] = stats
 		if stats["level"] > 0:
 			weapon_order.append(id)
+
+# The selected character's starting weapon (the only weapon owned at the
+# start of a run). Falls back to the first character if the selection
+# is stale, the same way RunSetup does.
+func get_starting_weapon() -> String:
+	var character: String = selected_character if CHARACTER_DEFS.has(selected_character) else CHARACTER_DEFS.keys()[0]
+	return CHARACTER_DEFS[character]["starting_weapon"]
 
 func _init_passives() -> void:
 	passives.clear()
