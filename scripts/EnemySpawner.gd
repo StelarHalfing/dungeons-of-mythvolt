@@ -38,11 +38,14 @@ const SLIME_START_TIME := 480.0  # 8:00
 const SLIME_RAMP_DURATION := 30.0
 const SLIME_MAX_SHARE := 0.35
 
-# The fourth step: from 10:30 the surge ramps back in over
-# SECOND_SURGE_RAMP_DURATION - double the rate again by 11:00, now with
-# the Slimes still in the mix - and stays for the rest of the run.
+# The fourth step: from 10:30 a bigger surge ramps in over
+# SECOND_SURGE_RAMP_DURATION - the interval drops to
+# SECOND_SURGE_INTERVAL_MULT of the plateau by 11:00 (four times the
+# rate, twice the first surge: ~6.7/s -> ~27/s), now with the Slimes
+# still in the mix - and stays for the rest of the run.
 const SECOND_SURGE_START_TIME := 630.0  # 10:30
 const SECOND_SURGE_RAMP_DURATION := 30.0
+const SECOND_SURGE_INTERVAL_MULT := 0.25
 
 var spawn_timer: float = 0.0
 var enemies_spawned: int = 0
@@ -63,15 +66,18 @@ func current_interval() -> float:
 # 1.0 before SURGE_START_TIME, easing linearly to SURGE_INTERVAL_MULT
 # over SURGE_RAMP_DURATION seconds, holding there until SLIME_START_TIME,
 # easing back to 1.0 over SLIME_RAMP_DURATION as the Slimes arrive, then
-# easing to SURGE_INTERVAL_MULT again from SECOND_SURGE_START_TIME and
+# easing to SECOND_SURGE_INTERVAL_MULT from SECOND_SURGE_START_TIME and
 # staying there.
 func _surge_interval_mult() -> float:
 	var surge_in: float = clamp((GameManager.game_time - SURGE_START_TIME) / SURGE_RAMP_DURATION, 0.0, 1.0)
 	var surge_out: float = clamp((GameManager.game_time - SLIME_START_TIME) / SLIME_RAMP_DURATION, 0.0, 1.0)
 	var second_in: float = clamp((GameManager.game_time - SECOND_SURGE_START_TIME) / SECOND_SURGE_RAMP_DURATION, 0.0, 1.0)
-	# 0 = plateau rate, 1 = full surge.
-	var surge_level: float = clamp(surge_in * (1.0 - surge_out) + second_in, 0.0, 1.0)
-	return lerp(1.0, SURGE_INTERVAL_MULT, surge_level)
+	# The first surge: 0 = plateau rate, 1 = full surge, eased back out
+	# again by the time the Slimes have arrived.
+	var first: float = lerp(1.0, SURGE_INTERVAL_MULT, clamp(surge_in * (1.0 - surge_out), 0.0, 1.0))
+	# The second starts from wherever that left off (the plateau, since
+	# it fully eased out by 8:30) and goes twice as far.
+	return lerp(first, SECOND_SURGE_INTERVAL_MULT, second_in)
 
 func spawn_enemy() -> void:
 	var players := get_tree().get_nodes_in_group("player")
