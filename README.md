@@ -17,7 +17,11 @@ offer two consolation picks instead of nothing: a Small Heal (25% of
 max HP) or a Coin Bonus (+25 gold) - `FALLBACK_DEFS` in
 `GameManager.gd`, applied by `_apply_fallback()`; rerolls and bans
 don't apply to that panel.
-Every 10th kill also drops a coin — coins persist across runs
+Every 10th kill also drops a coin, and once in a thousand kills a
+Gold Dream power-up (`GoldDreamPickup.tscn`, as rare as the Magnet):
+pick it up and for 10 seconds every kill drops a coin and gold is
+worth double (`GameManager.activate_gold_dream()`; the HUD counts it
+down beside the coin total) — coins persist across runs
 (and across closing the game) and can be spent in the main menu's
 Upgrades screen on permanent bonuses. Starting at 1:30 into a run, a
 Minotaur — a slow, 300 HP enemy with a periodic dash attack — shows

@@ -17,6 +17,7 @@ extends Area2D
 @export var coin_pickup_scene: PackedScene = preload("res://scenes/CoinPickup.tscn")
 @export var damage_number_scene: PackedScene = preload("res://scenes/DamageNumber.tscn")
 @export var magnet_pickup_scene: PackedScene = preload("res://scenes/MagnetPickup.tscn")
+@export var gold_dream_pickup_scene: PackedScene = preload("res://scenes/GoldDreamPickup.tscn")
 @export var death_burst_scene: PackedScene = preload("res://scenes/DeathBurst.tscn")
 
 const MAGNET_DROP_CHANCE := 0.001  # 0.1% chance per kill
@@ -134,7 +135,8 @@ func die() -> void:
 	GameManager.enemies_defeated += 1
 	_drop_loot()
 
-	if GameManager.enemies_defeated % 10 == 0:
+	# A coin every 10th kill - every kill while a Gold Dream is running.
+	if GameManager.is_gold_dream_active() or GameManager.enemies_defeated % 10 == 0:
 		var coin = coin_pickup_scene.instantiate()
 		get_parent().add_child(coin)
 		coin.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
@@ -143,6 +145,12 @@ func die() -> void:
 		var magnet = magnet_pickup_scene.instantiate()
 		get_parent().add_child(magnet)
 		magnet.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
+
+	# The Gold Dream power-up is just as rare as the Magnet (its own roll).
+	if randf() < MAGNET_DROP_CHANCE:
+		var dream = gold_dream_pickup_scene.instantiate()
+		get_parent().add_child(dream)
+		dream.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
 
 	# Spark burst at the corpse: one one-shot CPUParticles2D that frees
 	# itself (see DeathBurst.tscn) rather than 8 ColorRects + 8 Tweens

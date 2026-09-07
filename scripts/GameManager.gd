@@ -240,6 +240,13 @@ var coin_carry: int = 0
 # Hourglass's stat: this run's extra duration as a fraction (0.5 =
 # +50%), added to the permanent Duration bonus in get_duration_mult().
 var duration_bonus: float = 0.0
+# Gold Dream (the GoldDreamPickup power-up): while gold_dream_timer is
+# running, every kill drops a coin (Zombie.die()) and gold is worth
+# GOLD_DREAM_COIN_BONUS more (get_coin_mult()). Picking up another
+# while one is running restarts the clock rather than stacking.
+const GOLD_DREAM_DURATION := 10.0
+const GOLD_DREAM_COIN_BONUS := 1.0
+var gold_dream_timer: float = 0.0
 
 # Static definition of every weapon: base stats and the flat amount
 # added to each stat every time it levels up. Every weapon starts a run
@@ -534,8 +541,15 @@ func _apply_passive(id: String) -> void:
 func _process(delta: float) -> void:
 	if not is_paused_for_upgrade and not is_menu_paused and not is_game_over:
 		game_time += delta
+		gold_dream_timer = maxf(gold_dream_timer - delta, 0.0)
 		_check_unlocks()
 	_tick_slot_save(delta)
+
+func activate_gold_dream() -> void:
+	gold_dream_timer = GOLD_DREAM_DURATION
+
+func is_gold_dream_active() -> bool:
+	return gold_dream_timer > 0.0
 
 func reset() -> void:
 	level = 1
@@ -561,6 +575,7 @@ func reset() -> void:
 	coin_gain_bonus = 0.0
 	coin_carry = 0
 	duration_bonus = 0.0
+	gold_dream_timer = 0.0
 	_init_weapons()
 	_init_passives()
 	# A new run is starting: make sure the last run's coins are on disk.
@@ -966,9 +981,13 @@ func get_duration_mult() -> float:
 
 # Gold per coin: the permanent Gold Gain bonus plus this run's Lucky
 # Coin bonus, ADDED (not multiplied like damage/XP) so the two maxed
-# +50%s make exactly x2 - two gold per coin, never a fraction over.
+# +50%s make exactly x2 - two gold per coin, never a fraction over -
+# plus another +100% while a Gold Dream is running.
 func get_coin_mult() -> float:
-	return 1.0 + get_permanent_bonus("coin_gain") + coin_gain_bonus
+	var mult: float = 1.0 + get_permanent_bonus("coin_gain") + coin_gain_bonus
+	if is_gold_dream_active():
+		mult += GOLD_DREAM_COIN_BONUS
+	return mult
 
 func get_coin_mult_percent() -> int:
 	return int(round(get_coin_mult() * 100.0))

@@ -5,6 +5,8 @@ extends CanvasLayer
 @onready var time_label: Label = $TimeLabel
 @onready var level_label: Label = $LevelLabel
 @onready var coins_label: Label = $CoinsLabel
+# Countdown shown beside the coin counter while a Gold Dream is running.
+@onready var gold_dream_label: Label = $GoldDreamLabel
 @onready var upgrade_panel: Panel = $UpgradePanel
 @onready var upgrade_buttons: Array = [
 	$UpgradePanel/VBoxContainer/ScrollContainer/ButtonList/Button1,
@@ -148,6 +150,9 @@ func _process(_delta: float) -> void:
 
 	time_label.text = GameManager.format_time()
 	coins_label.text = "Coins: %d" % GameManager.coins
+	gold_dream_label.visible = GameManager.is_gold_dream_active()
+	if gold_dream_label.visible:
+		gold_dream_label.text = "Gold Dream %.1fs" % GameManager.gold_dream_timer
 	var players := get_tree().get_nodes_in_group("player")
 	if not players.is_empty():
 		var player = players[0]
