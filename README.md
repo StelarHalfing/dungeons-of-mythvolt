@@ -203,11 +203,12 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   how often `EnemySpawner.gd` spawns one
   (`initial_interval - game_time * 0.01`, floored at 0.15s), and
   which: the surge from 6:00 halves the interval (double the rate),
-  and from 8:00 Slimes (`Slime.tscn`, 120 HP, slow, reusing
+  and from 8:00 Slimes (`Slime.tscn`, 500 HP, slow, reusing
   `Zombie.gd` with the Slimes Pack bounce frames for every facing)
-  take up to 35% of the base chaser slot while the surge eases back
-  off over the same 30 seconds - the spawn rate returns to its
-  pre-6:00 level, but with far more HP per spawn - and from 10:30 a
+  take over the base chaser slot entirely - Skeletons stop spawning
+  by 8:30 - while the surge eases back off over the same 30 seconds:
+  the spawn rate returns to its pre-6:00 level, but with far more HP
+  per spawn. Tank Zombies keep their own schedule. From 10:30 a
   bigger surge ramps in (`SECOND_SURGE_INTERVAL_MULT`: a quarter of the
   plateau interval by 11:00, four times the rate and twice the first
   surge, Slimes included) and stays for the rest of the run. A Slime

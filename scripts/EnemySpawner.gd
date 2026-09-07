@@ -29,14 +29,15 @@ const SURGE_START_TIME := 360.0  # 6:00
 const SURGE_RAMP_DURATION := 30.0
 const SURGE_INTERVAL_MULT := 0.5
 
-# The third step trades numbers for toughness: from 8:00 Slimes (120
-# HP, slow) take a growing share of the base chaser slot, up to
-# SLIME_MAX_SHARE by 8:30, and over the same 30 seconds the surge eases
-# back off, so the spawn rate returns to its pre-6:00 level (~6.7/s)
-# with far more HP per spawn. Tank Zombies keep their own schedule.
+# The third step trades numbers for toughness: from 8:00 Slimes (500
+# HP, slow) take over the base chaser slot, ramping from none of it to
+# SLIME_MAX_SHARE (all of it - Skeletons stop spawning) by 8:30, and
+# over the same 30 seconds the surge eases back off, so the spawn rate
+# returns to its pre-6:00 level (~6.7/s) with far more HP per spawn.
+# Tank Zombies keep their own schedule.
 const SLIME_START_TIME := 480.0  # 8:00
 const SLIME_RAMP_DURATION := 30.0
-const SLIME_MAX_SHARE := 0.35
+const SLIME_MAX_SHARE := 1.0
 
 # The fourth step: from 10:30 a bigger surge ramps in over
 # SECOND_SURGE_RAMP_DURATION - the interval drops to
