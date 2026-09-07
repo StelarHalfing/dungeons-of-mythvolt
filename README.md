@@ -123,9 +123,10 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `BASE_WEAPON_SLOTS`/`BASE_PASSIVE_SLOTS` (2 each, so four locks per
   row) and each level of the permanent Weapon Slots / Passive Slots
   upgrades opens one more, to four; the boxes beyond that come from
-  `UNLOCK_DEFS`, earned in play and saved with the slot - today one
-  entry, a fifth weapon slot for surviving 10:00 in a single run
-  (`_check_unlocks()` awards it the moment the clock gets there, the
+  `UNLOCK_DEFS`, earned in play and saved with the slot - today a
+  fifth weapon slot for surviving 10:00 in a single run and a fifth
+  passive slot for 15:00
+  (`_check_unlocks()` awards each the moment the clock gets there, the
   HUD rebuilds the grid so the lock vanishes mid-run and shows a
   banner under the timer, and `_save_slot()` writes it at once). A slot is a
   real cap: `_upgrade_pool()` only offers a weapon or passive you

@@ -180,6 +180,13 @@ const UNLOCK_DEFS := {
 		"weapon_slots": 1,
 		"passive_slots": 0,
 	},
+	"passive_slot_15min": {
+		"display_name": "Fifth passive slot",
+		"description": "Survive 15:00 in a single run.",
+		"survive_time": 900.0,
+		"weapon_slots": 0,
+		"passive_slots": 1,
+	},
 }
 # unlocks[id] = earned, one entry per UNLOCK_DEFS key (filled by
 # _apply_slot()).
@@ -401,7 +408,7 @@ const CHARACTER_DEFS := {
 			"Starting weapon: Laser Pistol",
 			"Can unlock: Forcefield, Tornado, Grenade, Fireball",
 			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin",
-			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00)",
+			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00, a 5th passive slot for 15:00)",
 		],
 		"portrait": "res://assets/ui/portrait_knight.tres",
 	},
