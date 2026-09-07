@@ -21,7 +21,7 @@ as you can.
 ## How to run
 1. Open Godot 4.3+ (or later 4.x — should still work).
 2. "Import" this folder, selecting `project.godot`.
-3. Press F5 (or the Play button). `Main.tscn` is set as the main scene.
+3. Press F5 (or the Play button). `MainMenu.tscn` is set as the main scene.
 
 ## Project structure
 
@@ -189,8 +189,9 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `enemies_defeated % 10` - Minotaur inherits this unchanged) drops a
   `CoinPickup` — same magnet/pickup code as `XPGem`, just paying out
   `GameManager.add_coins()` instead of `add_xp()`.
-  - There are three permanent upgrades right now, all `level *
-    per_level_value` via `get_permanent_bonus(id)`: Health
+  - There are five permanent upgrades right now, all `level *
+    per_level_value` via `get_permanent_bonus(id)`. Three are stat
+    bonuses: Health
     Regeneration (+0.2 HP/sec/level, applied in `Player.gd`'s
     `_physics_process()` via `get_health_regen_rate()`, which also adds
     the run-only Vitality Elixir passive), Damage (+10%/level, flat/
