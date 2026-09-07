@@ -70,7 +70,7 @@ text = "Coins: 0"
 [node name="WeaponGrid" type="GridContainer" parent="."]
 offset_left = 20.0
 offset_top = 88.0
-offset_right = 484.0
+offset_right = 328.0
 offset_bottom = 188.0
 theme = ExtResource("4")
 theme_override_constants/h_separation = 4

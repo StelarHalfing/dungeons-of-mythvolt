@@ -31,12 +31,14 @@ extends CanvasLayer
 @onready var ban_button: Button = $UpgradePanel/VBoxContainer/ActionRow/BanButton
 var ban_mode: bool = false
 # Collection grid: GameManager.GRID_SLOTS_PER_ROW boxes per row. The
-# top row's first get_weapon_slots() boxes are open (one per WEAPON_DEFS
-# entry, in order, then any spare open slots), the rest locked; the
-# bottom row is the same for passives. Buying a Weapon/Passive Slots
-# level opens one more box on the next run.
+# top row's first get_weapon_slots() boxes are open and show the
+# weapons owned this run in pickup order (empty box = a free slot), the
+# rest are locked; the bottom row is the same for passives. Buying a
+# Weapon/Passive Slots level opens one more box on the next run.
 const IconSlotScene := preload("res://scenes/IconSlot.tscn")
 @onready var weapon_grid: GridContainer = $WeaponGrid
+var weapon_slots: Array = []
+var passive_slots: Array = []
 @onready var game_over_panel: Panel = $GameOverPanel
 @onready var pause_panel: Panel = $PausePanel
 @onready var game_settings_panel: Panel = $GameSettingsPanel
@@ -90,20 +92,34 @@ func _ready() -> void:
 
 func _build_collection_grid() -> void:
 	weapon_grid.columns = GameManager.GRID_SLOTS_PER_ROW
-	_add_slot_row(GameManager.WEAPON_DEFS.keys(), true, GameManager.get_weapon_slots())
-	_add_slot_row(GameManager.PASSIVE_DEFS.keys(), false, GameManager.get_passive_slots())
+	weapon_slots = _add_slot_row(true, GameManager.get_weapon_slots())
+	passive_slots = _add_slot_row(false, GameManager.get_passive_slots())
+	_refresh_collection_grid()
 
-func _add_slot_row(ids: Array, is_weapon: bool, open_slots: int) -> void:
+# Returns the row's open (unlocked) slots, left to right.
+func _add_slot_row(is_weapon: bool, open_slots: int) -> Array:
+	var open: Array = []
 	for i in range(GameManager.GRID_SLOTS_PER_ROW):
 		var slot = IconSlotScene.instantiate()
 		slot.locked = i >= open_slots
-		slot.icon_id = ids[i] if (i < open_slots and i < ids.size()) else ""
 		slot.is_weapon = is_weapon
 		weapon_grid.add_child(slot)
+		if not slot.locked:
+			open.append(slot)
+	return open
+
+# Open boxes show the run's pickups in order; boxes past the last
+# pickup stay empty. Cheap enough to do every frame (a dozen slots).
+func _refresh_collection_grid() -> void:
+	for i in range(weapon_slots.size()):
+		weapon_slots[i].icon_id = GameManager.weapon_order[i] if i < GameManager.weapon_order.size() else ""
+	for i in range(passive_slots.size()):
+		passive_slots[i].icon_id = GameManager.passive_order[i] if i < GameManager.passive_order.size() else ""
 
 func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("ui_cancel"):
 		_try_toggle_pause()
+	_refresh_collection_grid()
 
 	time_label.text = GameManager.format_time()
 	coins_label.text = "Coins: %d" % GameManager.coins

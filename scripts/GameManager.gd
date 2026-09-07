@@ -133,15 +133,16 @@ const PERMANENT_UPGRADE_DEFS := {
 		"costs": [1000, 5000],
 	},
 	# Each level turns one locked box in the HUD's collection grid into an
-	# open slot (see get_weapon_slots() / get_passive_slots()).
+	# open slot (see get_weapon_slots() / get_passive_slots()): 2 base
+	# slots + 4 levels = the 6-box row fully open.
 	"weapon_slots": {
 		"display_name": "Weapon Slots",
 		"description": "Unlock another weapon slot for every run.",
 		"stat_label": "weapon slots",
 		"format": "count",
 		"per_level_value": 1.0,
-		"max_level": 2,
-		"costs": [1000, 2500],
+		"max_level": 4,
+		"costs": [1000, 2500, 5000, 10000],
 	},
 	"passive_slots": {
 		"display_name": "Passive Slots",
@@ -149,21 +150,26 @@ const PERMANENT_UPGRADE_DEFS := {
 		"stat_label": "passive slots",
 		"format": "count",
 		"per_level_value": 1.0,
-		"max_level": 2,
-		"costs": [1000, 2500],
+		"max_level": 4,
+		"costs": [1000, 2500, 5000, 10000],
 	},
 }
 
 # Weapon and passive slots: how many different weapons (passives) a run
 # can hold. Every run has BASE_*_SLOTS; the permanent Weapon Slots /
-# Passive Slots upgrades add one each per level. The HUD grid shows
-# GRID_SLOTS_PER_ROW boxes per row - the open ones first, then a lock
-# on each of the rest - so buying a level visibly removes a lock.
-# Today's five weapons and five passives fit the base slots exactly, so
-# the cap in _upgrade_pool() only starts to bite once a sixth exists.
-const BASE_WEAPON_SLOTS := 5
-const BASE_PASSIVE_SLOTS := 5
-const GRID_SLOTS_PER_ROW := 9
+# Passive Slots upgrades add one each per level, up to the
+# GRID_SLOTS_PER_ROW boxes the HUD grid shows per row (open ones first,
+# a lock on each of the rest, so buying a level visibly removes one).
+# A slot is a real cap: _upgrade_pool() only offers a weapon (passive)
+# you don't own yet while a slot is free for it.
+const BASE_WEAPON_SLOTS := 2
+const BASE_PASSIVE_SLOTS := 2
+const GRID_SLOTS_PER_ROW := 6
+
+# The weapons and passives owned this run, in the order they were
+# picked up - what the HUD grid's open boxes show, left to right.
+var weapon_order: Array = []
+var passive_order: Array = []
 
 # Player-level stats. Passives (PASSIVE_DEFS below) drive these:
 # pickup_range_mult is the Attraction Tome's stat (read by XPGem/
@@ -375,6 +381,7 @@ const CHARACTER_DEFS := {
 			"Starting weapon: Laser Pistol",
 			"Can unlock: Forcefield, Tornado, Grenade, Fireball",
 			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin",
+			"Slots: 2 weapons, 2 passives (more from the Upgrades shop)",
 		],
 		"portrait": "res://assets/ui/portrait_knight.tres",
 	},
@@ -407,14 +414,18 @@ func _ready() -> void:
 
 func _init_weapons() -> void:
 	weapons.clear()
+	weapon_order.clear()
 	for id in WEAPON_DEFS.keys():
 		var def: Dictionary = WEAPON_DEFS[id]
 		var stats: Dictionary = def["base"].duplicate()
 		stats["level"] = def["start_level"]
 		weapons[id] = stats
+		if stats["level"] > 0:
+			weapon_order.append(id)
 
 func _init_passives() -> void:
 	passives.clear()
+	passive_order.clear()
 	for id in PASSIVE_DEFS.keys():
 		passives[id] = {"level": 0}
 		_apply_passive(id)
@@ -633,6 +644,7 @@ func level_up_weapon(weapon_id: String) -> void:
 		# First pick just unlocks the weapon at its base stats -
 		# it hasn't "leveled up" yet, so no gain is applied here.
 		stats["level"] = 1
+		weapon_order.append(weapon_id)
 		return
 	stats["level"] += 1
 	for stat_key in gain.keys():
@@ -647,6 +659,8 @@ func level_up_weapon(weapon_id: String) -> void:
 
 func level_up_passive(id: String) -> void:
 	passives[id]["level"] += 1
+	if passives[id]["level"] == 1:
+		passive_order.append(id)
 	_apply_passive(id)
 
 # Text for a level-up choice button (weapon or passive): current
