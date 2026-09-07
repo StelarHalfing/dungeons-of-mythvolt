@@ -349,9 +349,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -160.0
-offset_top = -150.0
+offset_top = -180.0
 offset_right = 160.0
-offset_bottom = 150.0
+offset_bottom = 180.0
 theme = ExtResource("4")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="GameSettingsPanel"]
@@ -388,6 +388,20 @@ button_pressed = true
 layout_mode = 2
 text = "Fullscreen"
 button_pressed = false
+
+[node name="FpsRow" type="HBoxContainer" parent="GameSettingsPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="FpsLabel" type="Label" parent="GameSettingsPanel/VBoxContainer/FpsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+text = "FPS Cap"
+
+[node name="FpsCapButton" type="Button" parent="GameSettingsPanel/VBoxContainer/FpsRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(170, 54)
+text = "Unlimited"
 
 [node name="BackButton" type="Button" parent="GameSettingsPanel/VBoxContainer"]
 layout_mode = 2

@@ -33,6 +33,11 @@ var show_damage_numbers: bool = true
 # user://save_data.json exists, i.e. only after the player has
 # explicitly turned fullscreen on at least once via set_fullscreen().
 var is_fullscreen: bool = false
+# Frame-rate cap applied to Engine.max_fps; 0 = unlimited (the engine
+# default, so a fresh install behaves as before). Always one of
+# FPS_CAP_OPTIONS - the settings panels cycle through that list.
+var fps_cap: int = 0
+const FPS_CAP_OPTIONS := [60, 120, 144, 240, 540, 0]
 var coins: int = 0
 var permanent_upgrades: Dictionary = {"health_regen": 0, "damage": 0}
 
@@ -204,6 +209,7 @@ func _ready() -> void:
 	_init_passives()
 	_load_persistent_data()
 	_apply_fullscreen()
+	_apply_fps_cap()
 
 func _init_weapons() -> void:
 	weapons.clear()
@@ -452,6 +458,8 @@ func _load_persistent_data() -> void:
 	coins = int(parsed.get("coins", 0))
 	show_damage_numbers = bool(parsed.get("show_damage_numbers", true))
 	is_fullscreen = bool(parsed.get("is_fullscreen", false))
+	var saved_cap: int = int(parsed.get("fps_cap", 0))
+	fps_cap = saved_cap if FPS_CAP_OPTIONS.has(saved_cap) else 0
 	var saved_upgrades: Dictionary = parsed.get("permanent_upgrades", {})
 	for id in saved_upgrades.keys():
 		if permanent_upgrades.has(id):
@@ -462,6 +470,7 @@ func _save_persistent_data() -> void:
 		"coins": coins,
 		"show_damage_numbers": show_damage_numbers,
 		"is_fullscreen": is_fullscreen,
+		"fps_cap": fps_cap,
 		"permanent_upgrades": permanent_upgrades,
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -484,3 +493,22 @@ func set_fullscreen(enabled: bool) -> void:
 func _apply_fullscreen() -> void:
 	var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if is_fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 	DisplayServer.window_set_mode(mode)
+
+# Sets the frame-rate cap, applies it, and saves it.
+func set_fps_cap(value: int) -> void:
+	fps_cap = value if FPS_CAP_OPTIONS.has(value) else 0
+	_apply_fps_cap()
+	_save_persistent_data()
+
+# Steps to the next FPS_CAP_OPTIONS entry (wrapping around) - what the
+# settings panels' FPS button does on each press. Returns the new cap.
+func cycle_fps_cap() -> int:
+	var idx: int = FPS_CAP_OPTIONS.find(fps_cap)
+	set_fps_cap(FPS_CAP_OPTIONS[(idx + 1) % FPS_CAP_OPTIONS.size()])
+	return fps_cap
+
+func fps_cap_label() -> String:
+	return "Unlimited" if fps_cap == 0 else "%d FPS" % fps_cap
+
+func _apply_fps_cap() -> void:
+	Engine.max_fps = fps_cap

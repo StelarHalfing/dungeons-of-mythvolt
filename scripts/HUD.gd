@@ -62,6 +62,13 @@ func _ready() -> void:
 	fullscreen_check.button_pressed = GameManager.is_fullscreen
 	fullscreen_check.toggled.connect(_on_fullscreen_toggled)
 
+	var fps_cap_button: Button = $GameSettingsPanel/VBoxContainer/FpsRow/FpsCapButton
+	fps_cap_button.text = GameManager.fps_cap_label()
+	fps_cap_button.pressed.connect(func():
+		GameManager.cycle_fps_cap()
+		fps_cap_button.text = GameManager.fps_cap_label()
+	)
+
 func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("ui_cancel"):
 		_try_toggle_pause()
