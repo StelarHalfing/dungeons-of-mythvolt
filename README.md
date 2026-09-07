@@ -48,6 +48,7 @@ scenes/
   Projectile.tscn   - Area2D, fired at nearest enemy
   XPGem.tscn        - Area2D, magnets to player, grants 1 XP (green)
   RedXPGem.tscn     - same script as XPGem, Minotaur's drop, grants 5 XP (red)
+  BlueXPGem.tscn    - same script again, the Slime's drop, grants 3 XP (blue)
   CoinPickup.tscn   - Area2D, magnets to player, grants a coin
   DamageNumber.tscn - floating text popup on hit, drifts up and fades
   IconSlot.tscn     - one box in the run-collection grid: border + icon, dimmed until acquired
@@ -124,13 +125,24 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     a line of enemies, ~150px deep at level 1 and ~350px at 12 before
     any Duration bonus. `speed` is swings per second, and
     `projectile_count` (+1 every 3rd level) adds a slash at the
-    next-nearest enemy in depth.
+    next-nearest enemy in depth. Its damage runs at half the pace of
+    the other weapons (10 at level 1, 32 at 12) because every hit also
+    knocks the enemy back: its `knockback` stat (40px, no per-level
+    gain) times `get_knockback_mult()`, handed to
+    `Zombie.apply_knockback()` as a decelerating shove along the slash
+    that replaces chasing until it stops (a TankZombie is shoved in
+    every state, without its telegraph/dash being cancelled).
   - **Duration** is a stat like damage: `get_duration_mult()` is
     1 + the permanent Duration upgrade (+10%/level to +50%) + the
     Hourglass passive (+10%/level to +50%), ADDED like gold gain
     rather than multiplied like damage, so both maxed is exactly x2.
     It stretches everything with a duration - the sword slash's flight
     and the Tornado's lifetime.
+  - **Knockback** works the same way: `get_knockback_mult()` is 1 + the
+    permanent Knockback upgrade (+10%/level to +50%) + the War Hammer
+    passive (+10%/level to +50%), added, so both maxed is exactly x2
+    the shove distance. Only the sword's slash has a `knockback` stat
+    so far; any weapon can add one and call `apply_knockback()`.
 - **Icons come from one script.** `WeaponIcon.gd` is a `Control`
   keyed by an `icon_id` string (the exact keys used in
   `GameManager.weapons`/`.passives`): ids in its `ICON_TEXTURES`
@@ -179,9 +191,11 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `Zombie.gd` with the Slimes Pack bounce frames for every facing)
   take up to 35% of the base chaser slot while the surge eases back
   off over the same 30 seconds - the spawn rate returns to its
-  pre-6:00 level, but with far more HP per spawn - and from 10:30 the
-  surge ramps back in (double rate again by 11:00, Slimes included)
-  and stays for the rest of the run.
+  pre-6:00 level, but with far more HP per spawn - and from 10:30 a
+  bigger surge ramps in (`SECOND_SURGE_INTERVAL_MULT`: a quarter of the
+  plateau interval by 11:00, four times the rate and twice the first
+  surge, Slimes included) and stays for the rest of the run. A Slime
+  drops one blue `BlueXPGem` worth 3 XP in place of green gems.
 - **Minotaur extends Goblin via GDScript inheritance**
   (`extends "res://scripts/Goblin.gd"`), not a from-scratch script.
   `Goblin.gd` splits its behavior into small overridable pieces
@@ -227,8 +241,8 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `enemies_defeated % 10` - Minotaur inherits this unchanged) drops a
   `CoinPickup` — same magnet/pickup code as `XPGem`, just paying out
   `GameManager.add_coins()` instead of `add_xp()`.
-  - There are nine permanent upgrades right now, all `level *
-    per_level_value` via `get_permanent_bonus(id)`. Five are stat
+  - There are ten permanent upgrades right now, all `level *
+    per_level_value` via `get_permanent_bonus(id)`. Six are stat
     bonuses: Health
     Regeneration (+0.2 HP/sec/level, applied in `Player.gd`'s
     `_physics_process()` via `get_health_regen_rate()`, which also adds
@@ -242,8 +256,10 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     gold per coin, applied in `add_coins()` with the same integer
     hundredths carry `add_xp()` uses), and Duration (same curve,
     folded into `get_duration_mult()` next to the Hourglass passive -
-    see the Duration note above). Damage's, XP Gain's, Gold Gain's
-    and Duration's `costs` are exactly double Health Regeneration's
+    see the Duration note above) and Knockback (same curve and costs,
+    folded into `get_knockback_mult()` next to the War Hammer passive,
+    added like Duration). Damage's, XP Gain's, Gold Gain's, Duration's
+    and Knockback's `costs` are exactly double Health Regeneration's
     (`[200, 400, 1000, 2000, 5000]` vs `[100, 200, 500, 1000, 2500]`).
     Four more are whole-number perks
     (`"format": "count"`): for the level-up panel, two levels each at
