@@ -24,6 +24,16 @@ var enemies_defeated: int = 0
 # offer_upgrades() overwriting the panel that's already open and
 # silently losing that level's pick.
 var pending_level_ups: int = 0
+# How many options a level-up panel shows.
+const CHOICE_COUNT := 3
+# The ids on the open level-up panel (what a reroll replaces).
+var current_choices: Array = []
+# Level-up rerolls: the first one each run is free, then REROLL_BASE_COST
+# coins doubling per reroll (50, 100, 200, ...), paid from the same coin
+# bank the permanent upgrades spend. Counted per run (reset() zeroes
+# it); make it per level-up by zeroing it in offer_upgrades() instead.
+const REROLL_BASE_COST := 50
+var rerolls_used: int = 0
 
 # User preferences and meta-progression. Persist across runs (not
 # touched by reset()) and across game restarts (saved to disk).
@@ -344,6 +354,8 @@ func reset() -> void:
 	is_game_over = false
 	enemies_defeated = 0
 	pending_level_ups = 0
+	current_choices = []
+	rerolls_used = 0
 	speed_mult = 1.0
 	max_hp_bonus = 0.0
 	pickup_range_mult = 1.0
@@ -386,6 +398,18 @@ func add_xp(amount: int) -> void:
 # nothing left to offer, pausing would leave the player stuck on an
 # empty panel - the pending level-ups are simply dropped instead.
 func offer_upgrades() -> bool:
+	var pool: Array = _upgrade_pool()
+	if pool.is_empty():
+		pending_level_ups = 0
+		return false
+	is_paused_for_upgrade = true
+	get_tree().paused = true
+	current_choices = _pick_choices(pool, [])
+	level_up_choices.emit(current_choices)
+	return true
+
+# Every weapon and passive that can still level up.
+func _upgrade_pool() -> Array:
 	var ids: Array = []
 	for id in weapons.keys():
 		var max_level: int = WEAPON_DEFS[id].get("max_level", -1)
@@ -394,15 +418,45 @@ func offer_upgrades() -> bool:
 	for id in passives.keys():
 		if passives[id]["level"] < PASSIVE_DEFS[id]["max_level"]:
 			ids.append(id)
-	if ids.is_empty():
-		pending_level_ups = 0
+	return ids
+
+# Up to CHOICE_COUNT random ids from the pool, taking ones not in
+# `avoid` (the set being rerolled) first, so a reroll shows all-new
+# options whenever the pool has enough and only repeats when it doesn't.
+func _pick_choices(pool: Array, avoid: Array) -> Array:
+	var fresh: Array = pool.filter(func(id): return not avoid.has(id))
+	var stale: Array = pool.filter(func(id): return avoid.has(id))
+	fresh.shuffle()
+	stale.shuffle()
+	var picks: Array = fresh + stale
+	return picks.slice(0, mini(CHOICE_COUNT, picks.size()))
+
+# Coins the next reroll costs: 0 for the run's first, then
+# REROLL_BASE_COST doubling each time (the shift is capped so the value
+# can't overflow, not that anyone reaches 50 million coins).
+func get_reroll_cost() -> int:
+	if rerolls_used == 0:
+		return 0
+	return REROLL_BASE_COST << mini(rerolls_used - 1, 20)
+
+# A reroll needs an open panel, the coins, and at least one option the
+# panel isn't already showing (otherwise it could only repeat itself).
+func can_reroll() -> bool:
+	if not is_paused_for_upgrade or coins < get_reroll_cost():
 		return false
-	is_paused_for_upgrade = true
-	get_tree().paused = true
-	ids.shuffle()
-	var count: int = min(3, ids.size())
-	var choices: Array = ids.slice(0, count)
-	level_up_choices.emit(choices)
+	return _upgrade_pool().size() > current_choices.size()
+
+# Replaces the open panel's choices, charging get_reroll_cost(). Emits
+# level_up_choices again on success so the HUD redraws; returns whether
+# the reroll happened.
+func reroll_upgrades() -> bool:
+	if not can_reroll():
+		return false
+	coins -= get_reroll_cost()
+	rerolls_used += 1
+	_slot_dirty = true
+	current_choices = _pick_choices(_upgrade_pool(), current_choices)
+	level_up_choices.emit(current_choices)
 	return true
 
 func choose_upgrade(id: String) -> void:
@@ -410,6 +464,7 @@ func choose_upgrade(id: String) -> void:
 		level_up_passive(id)
 	else:
 		level_up_weapon(id)
+	current_choices = []
 	pending_level_ups = max(pending_level_ups - 1, 0)
 	# Another level-up still owed a pick: stay paused and put up the next
 	# set of choices right away (unless the pool just ran dry).

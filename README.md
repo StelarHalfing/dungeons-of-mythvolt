@@ -6,7 +6,11 @@ the nearest enemy); kill Goblins to drop XP gems, and level up to
 pick from 3 weapon choices — leveling up a weapon you already own
 boosts its damage/size/speed, and picking the Forcefield for the
 first time unlocks it (an aura that ticks damage to enemies around
-you). Every 10th kill also drops a coin — coins persist across runs
+you). Don't like the three on offer? The Reroll button under them
+swaps in new ones: the first reroll of a run is free, the next costs
+50 coins and the price doubles with every reroll after that
+(`GameManager.reroll_upgrades()`; the counter resets each run).
+Every 10th kill also drops a coin — coins persist across runs
 (and across closing the game) and can be spent in the main menu's
 Upgrades screen on permanent bonuses. Starting at 1:30 into a run, a
 Minotaur — a slow, 300 HP enemy with a periodic dash attack — shows
