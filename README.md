@@ -108,17 +108,24 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   same click-through `mouse_filter = 2` trick as the label itself)
   and inside `IconSlot.tscn` for the collection grid below.
 - **The collection grid** (`WeaponGrid` in `HUD.tscn`) is built by
-  `HUD._build_collection_grid()`: the top row is one `IconSlot.tscn`
-  per `WEAPON_DEFS` entry followed by `LOCKED_SLOTS_PER_ROW` (4)
-  locked slots, the bottom row the same for `PASSIVE_DEFS`, both
-  padded to the same width. A slot has three looks - locked (darker
-  `IconSlotLocked` frame + lock glyph: nothing exists there yet),
-  unowned (normal frame, empty: something to collect) and owned
-  (the icon appears the moment it's picked up). `IconSlot.gd` polls
+  `HUD._build_collection_grid()`: `GameManager.GRID_SLOTS_PER_ROW`
+  (9) `IconSlot.tscn` boxes per row. On the top row the first
+  `get_weapon_slots()` boxes are open - one per `WEAPON_DEFS` entry in
+  order, then any spare - and the rest are locked; the bottom row is
+  the same for passives. A slot has three looks: locked (darker
+  `IconSlotLocked` frame + lock glyph: the run can't use it), unowned
+  (normal frame, empty: a free slot, with something to collect if an
+  id sits there) and owned (the icon appears the moment it's picked
+  up). Runs start with `BASE_WEAPON_SLOTS`/`BASE_PASSIVE_SLOTS` (5
+  each, so four locks per row) and each level of the permanent
+  Weapon Slots / Passive Slots upgrades opens one more; a slot is
+  also a capacity - `_upgrade_pool()` only offers a weapon or passive
+  you don't own yet while a slot is free for it (with five of each
+  today that never bites). `IconSlot.gd` polls
   `GameManager.weapons`/`.passives` `["level"] > 0` every frame, the
   same cheap polling pattern `HUD.gd` uses elsewhere. Adding a
   weapon or passive is a def entry plus an `ICON_TEXTURES` entry;
-  the grid grows a box for it on its own.
+  its box appears in the next open slot on its own.
 - **No custom Input Map actions** — movement reads raw key state
   (`Input.is_key_pressed`) so there's nothing to misconfigure in
   Project Settings. If you want gamepad support, this is the first
@@ -173,7 +180,7 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `enemies_defeated % 10` - Minotaur inherits this unchanged) drops a
   `CoinPickup` — same magnet/pickup code as `XPGem`, just paying out
   `GameManager.add_coins()` instead of `add_xp()`.
-  - There are six permanent upgrades right now, all `level *
+  - There are eight permanent upgrades right now, all `level *
     per_level_value` via `get_permanent_bonus(id)`. Four are stat
     bonuses: Health
     Regeneration (+0.2 HP/sec/level, applied in `Player.gd`'s
@@ -189,11 +196,15 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     hundredths carry `add_xp()` uses). Damage's, XP Gain's and Gold
     Gain's `costs` are exactly double Health Regeneration's
     (`[200, 400, 1000, 2000, 5000]` vs `[100, 200, 500, 1000, 2500]`).
-    Two more are whole-number perks
-    for the level-up panel (`"format": "count"`), two levels each at
-    1000 then 5000 coins: Rerolls (+1 free reroll per run on top of
+    Four more are whole-number perks
+    (`"format": "count"`), two levels each: for the level-up panel,
+    at 1000 then 5000 coins, Rerolls (+1 free reroll per run on top of
     the one everyone gets, via `get_free_rerolls()`) and Bans (+1 ban
-    per run; there are none without it, via `get_max_bans()`).
+    per run; there are none without it, via `get_max_bans()`); and
+    for the collection grid, at 1000 then 2500 coins, Weapon Slots and
+    Passive Slots (+1 open slot per run each, via
+    `get_weapon_slots()`/`get_passive_slots()` - see the grid notes
+    above).
   - **Bans**: the Ban button beside Reroll on the level-up panel is a
     mode - press it, the title switches to "Choose an upgrade to
     ban:", and clicking a choice removes that weapon/passive from the

@@ -30,12 +30,12 @@ extends CanvasLayer
 @onready var reroll_button: Button = $UpgradePanel/VBoxContainer/ActionRow/RerollButton
 @onready var ban_button: Button = $UpgradePanel/VBoxContainer/ActionRow/BanButton
 var ban_mode: bool = false
-# Collection grid: one IconSlot per WEAPON_DEFS entry then
-# LOCKED_SLOTS_PER_ROW locked ones on the top row, the same for
-# PASSIVE_DEFS on the bottom row, so a new weapon or passive gets its
-# box automatically and every row keeps the same number of locked slots.
+# Collection grid: GameManager.GRID_SLOTS_PER_ROW boxes per row. The
+# top row's first get_weapon_slots() boxes are open (one per WEAPON_DEFS
+# entry, in order, then any spare open slots), the rest locked; the
+# bottom row is the same for passives. Buying a Weapon/Passive Slots
+# level opens one more box on the next run.
 const IconSlotScene := preload("res://scenes/IconSlot.tscn")
-const LOCKED_SLOTS_PER_ROW := 4
 @onready var weapon_grid: GridContainer = $WeaponGrid
 @onready var game_over_panel: Panel = $GameOverPanel
 @onready var pause_panel: Panel = $PausePanel
@@ -89,19 +89,15 @@ func _ready() -> void:
 	)
 
 func _build_collection_grid() -> void:
-	var weapon_ids: Array = GameManager.WEAPON_DEFS.keys()
-	var passive_ids: Array = GameManager.PASSIVE_DEFS.keys()
-	# Both rows are padded to the same width, so a row with fewer real
-	# items shows extra locked slots rather than breaking the grid.
-	var columns: int = maxi(weapon_ids.size(), passive_ids.size()) + LOCKED_SLOTS_PER_ROW
-	weapon_grid.columns = columns
-	_add_slot_row(weapon_ids, true, columns)
-	_add_slot_row(passive_ids, false, columns)
+	weapon_grid.columns = GameManager.GRID_SLOTS_PER_ROW
+	_add_slot_row(GameManager.WEAPON_DEFS.keys(), true, GameManager.get_weapon_slots())
+	_add_slot_row(GameManager.PASSIVE_DEFS.keys(), false, GameManager.get_passive_slots())
 
-func _add_slot_row(ids: Array, is_weapon: bool, columns: int) -> void:
-	for i in range(columns):
+func _add_slot_row(ids: Array, is_weapon: bool, open_slots: int) -> void:
+	for i in range(GameManager.GRID_SLOTS_PER_ROW):
 		var slot = IconSlotScene.instantiate()
-		slot.icon_id = ids[i] if i < ids.size() else ""
+		slot.locked = i >= open_slots
+		slot.icon_id = ids[i] if (i < open_slots and i < ids.size()) else ""
 		slot.is_weapon = is_weapon
 		weapon_grid.add_child(slot)
 

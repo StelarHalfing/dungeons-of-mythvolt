@@ -132,7 +132,38 @@ const PERMANENT_UPGRADE_DEFS := {
 		"max_level": 2,
 		"costs": [1000, 5000],
 	},
+	# Each level turns one locked box in the HUD's collection grid into an
+	# open slot (see get_weapon_slots() / get_passive_slots()).
+	"weapon_slots": {
+		"display_name": "Weapon Slots",
+		"description": "Unlock another weapon slot for every run.",
+		"stat_label": "weapon slots",
+		"format": "count",
+		"per_level_value": 1.0,
+		"max_level": 2,
+		"costs": [1000, 2500],
+	},
+	"passive_slots": {
+		"display_name": "Passive Slots",
+		"description": "Unlock another passive slot for every run.",
+		"stat_label": "passive slots",
+		"format": "count",
+		"per_level_value": 1.0,
+		"max_level": 2,
+		"costs": [1000, 2500],
+	},
 }
+
+# Weapon and passive slots: how many different weapons (passives) a run
+# can hold. Every run has BASE_*_SLOTS; the permanent Weapon Slots /
+# Passive Slots upgrades add one each per level. The HUD grid shows
+# GRID_SLOTS_PER_ROW boxes per row - the open ones first, then a lock
+# on each of the rest - so buying a level visibly removes a lock.
+# Today's five weapons and five passives fit the base slots exactly, so
+# the cap in _upgrade_pool() only starts to bite once a sixth exists.
+const BASE_WEAPON_SLOTS := 5
+const BASE_PASSIVE_SLOTS := 5
+const GRID_SLOTS_PER_ROW := 9
 
 # Player-level stats. Passives (PASSIVE_DEFS below) drive these:
 # pickup_range_mult is the Attraction Tome's stat (read by XPGem/
@@ -468,17 +499,38 @@ func offer_upgrades() -> bool:
 	level_up_choices.emit(current_choices)
 	return true
 
-# Every weapon and passive that can still level up and isn't banned.
+# Every weapon and passive that can still level up and isn't banned. A
+# weapon (passive) you don't own yet is only offered while a slot is
+# free for it; owned ones can always level up.
 func _upgrade_pool() -> Array:
 	var ids: Array = []
+	var weapon_room: bool = _owned_count(weapons) < get_weapon_slots()
 	for id in weapons.keys():
 		var max_level: int = WEAPON_DEFS[id].get("max_level", -1)
-		if (max_level < 0 or weapons[id]["level"] < max_level) and not banned_ids.has(id):
+		var can_level: bool = max_level < 0 or weapons[id]["level"] < max_level
+		var has_room: bool = weapons[id]["level"] > 0 or weapon_room
+		if can_level and has_room and not banned_ids.has(id):
 			ids.append(id)
+	var passive_room: bool = _owned_count(passives) < get_passive_slots()
 	for id in passives.keys():
-		if passives[id]["level"] < PASSIVE_DEFS[id]["max_level"] and not banned_ids.has(id):
+		var can_level: bool = passives[id]["level"] < PASSIVE_DEFS[id]["max_level"]
+		var has_room: bool = passives[id]["level"] > 0 or passive_room
+		if can_level and has_room and not banned_ids.has(id):
 			ids.append(id)
 	return ids
+
+func _owned_count(registry: Dictionary) -> int:
+	var count: int = 0
+	for id in registry.keys():
+		if registry[id]["level"] > 0:
+			count += 1
+	return count
+
+func get_weapon_slots() -> int:
+	return BASE_WEAPON_SLOTS + int(get_permanent_bonus("weapon_slots"))
+
+func get_passive_slots() -> int:
+	return BASE_PASSIVE_SLOTS + int(get_permanent_bonus("passive_slots"))
 
 # Up to CHOICE_COUNT random ids from the pool, taking ones not in
 # `avoid` (the set being rerolled) first, so a reroll shows all-new
