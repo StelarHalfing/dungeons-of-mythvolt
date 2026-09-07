@@ -18,6 +18,16 @@ const TANK_ZOMBIE_SPAWN_INTERVAL := 25  # 1 Tank Zombie per 25 spawns
 const SKELETON_START_TIME := 105.0  # 1:45
 const SKELETON_RAMP_DURATION := 30.0
 
+# The base interval ramp below bottoms out at MIN_INTERVAL by 1:45 and
+# then stays flat. The surge is a second difficulty step: from 6:00 the
+# interval is scaled down toward SURGE_INTERVAL_MULT over
+# SURGE_RAMP_DURATION, so the spawn rate doubles (~6.7/s -> ~13/s) by
+# 6:30 instead of staying at the 1:45 plateau for the rest of the run.
+const MIN_INTERVAL := 0.15
+const SURGE_START_TIME := 360.0  # 6:00
+const SURGE_RAMP_DURATION := 30.0
+const SURGE_INTERVAL_MULT := 0.5
+
 var spawn_timer: float = 0.0
 var enemies_spawned: int = 0
 
@@ -27,8 +37,18 @@ func _process(delta: float) -> void:
 	spawn_timer -= delta
 	if spawn_timer <= 0:
 		spawn_enemy()
-		var interval: float = max(0.15, initial_interval - GameManager.game_time * 0.01)
-		spawn_timer = interval
+		spawn_timer = current_interval()
+
+# Seconds between spawns right now: the base ramp, then the surge on top.
+func current_interval() -> float:
+	var base: float = max(MIN_INTERVAL, initial_interval - GameManager.game_time * 0.01)
+	return base * _surge_interval_mult()
+
+# 1.0 before SURGE_START_TIME, easing linearly to SURGE_INTERVAL_MULT
+# over SURGE_RAMP_DURATION seconds, then staying there.
+func _surge_interval_mult() -> float:
+	var t: float = clamp((GameManager.game_time - SURGE_START_TIME) / SURGE_RAMP_DURATION, 0.0, 1.0)
+	return lerp(1.0, SURGE_INTERVAL_MULT, t)
 
 func spawn_enemy() -> void:
 	var players := get_tree().get_nodes_in_group("player")
