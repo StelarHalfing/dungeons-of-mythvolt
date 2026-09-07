@@ -1,29 +1,23 @@
-extends Node2D
+extends "res://scripts/WeaponCaster.gd"
 
 # Child of Player (sibling of Forcefield). On a cooldown, spawns a
 # Tornado.tscn on top of the nearest enemy - same nearest-enemy
 # targeting as Player.try_fire(), but a discrete AoE-zone spawn
 # instead of a projectile. Inactive until the "tornado" weapon has
-# been picked at least once (level > 0). Every 3rd level (see
-# GameManager.level_up_weapon()) also casts on additional nearby
-# enemies per cooldown, via projectile_count - same idea as the
-# Laser Pistol's multi-target firing.
+# been picked at least once (level > 0); the cooldown gate is
+# WeaponCaster.gd's, with the weapon's "speed" stat as casts per second.
+# Every 3rd level (see GameManager.level_up_weapon()) also casts on
+# additional nearby enemies per cooldown, via projectile_count - same
+# idea as the Laser Pistol's multi-target firing.
 
 @export var tornado_scene: PackedScene = preload("res://scenes/Tornado.tscn")
 
-var cast_timer: float = 0.0
+func _init() -> void:
+	weapon_id = "tornado"
 
-func _process(delta: float) -> void:
-	if GameManager.is_paused_for_upgrade:
-		return
-	var stats: Dictionary = GameManager.weapons["tornado"]
-	if stats["level"] <= 0:
-		return
-
-	cast_timer -= delta
-	if cast_timer <= 0:
-		_try_cast(stats)
-		cast_timer = 1.0 / max(stats["speed"], 0.01) * GameManager.get_cooldown_mult()
+func _cast(stats: Dictionary) -> bool:
+	_try_cast(stats)
+	return true
 
 func _try_cast(stats: Dictionary) -> void:
 	var enemies := get_tree().get_nodes_in_group("enemies")

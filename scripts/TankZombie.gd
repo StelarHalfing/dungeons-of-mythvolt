@@ -67,18 +67,53 @@ func _start_telegraph() -> void:
 	state = State.TELEGRAPH
 	state_elapsed = 0.0
 	sprite.modulate = Color(1.0, 0.6, 0.1)
-	var players := get_tree().get_nodes_in_group("player")
-	if not players.is_empty():
-		dash_direction = (players[0].global_position - global_position).normalized()
-	else:
-		dash_direction = Vector2.RIGHT
+	var player: Node2D = GameManager.player
+	dash_direction = (player.global_position - global_position).normalized() if player != null else Vector2.RIGHT
 
 func _start_dash() -> void:
 	state = State.DASH
 	state_elapsed = 0.0
 	sprite.modulate = Color.WHITE
 
+# Plays the dash cycle above forward instead of assuming a straight walk
+# (Zombie.predict_position()): a tank that is telegraphing stands still
+# and then covers dash_speed * dash_duration (380px) along dash_direction,
+# which a walk at its 30px/s base speed puts nowhere near - grenades led
+# that way landed where no tank would be. A dash due to start inside the
+# window (dash_timer running out mid-chase) is played out too, aimed at
+# `player_pos` since that is where _start_telegraph() would aim it.
+# dash_interval (8s) is far longer than any lead time, so at most one
+# cycle is ever in the window.
+func predict_position(lead_time: float, player_pos: Vector2) -> Vector2:
+	var pos: Vector2 = global_position
+	var t: float = 0.0
+	match state:
+		State.CHASE:
+			var chase_until: float = minf(dash_timer, lead_time)
+			pos = _predict_chase(pos, player_pos, t, chase_until)
+			t = chase_until
+			if t < lead_time:
+				t = minf(t + telegraph_time, lead_time)
+				var dash_until: float = minf(t + dash_duration, lead_time)
+				pos = _predict_dash(pos, (player_pos - pos).normalized(), t, dash_until)
+				t = dash_until
+		State.TELEGRAPH:
+			t = minf(maxf(telegraph_time - state_elapsed, 0.0), lead_time)
+			var dash_until: float = minf(t + dash_duration, lead_time)
+			pos = _predict_dash(pos, dash_direction, t, dash_until)
+			t = dash_until
+		State.DASH:
+			var dash_until: float = minf(maxf(dash_duration - state_elapsed, 0.0), lead_time)
+			pos = _predict_dash(pos, dash_direction, t, dash_until)
+			t = dash_until
+	# Whatever is left of the window is spent chasing again.
+	return _predict_chase(pos, player_pos, t, lead_time)
+
+# The dash leg: straight along `direction` at dash_speed (slowed like the
+# real dash in _process()) between `from_now` and `until` seconds ahead,
+# through the player if that is where it leads - a dash never stops short.
+func _predict_dash(pos: Vector2, direction: Vector2, from_now: float, until: float) -> Vector2:
+	return pos + direction * _predicted_travel(dash_speed, from_now, until)
+
 func _drop_loot() -> void:
-	var gem = red_xp_gem_scene.instantiate()
-	get_parent().add_child(gem)
-	gem.global_position = global_position
+	XPGemScript.spawn(red_xp_gem_scene, get_parent(), global_position)

@@ -1,30 +1,27 @@
-extends Node2D
+extends "res://scripts/WeaponCaster.gd"
 
 # Child of Player (sibling of Forcefield/TornadoCaster/GrenadeCaster).
 # On a fixed cooldown, launches Fireball.tscn at the nearest enemies -
 # slow, heavy shots that explode on impact (see Fireball.gd). Inactive
-# until the "fireball" weapon has been picked at least once (level > 0).
-# Every 3rd level (see GameManager.level_up_weapon()) fires an extra
-# fireball at the next-nearest enemy per cooldown, via projectile_count,
-# same as the Laser Pistol. The weapon's "speed" stat is projectile
-# speed (that's what levels up), not fire rate, hence the constant.
+# until the "fireball" weapon has been picked at least once (level > 0);
+# the cooldown gate is WeaponCaster.gd's. Every 3rd level (see
+# GameManager.level_up_weapon()) fires an extra fireball at the
+# next-nearest enemy per cooldown, via projectile_count, same as the
+# Laser Pistol. The weapon's "speed" stat is projectile speed (that's
+# what levels up), not fire rate, hence the constant.
 
 @export var fireball_scene: PackedScene = preload("res://scenes/Fireball.tscn")
 const COOLDOWN := 1.2
 
-var cast_timer: float = 0.0
+func _init() -> void:
+	weapon_id = "fireball"
 
-func _process(delta: float) -> void:
-	if GameManager.is_paused_for_upgrade:
-		return
-	var stats: Dictionary = GameManager.weapons["fireball"]
-	if stats["level"] <= 0:
-		return
+func _cast(stats: Dictionary) -> bool:
+	_try_launch(stats)
+	return true
 
-	cast_timer -= delta
-	if cast_timer <= 0.0:
-		_try_launch(stats)
-		cast_timer = COOLDOWN * GameManager.get_cooldown_mult()
+func _cooldown(_stats: Dictionary) -> float:
+	return COOLDOWN
 
 func _try_launch(stats: Dictionary) -> void:
 	var enemies := get_tree().get_nodes_in_group("enemies")

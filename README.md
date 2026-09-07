@@ -1,22 +1,25 @@
-# The Dungeons of Mythvolt (Godot 4.3)
+# The Dungeons of Mythvolt (Godot 4.7)
 
 A Vampire Survivors–style auto-battler survival game. Move with
 WASD or arrow keys. The Knight starts with the Sword (a slash at the
 nearest enemy that flies on and cleaves through whatever it passes -
-`starting_weapon` in `CHARACTER_DEFS`); kill Goblins to drop XP gems,
-and level up to
-pick from 3 weapon choices — leveling up a weapon you already own
-boosts its damage/size/speed, and picking the Forcefield for the
-first time unlocks it (an aura that ticks damage to enemies around
-you). Don't like the three on offer? The Reroll button under them
-swaps in new ones: the first reroll of a run is free, the next costs
-50 coins and the price doubles with every reroll after that
-(`GameManager.reroll_upgrades()`; the counter resets each run).
-Once every slot is full and everything you hold is maxed, level-ups
-offer two consolation picks instead of nothing: a Small Heal (25% of
-max HP) or a Coin Bonus (+25 gold) - `FALLBACK_DEFS` in
-`GameManager.gd`, applied by `_apply_fallback()`; rerolls and bans
-don't apply to that panel.
+`starting_weapon` in `CHARACTER_DEFS`); kill Zombies to drop XP gems,
+and level up to pick from 3 weapon or passive choices — leveling up a
+weapon you already own boosts its damage/size/speed (to a cap of level
+12), picking a weapon for the first time unlocks it (the Laser Pistol,
+Forcefield, Tornado, Grenade, Fireball and Mjolnir - see the weapon
+notes below), and a passive (Attraction Tome, Power Emblem, Wisdom
+Orb, Vitality Elixir, Lucky Coin, Hourglass, Heavy Club, Haste
+Crystal) boosts a stat of yours instead. Don't like the three on
+offer? The Reroll button under them swaps in new ones: the first
+reroll of a run is free, the next costs 50 coins and the price doubles
+with every reroll after that (`GameManager.reroll_upgrades()`; the
+counter resets each run). Once every slot is full and everything you
+hold is maxed, level-ups offer two consolation picks instead of
+nothing: a Small Heal (25% of max HP) or a Coin Bonus (a flat 25 gold,
+paid through `add_flat_coins()` so no gold multiplier changes the
+number on the card) - `FALLBACK_DEFS` in `GameManager.gd`, applied by
+`_apply_fallback()`; rerolls and bans don't apply to that panel.
 Every 10th kill also drops a coin, and once in a thousand kills a
 Gold Dream power-up (`GoldDreamPickup.tscn`, as rare as the Magnet):
 pick it up and for 10 seconds every kill drops a coin and gold is
@@ -24,13 +27,14 @@ worth double (`GameManager.activate_gold_dream()`; the HUD counts it
 down beside the coin total) — coins persist across runs
 (and across closing the game) and can be spent in the main menu's
 Upgrades screen on permanent bonuses. Starting at 1:30 into a run, a
-Minotaur — a slow, 300 HP enemy with a periodic dash attack — shows
-up in place of a Goblin roughly once every 25 spawns, and drops a
-red gem worth 5 XP instead of the usual green one. Survive as long
-as you can.
+Tank Zombie — a slow, 300 HP enemy with a periodic dash attack — takes
+every 25th spawn and drops a red gem worth 5 XP instead of the usual
+green one; Skeletons (60 HP, two gems) replace Zombies from 1:45 and
+Slimes (500 HP, blue 3 XP gems) take over from 8:00 - see the
+difficulty notes below. Survive as long as you can.
 
 ## How to run
-1. Open Godot 4.3+ (or later 4.x — should still work).
+1. Open Godot 4.7 (`project.godot` targets 4.7 with the GL Compatibility renderer).
 2. "Import" this folder, selecting `project.godot`.
 3. Press F5 (or the Play button). `MainMenu.tscn` is set as the main scene.
 
@@ -41,27 +45,56 @@ scenes/
   MainMenu.tscn     - entry point: Play / Settings / Upgrades / Saves (+ Quit, Unlocks)
   RunSetup.tscn     - character select then map select (two SelectPage.tscn
                       instances of SelectCard.tscn cards), then Main.tscn
-  Main.tscn        - root gameplay scene: Player + EnemySpawner + HUD
-  Player.tscn       - CharacterBody2D, movement + auto-fire weapon
-  Goblin.tscn       - Area2D, base enemy: chases player, contact damage
-  Minotaur.tscn     - Area2D extending Goblin: 300 HP, half speed, dash attack
-  Projectile.tscn   - Area2D, fired at nearest enemy
-  XPGem.tscn        - Area2D, magnets to player, grants 1 XP (green)
-  RedXPGem.tscn     - same script as XPGem, Minotaur's drop, grants 5 XP (red)
-  BlueXPGem.tscn    - same script again, the Slime's drop, grants 3 XP (blue)
+  Main.tscn         - root gameplay scene: Background + BossTotem + Player + EnemySpawner + HUD
+  BossTotem.tscn    - Area2D: the pillar 5 minutes' walk left of spawn; press E to
+                      summon the Ancient Keeper (one-shot)
+  AncientKeeper.tscn - the summonable boss (AncientKeeper.gd extends Zombie.gd):
+                      7500 HP, 2/3 Zombie speed, CC-immune, rock slam attack
+  RockSlam.tscn     - the slam's ground marker + eruption (RockSlam.gd)
+  Player.tscn       - CharacterBody2D, movement + the Laser Pistol's auto-fire,
+                      with the Forcefield and one caster node per other weapon
+                      under it (SwordCaster, TornadoCaster, GrenadeCaster,
+                      FireballCaster, MjolnirCaster)
+  Zombie.tscn       - Area2D, base enemy: chases player, contact damage (20 HP)
+  TankZombie.tscn   - Area2D extending Zombie: 300 HP, half speed, dash attack
+  Skeleton.tscn     - Zombie.gd with scene-tuned stats: 60 HP, drops two gems
+  Slime.tscn        - Zombie.gd again: 500 HP, slow, drops a blue gem
+  Reaper.tscn       - the 15:01 finale (Reaper.gd extends Zombie.gd)
+  Projectile.tscn   - Area2D, the Laser Pistol's shot
+  Fireball.tscn     - Area2D, the Fireball's shot (explodes on impact)
+  Grenade.tscn      - Area2D, lobbed, one blast after a fuse
+  Tornado.tscn      - Area2D, wandering AoE zone that ticks damage
   MjolnirHammer.tscn - Mjolnir's thrown hammer (Area2D, MjolnirHammer.gd); its
                       lightning is code-drawn by LightningChain.gd
+  XPGem.tscn        - Area2D, magnets to player, grants its xp_value (1 by default);
+                      colour/size come from the value's tier (see XPGem.gd TIERS)
+  RedXPGem.tscn     - XPGem.tscn inherited with xp_value 5, the Tank Zombie's drop
+  BlueXPGem.tscn    - XPGem.tscn inherited with xp_value 3, the Slime's drop
   CoinPickup.tscn   - Area2D, magnets to player, grants a coin
-  DamageNumber.tscn - floating text popup on hit, drifts up and fades
+  MagnetPickup.tscn - rare drop: pulls every gem and coin on the field in
+  GoldDreamPickup.tscn - rare drop: 10 seconds of double gold and a coin per kill
+  DamageNumber.tscn - floating text popup on hit, drifts up and fades (pooled)
+  DeathBurst.tscn   - one-shot particle burst at a corpse
   IconSlot.tscn     - one box in the run-collection grid: border + icon, dimmed until acquired
   HUD.tscn          - HP/XP/coin display, weapon/passive collection grid,
-                       level-up panel, pause panel, game over panel
+                       level-up panel, pause panel, game over panel, the boss
+                       HP bar (top centre while a boss lives) and the totem
+                       pointer (TotemPointer.gd)
 scripts/
   GameManager.gd    - autoload singleton: XP, level, run timer,
-                       weapon stats (WEAPON_DEFS), kill count, coins
-                       and permanent upgrades (PERMANENT_UPGRADE_DEFS),
-                       save/load to disk
-  MainMenu.gd, Player.gd, ForcefieldWeapon.gd, Goblin.gd, Minotaur.gd, Projectile.gd, XPGem.gd, CoinPickup.gd, DamageNumber.gd, EnemySpawner.gd, IconSlot.gd, WeaponIcon.gd, Main.gd, HUD.gd
+                       weapon stats (WEAPON_DEFS), passives (PASSIVE_DEFS),
+                       kill count, coins and permanent upgrades
+                       (PERMANENT_UPGRADE_DEFS), save/load to disk, and the
+                       cached `player` reference everything reads
+  WeaponCaster.gd   - shared base for the caster nodes: the cooldown gate
+  MainMenu.gd, RunSetup.gd, SelectPage.gd, SelectCard.gd, Main.gd, Background.gd,
+  Player.gd, EnemySpawner.gd, Zombie.gd, TankZombie.gd, Reaper.gd,
+  BossTotem.gd, AncientKeeper.gd, RockSlam.gd, TotemPointer.gd,
+  SwordCaster.gd, Slash.gd, ForcefieldWeapon.gd, TornadoCaster.gd, Tornado.gd,
+  GrenadeCaster.gd, Grenade.gd, FireballCaster.gd, Fireball.gd, ExplosionFlash.gd,
+  MjolnirCaster.gd, MjolnirHammer.gd, LightningChain.gd, Projectile.gd,
+  XPGem.gd, CoinPickup.gd, MagnetPickup.gd, GoldDreamPickup.gd,
+  DamageNumber.gd, DeathBurst.gd, IconSlot.gd, WeaponIcon.gd, HUD.gd
 allassets/
   Third-party art and audio packs, one folder per pack. The original DG /
   Dungeon Gathering / Pixel Dungeon packs sit at the top level; the packs
@@ -93,10 +126,14 @@ bottom-right corner and opens a panel listing every `UNLOCK_DEFS`
 achievement (condition, reward, and Locked/Unlocked for the active
 save - rows built by `MainMenu._build_unlock_rows()`).
 
-All visuals are drawn with `_draw()` as plain colored circles
-(blue = player, red = enemy, yellow = projectile, green = gem) so
-there are zero external art dependencies — swap in real sprites by
-replacing the `_draw()` calls with a `Sprite2D` child.
+Sprites come from the packs under `allassets/` (see that folder's note
+in the tree above): every enemy and the player are `AnimatedSprite2D`s
+with 4-direction walk cycles (`Zombie._facing_animation()` picks the
+frame set from the direction to the player, with hysteresis so a
+diagonal approach doesn't flicker), pickups and icons are single
+frames, and the effects with no fitting art - the Tornado, Slash,
+Grenade, lightning, explosion flash, Magnet and Gold Dream halos - are
+still drawn in code with `_draw()`.
 
 ## Design notes / why it's built this way
 
@@ -109,7 +146,8 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `WEAPON_DEFS` is a static table (base stats + per-level flat
   gains); `weapons[id]` holds the *live* stats for an owned weapon
   (`level`, `damage`, `size`, `speed`). Leveling up just adds the
-  `gain` amounts to the current stats — no min/max caps yet. Every
+  `gain` amounts to the current stats, up to each weapon's `max_level`
+  (12 for all of them), after which `_upgrade_pool()` stops offering it. Every
   weapon starts a run at `level == 0` ("not yet owned") except the
   selected character's `starting_weapon` (`CHARACTER_DEFS`; the
   Knight's is the Sword), which `_init_weapons()` sets to level 1;
@@ -117,8 +155,8 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   to level 1 and activates it.
   - **Laser Pistol** (`Player.try_fire()`): `damage` per hit, `size`
     is the projectile's radius (collision + visuals), `speed` is
-    projectile travel speed. Fire rate is a fixed 0.6s cooldown —
-    nothing currently upgrades attack speed. It also has a
+    projectile travel speed. Fire rate is a fixed 0.6s cooldown
+    times `get_cooldown_mult()` (see Cooldown below). It also has a
     `projectile_count` stat (not in `gain` - handled as a special
     case in `level_up_weapon()`) that goes up by 1 every 3rd level
     (3, 6, 9, ...). Each shot targets a *different* nearby enemy:
@@ -129,7 +167,36 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     Player): `damage` per tick to everything overlapping it,
     `size` is the ring's radius, `speed` is ticks-per-second
     (`1.0 / speed` = seconds between ticks). No projectile count -
-    the every-3-levels bonus is exclusive to the Laser Pistol.
+    it's the one weapon `get_projectile_count()` doesn't apply to.
+  - **Tornado** (`TornadoCaster.gd`, a child of Player): on a cooldown
+    (`speed` is casts per second, 10s at level 1) drops a `Tornado.tscn`
+    on the nearest enemy - a vortex of radius `size` that wanders in a
+    slow random walk for its `duration` (2.5s, times
+    `get_duration_mult()`), ticks `damage` every 0.4s to everything
+    overlapping it and drags those enemies toward its centre so they
+    stay caught as it drifts (Tank Zombies are too heavy to drag and are
+    slowed instead - `Zombie.apply_slow()`). `projectile_count` (+1
+    every 3rd level) casts on the next-nearest enemies too.
+  - **Grenade** (`GrenadeCaster.gd`, a child of Player): on a long
+    cooldown (15s at level 1 down to 2s at 12; `speed` is casts per
+    second) lobs a `Grenade.tscn` that flies at 600 px/s, sits through a
+    1s fuse and explodes once for `damage` to everything within `size`
+    (35 damage at level 1, 200 at 12). Unlike every other weapon it
+    doesn't aim at the nearest enemy: it asks each enemy where it will
+    be when the blast goes off (`Zombie.predict_position()`, which
+    `TankZombie` overrides to play its telegraph and dash out first) and
+    throws at the densest cluster of those predicted positions, scored
+    through a spatial hash of blast-radius cells so a late-run crowd
+    doesn't cost n² distance checks per throw. `projectile_count` (+1
+    every 3rd level) throws at the next-densest cluster as well.
+  - **Fireball** (`FireballCaster.gd`, a child of Player): on a fixed
+    1.2s cooldown launches `Fireball.tscn` at the nearest enemies, slow
+    (`speed` is its travel speed, 100 px/s at level 1) and heavy: on
+    touching an enemy, or after 3s, it explodes - `damage` to what it
+    hit, then 60% of that to everything within 3.75x its `size`
+    (`Fireball.BLAST_RADIUS_MULT`/`BLAST_DAMAGE_MULT`), with an
+    `ExplosionFlash`. `projectile_count` (+1 every 3rd level) fires at
+    the next-nearest enemies too.
   - **Sword** (`SwordCaster.gd`, a child of Player): once its
     cooldown is up it waits for the nearest enemy to come within the
     slash's depth (`size`, its reach, plus its flight), then spawns a
@@ -162,6 +229,15 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     with the permanent Damage upgrade and Power Emblem both maxed
     hits for exactly 120. Its level-up text uses `size_label`
     ("chain range") in place of "size".
+  - **Every caster shares one loop.** `WeaponCaster.gd` is the base of
+    SwordCaster/TornadoCaster/GrenadeCaster/FireballCaster/MjolnirCaster:
+    it skips the level-up pause, does nothing until the weapon is owned
+    (level > 0), counts the cooldown down and, when `_cast()` reports it
+    fired, reloads it with `_cooldown()` (1 / `speed` unless overridden -
+    Fireball and Mjolnir use a constant) times `get_cooldown_mult()`. A
+    caster that finds nothing to hit returns false from `_cast()` to
+    keep the cooldown ready (the Sword). The Forcefield is an `Area2D`
+    that ticks rather than casts, so it keeps its own loop.
   - **Duration** is a stat like damage: `get_duration_mult()` is
     1 + the permanent Duration upgrade (+10%/level to +50%) + the
     Hourglass passive (+10%/level to +50%), ADDED like gold gain
@@ -173,6 +249,20 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     passive (+10%/level to +50%), added, so both maxed is exactly x2
     the shove distance. Only the sword's slash has a `knockback` stat
     so far; any weapon can add one and call `apply_knockback()`.
+  - **Passives** (`PASSIVE_DEFS`) sit in the same level-up pool as
+    weapons but drive one player-level stat in `GameManager` each,
+    `base + level * per_level_value`, five levels: **Attraction Tome**
+    (`pickup_range_mult`, +30%/level: the 60px range at which gems,
+    coins and the rare pickups start homing to you, read by
+    `XPGem.gd`/`CoinPickup.gd`/`MagnetPickup.gd`/`GoldDreamPickup.gd`),
+    **Power Emblem** (`damage_mult`, +20%/level, multiplied into
+    `get_damage_mult()`), **Wisdom Orb** (`xp_mult`, +10%/level),
+    **Vitality Elixir** (`regen_bonus`, +0.2 HP/sec/level), **Lucky Coin**
+    (`coin_gain_bonus`, +10%/level), **Hourglass** (`duration_bonus`),
+    **Heavy Club** (`knockback_bonus`) and **Haste Crystal**
+    (`attack_speed_bonus`), the last four added to their permanent
+    upgrade as described above. A new passive is a def entry naming an
+    existing (or new) `GameManager` var plus an `ICON_TEXTURES` entry.
 - **Icons come from one script.** `WeaponIcon.gd` is a `Control`
   keyed by an `icon_id` string (the exact keys used in
   `GameManager.weapons`/`.passives`): ids in its `ICON_TEXTURES`
@@ -212,11 +302,13 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   Project Settings. If you want gamepad support, this is the first
   place to add it.
 - **Difficulty ramps via spawn rate**, not per-enemy stats scaling
-  over time. Each Goblin/Minotaur always spawns at its scene's fixed
+  over time. Each enemy always spawns at its scene's fixed
   base `max_hp`/`speed` — the only thing that changes with time is
   how often `EnemySpawner.gd` spawns one
   (`initial_interval - game_time * 0.01`, floored at 0.15s), and
-  which: the surge from 6:00 halves the interval (double the rate),
+  which: Tank Zombies take every 25th spawn from 1:30
+  (`TANK_ZOMBIE_START_TIME`), Skeletons ramp in over 1:45-2:15 to
+  replace Zombies as the base chaser, the surge from 6:00 halves the interval (double the rate),
   and from 8:00 Slimes (`Slime.tscn`, 500 HP, slow, reusing
   `Zombie.gd` with the Slimes Pack bounce frames for every facing)
   take over the base chaser slot entirely - Skeletons stop spawning
@@ -234,21 +326,75 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   speed, 1000 contact damage, immune to knockback and slows) runs the
   player down. It is a placeholder finale to be pushed later once
   there is more game to survive.
-- **Minotaur extends Goblin via GDScript inheritance**
-  (`extends "res://scripts/Goblin.gd"`), not a from-scratch script.
-  `Goblin.gd` splits its behavior into small overridable pieces
-  (`_move_toward_player()`, `_update_contact_damage()`,
-  `_drop_loot()`) specifically so `Minotaur.gd` can replace movement
-  with a dash state machine (`CHASE` → `TELEGRAPH` → `DASH`, calling
-  `super._ready()` to still get the base HP/group-membership setup)
-  and replace `_drop_loot()` to spawn a `RedXPGem` instead, while
-  reusing `take_damage()`/`die()`/contact-damage/damage-numbers/coin-
-  drops unchanged. `EnemySpawner.gd` decides which scene to
-  instantiate per spawn: Goblin by default, Minotaur once
-  `game_time >= 90.0` (1:30) and `enemies_spawned % 25 == 0`.
-  `XPGem.gd` similarly got `gem_color`/`gem_radius` exports so
-  `RedXPGem.tscn` could reuse the exact same script instead of a
-  near-duplicate one.
+- **Every enemy is `Zombie.gd`.** `Zombie.gd` splits its behavior into
+  small overridable pieces (`_move_toward_player()`, `_update_facing()`,
+  `_update_contact_damage()`, `_drop_loot()`, `predict_position()`) so
+  variants can replace just what differs. `TankZombie.gd` extends it via
+  GDScript inheritance (`extends "res://scripts/Zombie.gd"`) to swap
+  movement for a dash state machine (`CHASE` → `TELEGRAPH` → `DASH`,
+  calling `super._ready()` to still get the base HP/group-membership
+  setup), to drop a `RedXPGem` instead, and to tell the Grenade where
+  the dash will put it; `Reaper.gd` extends it to refuse knockback and
+  slows; Skeleton and Slime don't need a script of their own at all -
+  their scenes attach `Zombie.gd` with different exported stats and
+  frames. All of them reuse `take_damage()`/`die()`/contact-damage/
+  damage-numbers/coin-drops unchanged. `EnemySpawner.gd` decides which
+  scene to instantiate per spawn (see the difficulty notes above).
+  `XPGem.gd` similarly keys everything off one `xp_value` export:
+  `RedXPGem.tscn`/`BlueXPGem.tscn` are inherited scenes that only
+  change that number, and the gem's colour and size follow from it.
+- **The Ancient Keeper is summoned, not scheduled.** `BossTotem.tscn`
+  sits in `Main.tscn` five minutes of base-speed walking
+  (`WALK_MINUTES * 60 * Player.base_speed`, so 42,000px) straight left
+  of the spawn point, drawn under the sprites (it comes right after
+  `Background` in the tree). Walk into its ring and press E
+  (`_unhandled_input`, one shot) to spawn `AncientKeeper.tscn` 260px
+  away. `AncientKeeper.gd` extends `Zombie.gd`: 7500 HP, speed 40 (2/3
+  of a Zombie), 35 contact damage, immune to knockback and slows like
+  the Reaper, and a `CHASE` → `CHARGE` state machine for its **rock
+  slam**: every 4-5s (trigger to trigger, rolled fresh each time) with
+  the player within 600px it stops, tints red and charges for 1.5s
+  while `RockSlam.tscn` draws a red ring on the ground at the player's
+  *predicted* position (`player.global_position + player.velocity *
+  1.5`) with an inner fill that grows to meet the ring as the slam
+  lands; at 1.5s the floor there erupts (the background's own prop
+  rocks popped up and faded) and the player takes 45 if still inside.
+  The ring's radius is 55% of the ground the player can cover during
+  the telegraph (`0.55 * base_speed * speed_mult * 1.5`, clamped to
+  60-220px - 115px at base speed), which is what makes it a dodge
+  rather than a coin flip: keep running and you arrive dead centre,
+  stop or turn the instant it appears and you clear it, react late and
+  it lands. `predict_position()` tells the Grenade the boss stands
+  still for the rest of a charge. It drops one purple gem worth 250 XP
+  and one 500-coin pile (a single `CoinPickup` at 2x with
+  `coin_value = 500`, so Gold Gain/Lucky Coin apply as to any coin).
+  The HUD does two things for it: `TotemPointer.gd` (a Control filling
+  the HUD layer) draws an arrow orbiting the player, aimed at the
+  totem, with the walk time left under it - hidden within 420px of the
+  totem and for good once it's used - and a top-centre bar
+  (`BossBar`/`BossLabel`, driven from `HUD._process()` off the
+  `bosses` group) shows the boss's name and current / max HP while it
+  is alive.
+- **XP gems are capped at 100 on the field.** `XPGem.spawn()` is the
+  one way enemies drop a gem (`Zombie._drop_loot()`,
+  `TankZombie._drop_loot()`). Past `MAX_GEMS` it folds the new drop's
+  value into the nearest existing gem (`add_value()`) instead of adding
+  another node that would home and distance-check every frame - a late
+  horde drops gems far faster than they get picked up. Nothing is lost:
+  the receiving gem's value goes up by exactly the folded amount, and
+  its look follows its value through the `TIERS` table (green 1, blue
+  3, red 5, gold 15, silver 50, purple 250 - orb rows of the same
+  `All Orbs anim 16x16.png` sheet, scaled up per tier), so a gem that
+  has absorbed a crowd reads as the bigger prize it is. The boss drop
+  is placed directly rather than through `spawn()` so the cap can't
+  fold it into a stray gem.
+- **The player is looked up once.** `Player._ready()` stores itself in
+  `GameManager.player` (and `_exit_tree()` clears it), and every
+  per-frame "where is the player" - each enemy's chase and facing, each
+  pickup's homing check, the spawner, the background, the HUD's HP bar
+  - reads that field instead of `get_nodes_in_group("player")`, which
+  built a fresh Array per caller per frame. The `player` group still
+  exists for the `is_in_group()` checks in `body_entered` handlers.
 - **Coins and permanent upgrades are real save data**, not just
   in-memory state. `GameManager.coins`, `.permanent_upgrades`,
   `.show_damage_numbers`, `.is_fullscreen` and `.fps_cap` are
@@ -265,9 +411,11 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   plus on death, run start, slot switch/delete, purchase and quit, so a
   Magnet pulling in dozens of coins in one tick doesn't do dozens of
   file writes. Everything is reloaded once in `GameManager._ready()`;
-  loaded values are type-checked and clamped (a hand-edited or
-  half-written file can't put an upgrade above `max_level` or break
-  the menu). The pre-slot `user://save_data.json` is migrated into
+  loaded values are type-checked and clamped by
+  `_clamped_upgrades()` (a hand-edited or half-written file can't put
+  an upgrade above `max_level` or break the menu), and the Saves
+  picker's per-slot summary reads through the same clamp, so it can't
+  show a total the slot can't actually have. The pre-slot `user://save_data.json` is migrated into
   `settings.json` + slot 1 the first time this build runs (gated on
   `settings.json` not existing yet) and then left in place untouched
   as a backup. `PERMANENT_UPGRADE_DEFS` follows the same
@@ -275,8 +423,8 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   has a `costs` array (cost of each level), a `max_level`, and the
   `stat_label`/`format` keys `format_bonus()` uses to write the bonus
   ("+10%", "+0.2" or "+1", the same formatter the level-up cards use for
-  passives). Every 10th kill (`Goblin.gd`, checking
-  `enemies_defeated % 10` - Minotaur inherits this unchanged) drops a
+  passives). Every 10th kill (`Zombie.die()`, checking
+  `enemies_defeated % 10` - every enemy inherits it) drops a
   `CoinPickup` — same magnet/pickup code as `XPGem`, just paying out
   `GameManager.add_coins()` instead of `add_xp()`.
   - There are twelve permanent upgrades right now, all `level *
@@ -367,26 +515,27 @@ replacing the `_draw()` calls with a `Sprite2D` child.
 
 ## Where to go from here
 
-- **More weapons**: add an entry to `WEAPON_DEFS` in `GameManager.gd`
-  plus the actual firing/damage behavior (a new script, similar to
-  `ForcefieldWeapon.gd` or `Player.try_fire()`), a case in
-  `WeaponIcon.gd`, and point one of the empty `WeaponSlot3-6` nodes
-  in `HUD.tscn` at its id. The level-up pool already scales to any
-  number of weapons — it always offers up to 3 random ones.
-- **Weapon caps / evolutions**: right now weapons level up forever
-  with no cap and no "evolved form" at max level (unlike VS's weapon
-  evolutions). Add a `max_level` to `WEAPON_DEFS` and filter it out
-  of `offer_upgrades()` once reached.
-- **More enemy types**: follow the Minotaur pattern - a new script
-  `extends "res://scripts/Goblin.gd"` overriding whatever's
-  different, plus a scene with tuned `speed`/`max_hp`. Right now
-  `EnemySpawner.gd` has Minotaur's spawn condition hardcoded
-  (`game_time >= 90.0 and enemies_spawned % 25 == 0`); with 3+ enemy
-  types you'll likely want a weighted/unlock-over-time pool instead
-  of hardcoded per-type conditions.
-- **Game feel**: hit-flash (swap `modulate` briefly on
-  `take_damage`), screen shake on player hit, a particle burst on
-  enemy death.
+`TODO.md` is the live queue. The structural notes:
+
+- **More weapons**: add an entry to `WEAPON_DEFS` in `GameManager.gd`,
+  a caster script extending `WeaponCaster.gd` (set `weapon_id` in
+  `_init()`, implement `_cast()`, override `_cooldown()` if the rate
+  isn't the `speed` stat) as a child node of `Player.tscn`, and an
+  `ICON_TEXTURES` entry in `WeaponIcon.gd`. The level-up pool and the
+  collection grid scale to any number of weapons on their own; give
+  it a `projectile_count` base stat and `get_projectile_count()` (the
+  every-3rd-level bonus plus the permanent upgrade) applies to it too.
+- **Weapon evolutions**: every weapon caps at `max_level` 12 but
+  nothing happens at the cap yet (unlike VS's weapon evolutions) - a
+  weapon-plus-passive-at-max evolved form is the standard hook.
+- **More enemy types**: a scene attaching `Zombie.gd` with tuned
+  `speed`/`max_hp`/`contact_damage`/`xp_gem_count` (the Skeleton and
+  Slime pattern), or a script `extends "res://scripts/Zombie.gd"`
+  overriding whatever's different (the Tank Zombie pattern; override
+  `predict_position()` too if it doesn't just walk at the player).
+  `EnemySpawner.gd` picks the scene per spawn with hand-written time
+  conditions; with many more types a weighted/unlock-over-time pool
+  would read better than more `if`s.
 - **More permanent upgrades**: add an entry to
   `PERMANENT_UPGRADE_DEFS` in `GameManager.gd` (display info,
   `stat_label` and, unless it's a percentage, `"format": "flat"` or
@@ -400,7 +549,7 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   every enemy in `_process` with a real node each frame becomes the
   bottleneck. The next step is `MultiMeshInstance2D` for rendering
   and a flat array (no per-enemy nodes) for position/health, with
-  manual broad-phase collision (e.g. a spatial hash grid).
-- **Background**: currently just black. A simple repeating
-  `TextureRect`/`ParallaxBackground` or `TileMapLayer` under the
-  action goes a long way visually.
+  manual broad-phase collision (e.g. a spatial hash grid like the
+  one `GrenadeCaster._pick_cluster_targets()` already uses).
+- **Sound and music**: nothing is wired up; the Master Volume slider
+  only sets the bus. `allassets/Sound Effects/` has OGGs.

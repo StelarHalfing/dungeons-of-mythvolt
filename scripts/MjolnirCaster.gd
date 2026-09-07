@@ -1,31 +1,28 @@
-extends Node2D
+extends "res://scripts/WeaponCaster.gd"
 
 # Child of Player (sibling of the other casters). On a fixed cooldown,
 # hurls MjolnirHammer.tscn at the nearest enemies: each hammer homes in
 # on its target, and where it lands a LightningChain leaps on to nearby
 # enemies (see MjolnirHammer.gd / LightningChain.gd). Inactive until the
-# "mjolnir" weapon has been picked (level > 0). The weapon's "speed" is
-# the hammer's flight speed, "size" is how far each lightning jump can
-# reach, "chains" is how many jumps a strike makes (+1 every 3rd level)
-# and "projectile_count" is hammers per throw, one per nearest enemy
-# (+1 at levels 6 and 12 - see GameManager.level_up_weapon()).
+# "mjolnir" weapon has been picked (level > 0); the cooldown gate is
+# WeaponCaster.gd's. The weapon's "speed" is the hammer's flight speed,
+# "size" is how far each lightning jump can reach, "chains" is how many
+# jumps a strike makes (+1 every 3rd level) and "projectile_count" is
+# hammers per throw, one per nearest enemy (+1 at levels 6 and 12 - see
+# GameManager.level_up_weapon()).
 
 @export var hammer_scene: PackedScene = preload("res://scenes/MjolnirHammer.tscn")
 const COOLDOWN := 1.4
 
-var cast_timer: float = 0.0
+func _init() -> void:
+	weapon_id = "mjolnir"
 
-func _process(delta: float) -> void:
-	if GameManager.is_paused_for_upgrade:
-		return
-	var stats: Dictionary = GameManager.weapons["mjolnir"]
-	if stats["level"] <= 0:
-		return
+func _cast(stats: Dictionary) -> bool:
+	_try_throw(stats)
+	return true
 
-	cast_timer -= delta
-	if cast_timer <= 0.0:
-		_try_throw(stats)
-		cast_timer = COOLDOWN * GameManager.get_cooldown_mult()
+func _cooldown(_stats: Dictionary) -> float:
+	return COOLDOWN
 
 func _try_throw(stats: Dictionary) -> void:
 	var enemies := get_tree().get_nodes_in_group("enemies")

@@ -7,6 +7,10 @@ extends CanvasLayer
 @onready var coins_label: Label = $CoinsLabel
 # Countdown shown beside the coin counter while a Gold Dream is running.
 @onready var gold_dream_label: Label = $GoldDreamLabel
+# Top centre, under the clock, while a boss (the "bosses" group - see
+# AncientKeeper.gd) is alive: its name and current / max HP.
+@onready var boss_bar: ProgressBar = $BossBar
+@onready var boss_label: Label = $BossLabel
 @onready var upgrade_panel: Panel = $UpgradePanel
 @onready var upgrade_buttons: Array = [
 	$UpgradePanel/VBoxContainer/ScrollContainer/ButtonList/Button1,
@@ -153,11 +157,19 @@ func _process(_delta: float) -> void:
 	gold_dream_label.visible = GameManager.is_gold_dream_active()
 	if gold_dream_label.visible:
 		gold_dream_label.text = "Gold Dream %.1fs" % GameManager.gold_dream_timer
-	var players := get_tree().get_nodes_in_group("player")
-	if not players.is_empty():
-		var player = players[0]
+	var player: Node2D = GameManager.player
+	if player != null:
 		hp_bar.max_value = player.max_hp
 		hp_bar.value = player.hp
+
+	var boss: Node = get_tree().get_first_node_in_group("bosses")
+	var boss_alive: bool = boss != null and not boss.is_dead
+	boss_bar.visible = boss_alive
+	boss_label.visible = boss_alive
+	if boss_alive:
+		boss_bar.max_value = boss.max_hp
+		boss_bar.value = maxf(boss.hp, 0.0)
+		boss_label.text = "%s  %d / %d" % [boss.boss_name, ceili(maxf(boss.hp, 0.0)), int(boss.max_hp)]
 
 func _on_xp_changed(current: int, needed: int) -> void:
 	xp_bar.max_value = needed

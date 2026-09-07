@@ -95,10 +95,9 @@ func _surge_interval_mult() -> float:
 	return lerp(first, SECOND_SURGE_INTERVAL_MULT, second_in)
 
 func spawn_enemy() -> void:
-	var players := get_tree().get_nodes_in_group("player")
-	if players.is_empty():
+	var player: Node2D = GameManager.player
+	if player == null:
 		return
-	var player: Node2D = players[0]
 	var angle: float = randf() * TAU
 	var pos: Vector2 = player.global_position + Vector2.RIGHT.rotated(angle) * spawn_radius
 
@@ -129,12 +128,12 @@ func _summon_reaper() -> void:
 	reaper_summoned = true
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		enemy.queue_free()
-	var players := get_tree().get_nodes_in_group("player")
-	if players.is_empty():
+	var player: Node2D = GameManager.player
+	if player == null:
 		return
 	var reaper = reaper_scene.instantiate()
 	get_parent().add_child(reaper)
-	reaper.global_position = players[0].global_position + Vector2.RIGHT.rotated(randf() * TAU) * spawn_radius
+	reaper.global_position = player.global_position + Vector2.RIGHT.rotated(randf() * TAU) * spawn_radius
 
 # 0.0 before SKELETON_START_TIME, ramping linearly to 1.0 over
 # SKELETON_RAMP_DURATION seconds, then staying at 1.0 forever after.

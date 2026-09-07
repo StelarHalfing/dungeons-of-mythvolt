@@ -70,10 +70,10 @@ func _ready() -> void:
 		_prop_weight_total += entry[1]
 
 func _process(_delta: float) -> void:
-	var players := get_tree().get_nodes_in_group("player")
-	if players.is_empty():
+	var player: Node2D = GameManager.player
+	if player == null:
 		return
-	var player_pos: Vector2 = players[0].global_position
+	var player_pos: Vector2 = player.global_position
 	var chunk := Vector2i(floori(player_pos.x / CHUNK_SIZE), floori(player_pos.y / CHUNK_SIZE))
 	if chunk != last_chunk:
 		last_chunk = chunk

@@ -15,6 +15,12 @@ var game_time: float = 0.0
 var is_paused_for_upgrade: bool = false
 var is_menu_paused: bool = false
 var is_game_over: bool = false
+# The live Player node: set by Player._ready(), cleared when it leaves the
+# tree (back to the menu, a restart) and null between runs. Everything
+# that needs the player's position every frame - enemies, pickups, the
+# spawner, the HUD - reads this instead of asking the "player" group,
+# which built a fresh Array per caller per frame.
+var player: Node2D = null
 var enemies_defeated: int = 0
 # Level-ups the player has earned but not yet picked an upgrade for.
 # Several can land at once (a burst of gems arriving in the same
@@ -537,6 +543,9 @@ const FALLBACK_DEFS := {
 		"description": "Restore 25% of your max HP.",
 		"heal_fraction": 0.25,
 	},
+	# Paid as a flat amount (add_flat_coins()), not as a coin pickup: the
+	# card promises an exact number, so Gold Gain, Lucky Coin and a running
+	# Gold Dream deliberately don't apply to it.
 	"coins": {
 		"display_name": "Coin Bonus",
 		"description": "+25 gold, right now.",
@@ -719,11 +728,10 @@ func is_fallback_panel() -> bool:
 
 func _apply_fallback(id: String) -> void:
 	var def: Dictionary = FALLBACK_DEFS[id]
-	if def.has("heal_fraction"):
-		for player in get_tree().get_nodes_in_group("player"):
-			player.hp = minf(player.hp + player.max_hp * def["heal_fraction"], player.max_hp)
+	if def.has("heal_fraction") and player != null:
+		player.hp = minf(player.hp + player.max_hp * def["heal_fraction"], player.max_hp)
 	if def.has("coins"):
-		add_coins(def["coins"])
+		add_flat_coins(def["coins"])
 
 # Every weapon and passive that can still level up and isn't banned. A
 # weapon (passive) you don't own yet is only offered while a slot is
@@ -1033,6 +1041,13 @@ func add_coins(amount: int) -> void:
 	coin_carry %= 100
 	_slot_dirty = true
 
+# Gold with no multiplier at all - for the Coin Bonus consolation pick,
+# whose card promises an exact amount (see FALLBACK_DEFS). Saved the same
+# debounced way as add_coins().
+func add_flat_coins(amount: int) -> void:
+	coins += amount
+	_slot_dirty = true
+
 func get_upgrade_level(id: String) -> int:
 	return permanent_upgrades.get(id, 0)
 
@@ -1195,16 +1210,25 @@ func _apply_settings(data: Dictionary) -> void:
 	fps_cap = saved_cap if FPS_CAP_OPTIONS.has(saved_cap) else 0
 	active_slot = clampi(_as_int(data.get("active_slot"), 1), 1, SLOT_COUNT)
 
+# The upgrade levels in a slot dictionary, one entry per
+# PERMANENT_UPGRADE_DEFS key, each clamped to 0..max_level. Save files
+# are untrusted input (hand-edited, half-written), and this is the one
+# reading of them: _apply_slot() loads it so get_upgrade_cost() can never
+# index costs[] out of range and no bonus exceeds its documented cap, and
+# slot_summary() counts it so the Saves menu can't show an upgrade total
+# the slot can't actually have. Unknown ids are dropped.
+func _clamped_upgrades(data: Dictionary) -> Dictionary:
+	var saved: Dictionary = _as_dict(data.get("permanent_upgrades"))
+	var levels: Dictionary = {}
+	for id in PERMANENT_UPGRADE_DEFS.keys():
+		levels[id] = clampi(_as_int(saved.get(id), 0), 0, PERMANENT_UPGRADE_DEFS[id]["max_level"])
+	return levels
+
 # Replaces the in-memory progression with a slot dictionary's (an empty
-# one means a fresh start: 0 coins, no upgrades). Levels are clamped to
-# 0..max_level so get_upgrade_cost() can never index costs[] out of
-# range and no bonus can exceed its documented cap.
+# one means a fresh start: 0 coins, no upgrades).
 func _apply_slot(data: Dictionary) -> void:
 	coins = maxi(_as_int(data.get("coins"), 0), 0)
-	var saved_upgrades: Dictionary = _as_dict(data.get("permanent_upgrades"))
-	for id in PERMANENT_UPGRADE_DEFS.keys():
-		var max_level: int = PERMANENT_UPGRADE_DEFS[id]["max_level"]
-		permanent_upgrades[id] = clampi(_as_int(saved_upgrades.get(id), 0), 0, max_level)
+	permanent_upgrades = _clamped_upgrades(data)
 	var saved_unlocks: Dictionary = _as_dict(data.get("unlocks"))
 	for id in UNLOCK_DEFS.keys():
 		unlocks[id] = saved_unlocks.get(id, false) == true
@@ -1292,8 +1316,8 @@ func slot_summary(slot: int) -> Dictionary:
 		return {"exists": false, "coins": 0, "upgrade_levels": 0}
 	var data := _read_json(path)
 	var levels: int = 0
-	for value in _as_dict(data.get("permanent_upgrades")).values():
-		levels += maxi(_as_int(value, 0), 0)
+	for level in _clamped_upgrades(data).values():
+		levels += level
 	return {"exists": true, "coins": maxi(_as_int(data.get("coins"), 0), 0), "upgrade_levels": levels}
 
 # One-time upgrade of the pre-slot save_data.json into settings.json +

@@ -20,6 +20,11 @@ extends Area2D
 @export var gold_dream_pickup_scene: PackedScene = preload("res://scenes/GoldDreamPickup.tscn")
 @export var death_burst_scene: PackedScene = preload("res://scenes/DeathBurst.tscn")
 
+# Damage numbers are pooled - see DamageNumber.spawn(). XP gems are
+# capped on the field - see XPGem.spawn().
+const DamageNumberScript := preload("res://scripts/DamageNumber.gd")
+const XPGemScript := preload("res://scripts/XPGem.gd")
+
 const MAGNET_DROP_CHANCE := 0.001  # 0.1% chance per kill
 
 var hp: float
@@ -79,12 +84,45 @@ func _update_knockback(delta: float) -> bool:
 	return true
 
 func _move_toward_player(delta: float) -> void:
-	var players := get_tree().get_nodes_in_group("player")
-	if not players.is_empty():
-		var player: Node2D = players[0]
-		var dir: Vector2 = (player.global_position - global_position).normalized()
-		var effective_speed: float = speed * (SLOWED_SPEED_MULT if slow_timer > 0.0 else 1.0)
-		global_position += dir * effective_speed * delta
+	var player: Node2D = GameManager.player
+	if player == null:
+		return
+	var dir: Vector2 = (player.global_position - global_position).normalized()
+	var effective_speed: float = speed * (SLOWED_SPEED_MULT if slow_timer > 0.0 else 1.0)
+	global_position += dir * effective_speed * delta
+
+# Where this enemy will be `lead_time` seconds from now if the player
+# stays at `player_pos` - what GrenadeCaster leads its throws with. The
+# base enemy just keeps walking straight at the player (exactly what
+# _move_toward_player() does), at SLOWED_SPEED_MULT for as long as any
+# slow still has to run, and stops on reaching it rather than walking
+# through. TankZombie overrides this to play its telegraph/dash out
+# first. A knockback in progress is ignored: it is over in a fraction of
+# a second and its direction has nothing to do with the chase.
+func predict_position(lead_time: float, player_pos: Vector2) -> Vector2:
+	return _predict_chase(global_position, player_pos, 0.0, lead_time)
+
+# The chase leg of a prediction: from `pos` at `from_now` seconds ahead
+# straight toward `player_pos` until `until` seconds ahead - never past
+# it. Offsetting by from_now is what lets the slow wear off correctly
+# partway through a multi-leg prediction (see _predicted_travel()).
+func _predict_chase(pos: Vector2, player_pos: Vector2, from_now: float, until: float) -> Vector2:
+	var to_player: Vector2 = player_pos - pos
+	var distance: float = to_player.length()
+	if distance <= 0.0 or until <= from_now:
+		return pos
+	return pos + to_player / distance * minf(_predicted_travel(speed, from_now, until), distance)
+
+# Distance covered at `base_speed` between `from_now` and `until` seconds
+# ahead, with the slow status (if any) expiring partway: slow_timer counts
+# down in real time, so the first slow_timer seconds of the window run at
+# SLOWED_SPEED_MULT and the rest at full speed.
+func _predicted_travel(base_speed: float, from_now: float, until: float) -> float:
+	if until <= from_now:
+		return 0.0
+	var time: float = until - from_now
+	var slowed: float = clampf(slow_timer - from_now, 0.0, time)
+	return base_speed * (slowed * SLOWED_SPEED_MULT + (time - slowed))
 
 # Split out from _move_toward_player() so the sprite always faces
 # wherever the player currently is, independent of whatever direction
@@ -94,10 +132,11 @@ func _move_toward_player(delta: float) -> void:
 # stale relative to the player's live position by the time the dash
 # actually plays out.
 func _update_facing() -> void:
-	var players := get_tree().get_nodes_in_group("player")
-	if not players.is_empty():
-		var dir_to_player: Vector2 = (players[0].global_position - global_position).normalized()
-		sprite.play(_facing_animation(dir_to_player))
+	var player: Node2D = GameManager.player
+	if player == null:
+		return
+	var dir_to_player: Vector2 = (player.global_position - global_position).normalized()
+	sprite.play(_facing_animation(dir_to_player))
 
 # Picks whichever axis (horizontal/vertical) dominates `dir` and
 # returns the matching walk_* animation - the sprite sheets are
@@ -135,6 +174,11 @@ func _update_contact_damage(delta: float) -> void:
 			damage_tick_timer = 0.5
 
 func take_damage(amount: float) -> void:
+	# Already dying (die() is queued below): a second hit in the same frame
+	# - a Tornado tick and a Grenade blast, say - would put another damage
+	# number on a corpse and restart its flash.
+	if is_dead:
+		return
 	hp -= amount
 	if GameManager.show_damage_numbers:
 		_spawn_damage_number(amount)
@@ -151,9 +195,7 @@ func take_damage(amount: float) -> void:
 		die.call_deferred()
 
 func _spawn_damage_number(amount: float) -> void:
-	var num = damage_number_scene.instantiate()
-	get_parent().add_child(num)
-	num.setup(amount, self)
+	DamageNumberScript.spawn(damage_number_scene, get_parent(), amount, self)
 
 func die() -> void:
 	GameManager.enemies_defeated += 1
@@ -191,13 +233,12 @@ func die() -> void:
 # Overridden by TankZombie to drop a RedXPGem instead. xp_gem_count
 # above 1 (e.g. Skeleton) spreads the extra gems out slightly so they
 # don't spawn stacked exactly on top of each other - same small-offset
-# idea as the coin/magnet drops in die().
+# idea as the coin/magnet drops in die(). Gems go through XPGem.spawn(),
+# which folds a drop into an existing gem once the field is full.
 func _drop_loot() -> void:
 	for i in range(xp_gem_count):
-		var gem = xp_gem_scene.instantiate()
-		get_parent().add_child(gem)
 		var offset: Vector2 = Vector2.ZERO if i == 0 else Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
-		gem.global_position = global_position + offset
+		XPGemScript.spawn(xp_gem_scene, get_parent(), global_position + offset)
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):

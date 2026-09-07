@@ -14,8 +14,15 @@ var fire_timer: float = 0.0
 
 func _ready() -> void:
 	add_to_group("player")
+	GameManager.player = self
 	max_hp = 100.0 + GameManager.max_hp_bonus
 	hp = max_hp
+
+# Drops the shared reference on the way out (see GameManager.player) so
+# nothing keeps reading a freed node once the scene changes.
+func _exit_tree() -> void:
+	if GameManager.player == self:
+		GameManager.player = null
 
 func _physics_process(delta: float) -> void:
 	if GameManager.is_paused_for_upgrade:
@@ -173,6 +180,9 @@ func take_damage(amount: float) -> void:
 		die()
 
 func die() -> void:
-	GameManager.is_game_over = true
-	GameManager.player_died.emit()
+	# GameManager.end_run() flags the game over, writes any coins still
+	# waiting on the debounced save and emits player_died (which opens the
+	# HUD's game-over panel) - the same path the pause menu's Quit takes,
+	# so a crash right after death can't lose the last second's pickups.
+	GameManager.end_run()
 	get_tree().paused = true

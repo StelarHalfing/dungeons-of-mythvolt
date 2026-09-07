@@ -20,10 +20,9 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 
 func _process(delta: float) -> void:
-	var players := get_tree().get_nodes_in_group("player")
-	if players.is_empty():
+	var player: Node2D = GameManager.player
+	if player == null:
 		return
-	var player: Node2D = players[0]
 	var dist: float = global_position.distance_to(player.global_position)
 	var pickup_range: float = 60.0 * GameManager.pickup_range_mult
 	if dist < pickup_range:

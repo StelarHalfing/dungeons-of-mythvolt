@@ -38,9 +38,18 @@ gets an in-engine harness pass before it is committed.
 - [ ] Replace the 15:01 Reaper placeholder (`EnemySpawner.REAPER_TIME`)
       with a real late game: push it out as the run gets longer, add
       waves after the Slimes.
-- [ ] King Slime boss (sprites in `DG Monsters Expansion/King Slime
-      Pack`), maybe at 10:00 or as the 15:00 finale instead of the
-      Reaper.
+- [x] A summonable boss: the Ancient Keeper (`AncientKeeper.gd`, the
+      stone golem `Fantasy Dreamland/Bosses Sprites 1/.../Boss_015.png`)
+      called up by pressing E at the Boss Totem (`BossTotem.gd`) five
+      minutes of walking left of spawn. 7500 HP, 2/3 Zombie speed, CC
+      immune, a dodgeable rock slam every 4-5s (`RockSlam.gd`), drops a
+      purple 250 XP gem and a 500-coin pile. The HUD points the way
+      (`TotemPointer.gd`) and shows the boss's name and HP top-centre
+      while it lives. Follow-up: the King Slime pack is still unused -
+      a second totem/boss?
+- [ ] XP gems are capped at 100 on the field (`XPGem.spawn()` folds
+      further drops into the nearest gem, which re-tiers by value) -
+      check the late game still feels right with fewer, bigger gems.
 - [ ] Elite / variant enemies (the other zombie and skeleton colours in
       the packs are unused).
 - [ ] Watch performance at 11:00+ (~27 spawns/s, `SECOND_SURGE_INTERVAL_MULT`)
