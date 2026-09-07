@@ -70,7 +70,7 @@ offset_left = -130.0
 offset_top = -80.0
 offset_right = 130.0
 offset_bottom = -20.0
-text = "Save Slot 1"
+text = "Saves"
 
 [node name="SavePanel" type="Panel" parent="."]
 visible = false

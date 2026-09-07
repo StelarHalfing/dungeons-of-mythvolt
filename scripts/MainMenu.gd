@@ -9,7 +9,7 @@ extends Control
 
 @onready var coins_label: Label = $UpgradesPanel/VBoxContainer/CoinsLabel
 
-# Save-slot picker: the "Save Slot N" button along the bottom opens a
+# Save-slot picker: the "Saves" button along the bottom opens a
 # panel with one button per GameManager slot (the active one marked with
 # the same check icon the select screens use) and a Delete button under
 # each, which asks for confirmation before wiping the slot.
@@ -151,7 +151,6 @@ func _on_cancel_delete() -> void:
 	confirm_panel.visible = false
 
 func _refresh_slots() -> void:
-	save_slot_button.text = "Save Slot %d" % GameManager.active_slot
 	for i in range(slot_buttons.size()):
 		var slot: int = i + 1
 		var summary: Dictionary = GameManager.slot_summary(slot)
