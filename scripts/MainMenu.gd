@@ -37,6 +37,7 @@ var pending_delete_slot: int = 0
 # GameManager.PERMANENT_UPGRADE_DEFS entry, built in _build_upgrade_rows()
 # in table order - a new permanent upgrade is a table entry only.
 @onready var upgrade_list: VBoxContainer = $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList
+@onready var upgrade_scroll: ScrollContainer = $UpgradesPanel/VBoxContainer/ScrollContainer
 var upgrade_rows: Dictionary = {}
 const BUY_BUTTON_HEIGHT := 48.0
 
@@ -51,6 +52,7 @@ func _ready() -> void:
 	$SettingsPanel/VBoxContainer/BackButton.pressed.connect(_on_settings_back_pressed)
 	$UpgradesPanel/VBoxContainer/BackButton.pressed.connect(_on_upgrades_back_pressed)
 	_build_upgrade_rows()
+	upgrade_scroll.gui_input.connect(_on_upgrade_scroll_input)
 
 	save_panel.visible = false
 	confirm_overlay.visible = false
@@ -218,6 +220,31 @@ func _build_upgrade_rows() -> void:
 		buy.pressed.connect(_on_upgrade_buy_pressed.bind(id))
 		upgrade_list.add_child(buy)
 		upgrade_rows[id] = {"info": info, "button": buy}
+
+# The shop shows three rows at a time and the mouse wheel moves one whole
+# row per notch - snapping to the next row's top (rows can differ in
+# height when a label wraps) instead of ScrollContainer's default eighth
+# of a page. Handled on the gui_input signal, which fires before the
+# container's own handling, so accept_event() replaces it.
+func _on_upgrade_scroll_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton and event.pressed):
+		return
+	var current: int = upgrade_scroll.scroll_vertical
+	var target: int = -1
+	if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		for id in upgrade_rows.keys():
+			var top: int = int(upgrade_rows[id]["info"].position.y)
+			if top > current:
+				target = top
+				break
+	elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		for id in upgrade_rows.keys():
+			var top: int = int(upgrade_rows[id]["info"].position.y)
+			if top < current:
+				target = top
+	if target >= 0:
+		upgrade_scroll.scroll_vertical = target
+		upgrade_scroll.accept_event()
 
 func _refresh_upgrades() -> void:
 	coins_label.text = "Coins: %d" % GameManager.coins
