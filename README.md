@@ -97,44 +97,28 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     `size` is the ring's radius, `speed` is ticks-per-second
     (`1.0 / speed` = seconds between ticks). No projectile count -
     the every-3-levels bonus is exclusive to the Laser Pistol.
-- **Icons are drawn in code, not image files**, same philosophy as
-  every other visual in the project. `WeaponIcon.gd` is a `Control`
-  whose `_draw()` switches on an `icon_id` string (currently
-  `"laser_pistol"` and `"forcefield"`, which double as the exact
-  keys already used in `GameManager.weapons` - no separate icon
-  registry to keep in sync) and falls back to a generic lock glyph
-  for anything else, including `""`. That one script is reused in
-  two places: as the icon inside each level-up choice button
+- **Icons come from one script.** `WeaponIcon.gd` is a `Control`
+  keyed by an `icon_id` string (the exact keys used in
+  `GameManager.weapons`/`.passives`): ids in its `ICON_TEXTURES`
+  table draw that sprite (every weapon and passive except Tornado,
+  which has no fitting art and keeps a drawn glyph), `""` or an
+  unknown id draws the lock glyph, and `set_blank()` draws nothing.
+  It is reused as the icon inside each level-up choice button
   (`HBoxContainer` wrapping an `Icon` + the wrapped-text `Label`,
-  same click-through `mouse_filter = 2` trick as the label itself),
-  and inside `IconSlot.tscn` for the collection grid below. Both
-  call `icon.configure(id, dimmed)`, which just sets two vars and
-  calls `queue_redraw()`.
-- **The 2×6 collection grid** (`WeaponGrid` in `HUD.tscn`, a
-  `GridContainer` with `columns = 6`) always shows all 12 possible
-  slots — 6 weapons then 6 passives, in that order since
-  `GridContainer` wraps children automatically every N columns. Only
-  `laser_pistol` and `forcefield` are real today; the other 4 weapon
-  slots and all 6 passive slots are instanced with `icon_id = ""`,
-  which always renders the locked glyph, dimmed, since there's
-  nothing to acquire there yet (passives as a level-up category
-  don't exist at all currently - these slots are pure placeholders
-  for future content). Each slot is an `IconSlot.tscn` instance;
-  `IconSlot.gd` checks `GameManager.weapons[icon_id]["level"] > 0`
-  every frame (cheap boolean check on 12 static nodes, same polling
-  pattern `HUD.gd` already uses elsewhere) and dims/undims the icon
-  accordingly - `is_weapon = false` slots are hardcoded to never
-  read as acquired, since there's no passives dictionary yet to
-  check against.
-  - To add a real weapon into an empty slot: give it an entry in
-    `WEAPON_DEFS`, a case in `WeaponIcon._draw()`/`_base_color()`,
-    and set that slot's `icon_id` in `HUD.tscn` (`WeaponSlot3`
-    onward). To add passives as an actual level-up category (not
-    just placeholder slots) is a bigger change — `GameManager` would
-    need a parallel `PASSIVE_DEFS`/`passives` dict alongside
-    `weapons`, `offer_upgrades()` would need to pull candidates from
-    both pools, and `IconSlot.gd`'s `is_weapon` check would switch to
-    reading that new dict instead of always resolving to "locked."
+  same click-through `mouse_filter = 2` trick as the label itself)
+  and inside `IconSlot.tscn` for the collection grid below.
+- **The collection grid** (`WeaponGrid` in `HUD.tscn`) is built by
+  `HUD._build_collection_grid()`: the top row is one `IconSlot.tscn`
+  per `WEAPON_DEFS` entry followed by `LOCKED_SLOTS_PER_ROW` (4)
+  locked slots, the bottom row the same for `PASSIVE_DEFS`, both
+  padded to the same width. A slot has three looks - locked (darker
+  `IconSlotLocked` frame + lock glyph: nothing exists there yet),
+  unowned (normal frame, empty: something to collect) and owned
+  (the icon appears the moment it's picked up). `IconSlot.gd` polls
+  `GameManager.weapons`/`.passives` `["level"] > 0` every frame, the
+  same cheap polling pattern `HUD.gd` uses elsewhere. Adding a
+  weapon or passive is a def entry plus an `ICON_TEXTURES` entry;
+  the grid grows a box for it on its own.
 - **No custom Input Map actions** — movement reads raw key state
   (`Input.is_key_pressed`) so there's nothing to misconfigure in
   Project Settings. If you want gamepad support, this is the first

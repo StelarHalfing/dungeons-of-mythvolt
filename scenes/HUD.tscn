@@ -70,72 +70,12 @@ text = "Coins: 0"
 [node name="WeaponGrid" type="GridContainer" parent="."]
 offset_left = 20.0
 offset_top = 88.0
-offset_right = 328.0
+offset_right = 484.0
 offset_bottom = 188.0
 theme = ExtResource("4")
 theme_override_constants/h_separation = 4
 theme_override_constants/v_separation = 4
 columns = 6
-
-[node name="WeaponSlot1" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "laser_pistol"
-is_weapon = true
-
-[node name="WeaponSlot2" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "forcefield"
-is_weapon = true
-
-[node name="WeaponSlot3" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "tornado"
-is_weapon = true
-
-[node name="WeaponSlot4" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "grenade"
-is_weapon = true
-
-[node name="WeaponSlot5" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "fireball"
-is_weapon = true
-
-[node name="WeaponSlot6" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = ""
-is_weapon = true
-
-[node name="PassiveSlot1" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "attraction_tome"
-is_weapon = false
-
-[node name="PassiveSlot2" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "power_emblem"
-is_weapon = false
-
-[node name="PassiveSlot3" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "wisdom_orb"
-is_weapon = false
-
-[node name="PassiveSlot4" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "vitality_elixir"
-is_weapon = false
-
-[node name="PassiveSlot5" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = "lucky_coin"
-is_weapon = false
-
-[node name="PassiveSlot6" parent="WeaponGrid" instance=ExtResource("2")]
-layout_mode = 2
-icon_id = ""
-is_weapon = false
 
 [node name="UpgradePanel" type="Panel" parent="."]
 anchor_left = 0.5

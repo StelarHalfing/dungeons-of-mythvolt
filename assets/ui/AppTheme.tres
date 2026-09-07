@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=19 format=3]
+[gd_resource type="Theme" load_steps=20 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/ui_sheet.png" id="1"]
 [ext_resource type="FontFile" path="res://allassets/DG UI-HUD Exp/TeamSnow.ttf" id="2"]
@@ -71,6 +71,14 @@ content_margin_bottom = 14.0
 [sub_resource type="StyleBoxTexture" id="slot"]
 texture = ExtResource("1")
 region_rect = Rect2(4, 722, 51, 51)
+texture_margin_left = 9.0
+texture_margin_top = 9.0
+texture_margin_right = 9.0
+texture_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxTexture" id="slot_dark"]
+texture = ExtResource("1")
+region_rect = Rect2(4, 777, 51, 51)
 texture_margin_left = 9.0
 texture_margin_top = 9.0
 texture_margin_right = 9.0
@@ -190,6 +198,8 @@ HSlider/styles/grabber_area_highlight = SubResource("slider_fill")
 HSlider/styles/slider = SubResource("slider_track")
 IconSlot/base_type = &"Panel"
 IconSlot/styles/panel = SubResource("slot")
+IconSlotLocked/base_type = &"Panel"
+IconSlotLocked/styles/panel = SubResource("slot_dark")
 Label/colors/font_outline_color = Color(0, 0, 0, 1)
 Label/constants/outline_size = 3
 Panel/styles/panel = SubResource("panel")

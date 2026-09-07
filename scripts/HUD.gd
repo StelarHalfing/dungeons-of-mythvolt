@@ -30,6 +30,13 @@ extends CanvasLayer
 @onready var reroll_button: Button = $UpgradePanel/VBoxContainer/ActionRow/RerollButton
 @onready var ban_button: Button = $UpgradePanel/VBoxContainer/ActionRow/BanButton
 var ban_mode: bool = false
+# Collection grid: one IconSlot per WEAPON_DEFS entry then
+# LOCKED_SLOTS_PER_ROW locked ones on the top row, the same for
+# PASSIVE_DEFS on the bottom row, so a new weapon or passive gets its
+# box automatically and every row keeps the same number of locked slots.
+const IconSlotScene := preload("res://scenes/IconSlot.tscn")
+const LOCKED_SLOTS_PER_ROW := 4
+@onready var weapon_grid: GridContainer = $WeaponGrid
 @onready var game_over_panel: Panel = $GameOverPanel
 @onready var pause_panel: Panel = $PausePanel
 @onready var game_settings_panel: Panel = $GameSettingsPanel
@@ -48,6 +55,7 @@ func _ready() -> void:
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.level_up_choices.connect(_on_level_up_choices)
 	GameManager.player_died.connect(_on_player_died)
+	_build_collection_grid()
 
 	for i in range(upgrade_buttons.size()):
 		upgrade_buttons[i].pressed.connect(_on_upgrade_pressed.bind(i))
@@ -79,6 +87,23 @@ func _ready() -> void:
 		GameManager.cycle_fps_cap()
 		fps_cap_button.text = GameManager.fps_cap_label()
 	)
+
+func _build_collection_grid() -> void:
+	var weapon_ids: Array = GameManager.WEAPON_DEFS.keys()
+	var passive_ids: Array = GameManager.PASSIVE_DEFS.keys()
+	# Both rows are padded to the same width, so a row with fewer real
+	# items shows extra locked slots rather than breaking the grid.
+	var columns: int = maxi(weapon_ids.size(), passive_ids.size()) + LOCKED_SLOTS_PER_ROW
+	weapon_grid.columns = columns
+	_add_slot_row(weapon_ids, true, columns)
+	_add_slot_row(passive_ids, false, columns)
+
+func _add_slot_row(ids: Array, is_weapon: bool, columns: int) -> void:
+	for i in range(columns):
+		var slot = IconSlotScene.instantiate()
+		slot.icon_id = ids[i] if i < ids.size() else ""
+		slot.is_weapon = is_weapon
+		weapon_grid.add_child(slot)
 
 func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("ui_cancel"):

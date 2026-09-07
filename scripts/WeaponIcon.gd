@@ -26,13 +26,25 @@ const ICON_TEXTURES := {
 
 var icon_id: String = ""
 var dimmed: bool = false
+# Draw nothing at all - the collection grid's "there's something to
+# collect here, but you don't have it yet" look.
+var blank: bool = false
 
 func configure(id: String, is_dimmed: bool) -> void:
 	icon_id = id
 	dimmed = is_dimmed
+	blank = false
+	queue_redraw()
+
+func set_blank() -> void:
+	if blank:
+		return
+	blank = true
 	queue_redraw()
 
 func _draw() -> void:
+	if blank:
+		return
 	var rect_size: Vector2 = size
 	var s: float = min(rect_size.x, rect_size.y)
 	var center: Vector2 = rect_size / 2.0
