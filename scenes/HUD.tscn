@@ -258,10 +258,21 @@ vertical_alignment = 1
 autowrap_mode = 2
 text = "Upgrade 3"
 
-[node name="RerollButton" type="Button" parent="UpgradePanel/VBoxContainer"]
+[node name="ActionRow" type="HBoxContainer" parent="UpgradePanel/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RerollButton" type="Button" parent="UpgradePanel/VBoxContainer/ActionRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 56)
 text = "Reroll (Free)"
+
+[node name="BanButton" type="Button" parent="UpgradePanel/VBoxContainer/ActionRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 56)
+text = "Ban (0 left)"
 
 [node name="GameOverPanel" type="Panel" parent="."]
 anchor_left = 0.5

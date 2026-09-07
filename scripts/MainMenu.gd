@@ -33,23 +33,12 @@ var delete_buttons: Array[Button] = []
 # Slot awaiting the delete confirmation (0 = none).
 var pending_delete_slot: int = 0
 
-# Maps upgrade id -> {info_label, buy_button}. Add a row here (plus
-# matching nodes in the .tscn) to add a new permanent upgrade without
-# duplicating the refresh/purchase logic below.
-@onready var upgrade_rows: Dictionary = {
-	"health_regen": {
-		"info": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/HealthRegenInfoLabel,
-		"button": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/HealthRegenBuyButton,
-	},
-	"damage": {
-		"info": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/DamageInfoLabel,
-		"button": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/DamageBuyButton,
-	},
-	"xp_gain": {
-		"info": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/XpGainInfoLabel,
-		"button": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/XpGainBuyButton,
-	},
-}
+# Upgrade id -> {"info": Label, "button": Button}, one row per
+# GameManager.PERMANENT_UPGRADE_DEFS entry, built in _build_upgrade_rows()
+# in table order - a new permanent upgrade is a table entry only.
+@onready var upgrade_list: VBoxContainer = $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList
+var upgrade_rows: Dictionary = {}
+const BUY_BUTTON_HEIGHT := 48.0
 
 func _ready() -> void:
 	settings_panel.visible = false
@@ -61,9 +50,7 @@ func _ready() -> void:
 	$QuitButton.pressed.connect(_on_quit_pressed)
 	$SettingsPanel/VBoxContainer/BackButton.pressed.connect(_on_settings_back_pressed)
 	$UpgradesPanel/VBoxContainer/BackButton.pressed.connect(_on_upgrades_back_pressed)
-
-	for id in upgrade_rows.keys():
-		upgrade_rows[id]["button"].pressed.connect(_on_upgrade_buy_pressed.bind(id))
+	_build_upgrade_rows()
 
 	save_panel.visible = false
 	confirm_overlay.visible = false
@@ -219,6 +206,18 @@ func _on_damage_numbers_toggled(enabled: bool) -> void:
 
 func _on_fullscreen_toggled(enabled: bool) -> void:
 	GameManager.set_fullscreen(enabled)
+
+func _build_upgrade_rows() -> void:
+	for id in GameManager.PERMANENT_UPGRADE_DEFS.keys():
+		var info := Label.new()
+		info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		upgrade_list.add_child(info)
+		var buy := Button.new()
+		buy.custom_minimum_size = Vector2(0, BUY_BUTTON_HEIGHT)
+		buy.pressed.connect(_on_upgrade_buy_pressed.bind(id))
+		upgrade_list.add_child(buy)
+		upgrade_rows[id] = {"info": info, "button": buy}
 
 func _refresh_upgrades() -> void:
 	coins_label.text = "Coins: %d" % GameManager.coins

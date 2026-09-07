@@ -21,9 +21,15 @@ extends CanvasLayer
 	$UpgradePanel/VBoxContainer/ScrollContainer/ButtonList/Button2/HBoxContainer/Icon,
 	$UpgradePanel/VBoxContainer/ScrollContainer/ButtonList/Button3/HBoxContainer/Icon,
 ]
-# Rerolls the open panel's choices; the label carries the cost (free
-# once per run, then 50 coins doubling - see GameManager.reroll_upgrades).
-@onready var reroll_button: Button = $UpgradePanel/VBoxContainer/RerollButton
+# Under the choices: Reroll (label carries the cost - free while free
+# ones remain, then 50 coins doubling; see GameManager.reroll_upgrades)
+# and Ban (label carries the bans left this run; see ban_upgrade). Ban
+# is a mode: press it, then click the choice to ban, or press it again
+# to cancel - the title says which the panel is waiting for.
+@onready var upgrade_title: Label = $UpgradePanel/VBoxContainer/TitleLabel
+@onready var reroll_button: Button = $UpgradePanel/VBoxContainer/ActionRow/RerollButton
+@onready var ban_button: Button = $UpgradePanel/VBoxContainer/ActionRow/BanButton
+var ban_mode: bool = false
 @onready var game_over_panel: Panel = $GameOverPanel
 @onready var pause_panel: Panel = $PausePanel
 @onready var game_settings_panel: Panel = $GameSettingsPanel
@@ -46,6 +52,7 @@ func _ready() -> void:
 	for i in range(upgrade_buttons.size()):
 		upgrade_buttons[i].pressed.connect(_on_upgrade_pressed.bind(i))
 	reroll_button.pressed.connect(_on_reroll_pressed)
+	ban_button.pressed.connect(_on_ban_pressed)
 	$GameOverPanel/VBoxContainer/RestartButton.pressed.connect(_on_restart_pressed)
 	$GameOverPanel/VBoxContainer/MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	$PausePanel/VBoxContainer/ResumeButton.pressed.connect(_resume)
@@ -107,16 +114,39 @@ func _on_level_up_choices(choices: Array) -> void:
 			upgrade_buttons[i].visible = true
 		else:
 			upgrade_buttons[i].visible = false
-	_refresh_reroll_button()
+	# A fresh set of choices (new level-up, reroll, or a ban's
+	# replacement) always starts in normal pick mode.
+	ban_mode = false
+	_refresh_action_buttons()
 	upgrade_panel.visible = true
 
-func _refresh_reroll_button() -> void:
+func _refresh_action_buttons() -> void:
 	var cost: int = GameManager.get_reroll_cost()
-	reroll_button.text = "Reroll (Free)" if cost == 0 else "Reroll (%d coins)" % cost
+	var free_left: int = GameManager.get_free_rerolls_left()
+	if cost > 0:
+		reroll_button.text = "Reroll (%d coins)" % cost
+	elif free_left > 1:
+		reroll_button.text = "Reroll (%d free)" % free_left
+	else:
+		reroll_button.text = "Reroll (Free)"
 	# Greyed out when unaffordable or when nothing new is left to show.
 	reroll_button.disabled = not GameManager.can_reroll()
 
+	if ban_mode:
+		ban_button.text = "Cancel ban"
+		ban_button.disabled = false
+		upgrade_title.text = "Choose an upgrade to ban:"
+	else:
+		ban_button.text = "Ban (%d left)" % GameManager.get_bans_left()
+		ban_button.disabled = not GameManager.can_ban()
+		upgrade_title.text = "Level Up! Choose an upgrade:"
+
 func _on_upgrade_pressed(index: int) -> void:
+	if ban_mode:
+		# On success GameManager re-emits level_up_choices with the banned
+		# slot refilled, which redraws the panel back in pick mode.
+		GameManager.ban_upgrade(current_choices[index])
+		return
 	upgrade_panel.visible = false
 	GameManager.choose_upgrade(current_choices[index])
 
@@ -124,6 +154,10 @@ func _on_reroll_pressed() -> void:
 	# On success GameManager re-emits level_up_choices, which redraws the
 	# panel (and this button's new cost) through _on_level_up_choices.
 	GameManager.reroll_upgrades()
+
+func _on_ban_pressed() -> void:
+	ban_mode = not ban_mode
+	_refresh_action_buttons()
 
 func _on_player_died() -> void:
 	pause_panel.visible = false

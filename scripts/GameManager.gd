@@ -28,12 +28,19 @@ var pending_level_ups: int = 0
 const CHOICE_COUNT := 3
 # The ids on the open level-up panel (what a reroll replaces).
 var current_choices: Array = []
-# Level-up rerolls: the first one each run is free, then REROLL_BASE_COST
-# coins doubling per reroll (50, 100, 200, ...), paid from the same coin
-# bank the permanent upgrades spend. Counted per run (reset() zeroes
-# it); make it per level-up by zeroing it in offer_upgrades() instead.
+# Level-up rerolls: the first one each run is free (plus one more per
+# level of the permanent Rerolls upgrade - see get_free_rerolls()), then
+# REROLL_BASE_COST coins doubling per reroll (50, 100, 200, ...), paid
+# from the same coin bank the permanent upgrades spend. Counted per run
+# (reset() zeroes it); make it per level-up by zeroing it in
+# offer_upgrades() instead.
 const REROLL_BASE_COST := 50
 var rerolls_used: int = 0
+# Level-up bans: a banned id never appears in this run's level-up pool
+# again. There are none by default; each level of the permanent Bans
+# upgrade grants one per run (see get_max_bans()).
+var banned_ids: Array = []
+var bans_used: int = 0
 
 # User preferences and meta-progression. Persist across runs (not
 # touched by reset()) and across game restarts (saved to disk).
@@ -93,6 +100,26 @@ const PERMANENT_UPGRADE_DEFS := {
 		"per_level_value": 0.10,
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
+	},
+	# Whole-number perks for the level-up panel (format "count": shown as
+	# "+1"). Two expensive levels each, so they're a late investment.
+	"rerolls": {
+		"display_name": "Rerolls",
+		"description": "Extra free level-up rerolls every run.",
+		"stat_label": "free rerolls per run",
+		"format": "count",
+		"per_level_value": 1.0,
+		"max_level": 2,
+		"costs": [1000, 5000],
+	},
+	"bans": {
+		"display_name": "Bans",
+		"description": "Ban a level-up option for the rest of the run.",
+		"stat_label": "bans per run",
+		"format": "count",
+		"per_level_value": 1.0,
+		"max_level": 2,
+		"costs": [1000, 5000],
 	},
 }
 
@@ -356,6 +383,8 @@ func reset() -> void:
 	pending_level_ups = 0
 	current_choices = []
 	rerolls_used = 0
+	banned_ids = []
+	bans_used = 0
 	speed_mult = 1.0
 	max_hp_bonus = 0.0
 	pickup_range_mult = 1.0
@@ -408,15 +437,15 @@ func offer_upgrades() -> bool:
 	level_up_choices.emit(current_choices)
 	return true
 
-# Every weapon and passive that can still level up.
+# Every weapon and passive that can still level up and isn't banned.
 func _upgrade_pool() -> Array:
 	var ids: Array = []
 	for id in weapons.keys():
 		var max_level: int = WEAPON_DEFS[id].get("max_level", -1)
-		if max_level < 0 or weapons[id]["level"] < max_level:
+		if (max_level < 0 or weapons[id]["level"] < max_level) and not banned_ids.has(id):
 			ids.append(id)
 	for id in passives.keys():
-		if passives[id]["level"] < PASSIVE_DEFS[id]["max_level"]:
+		if passives[id]["level"] < PASSIVE_DEFS[id]["max_level"] and not banned_ids.has(id):
 			ids.append(id)
 	return ids
 
@@ -431,13 +460,22 @@ func _pick_choices(pool: Array, avoid: Array) -> Array:
 	var picks: Array = fresh + stale
 	return picks.slice(0, mini(CHOICE_COUNT, picks.size()))
 
-# Coins the next reroll costs: 0 for the run's first, then
-# REROLL_BASE_COST doubling each time (the shift is capped so the value
-# can't overflow, not that anyone reaches 50 million coins).
+# Free rerolls per run: one, plus one per level of the permanent
+# Rerolls upgrade.
+func get_free_rerolls() -> int:
+	return 1 + int(get_permanent_bonus("rerolls"))
+
+func get_free_rerolls_left() -> int:
+	return maxi(get_free_rerolls() - rerolls_used, 0)
+
+# Coins the next reroll costs: 0 while free ones remain, then
+# REROLL_BASE_COST doubling each paid reroll (the shift is capped so the
+# value can't overflow, not that anyone reaches 50 million coins).
 func get_reroll_cost() -> int:
-	if rerolls_used == 0:
+	var paid_so_far: int = rerolls_used - get_free_rerolls()
+	if paid_so_far < 0:
 		return 0
-	return REROLL_BASE_COST << mini(rerolls_used - 1, 20)
+	return REROLL_BASE_COST << mini(paid_so_far, 20)
 
 # A reroll needs an open panel, the coins, and at least one option the
 # panel isn't already showing (otherwise it could only repeat itself).
@@ -456,6 +494,38 @@ func reroll_upgrades() -> bool:
 	rerolls_used += 1
 	_slot_dirty = true
 	current_choices = _pick_choices(_upgrade_pool(), current_choices)
+	level_up_choices.emit(current_choices)
+	return true
+
+# Bans per run come only from the permanent Bans upgrade (0 without it).
+func get_max_bans() -> int:
+	return int(get_permanent_bonus("bans"))
+
+func get_bans_left() -> int:
+	return maxi(get_max_bans() - bans_used, 0)
+
+# A ban needs an open panel, a ban left, and something for the panel to
+# still show afterwards (another choice, or a replacement in the pool).
+func can_ban() -> bool:
+	if not is_paused_for_upgrade or get_bans_left() <= 0:
+		return false
+	return current_choices.size() > 1 or _upgrade_pool().size() > 1
+
+# Removes `id` from this run's level-up pool for good and swaps a fresh
+# option into its place on the open panel (or drops the slot when the
+# pool has nothing new left). Emits level_up_choices again so the HUD
+# redraws; returns whether the ban happened.
+func ban_upgrade(id: String) -> bool:
+	if not can_ban() or not current_choices.has(id):
+		return false
+	banned_ids.append(id)
+	bans_used += 1
+	var index: int = current_choices.find(id)
+	var fresh: Array = _upgrade_pool().filter(func(other): return not current_choices.has(other))
+	if fresh.is_empty():
+		current_choices.remove_at(index)
+	else:
+		current_choices[index] = fresh[randi() % fresh.size()]
 	level_up_choices.emit(current_choices)
 	return true
 
@@ -519,13 +589,18 @@ func _get_passive_choice_text(id: String) -> Dictionary:
 	}
 
 # The one way a bonus value is written, for passives and permanent
-# upgrades alike: "+10%" for percentage bonuses, "+0.2" for flat ones
-# (def["format"] == "flat", where def["stat_label"] names the unit).
-# Callers append the stat_label once where it reads best.
+# upgrades alike: "+10%" for percentage bonuses (the default), "+0.2"
+# for flat ones (def["format"] == "flat") and "+1" for whole-number
+# ones ("count"); def["stat_label"] names the unit and callers append
+# it once where it reads best.
 func format_bonus(def: Dictionary, value: float) -> String:
-	if def.get("format", "percent") == "flat":
-		return "+%.1f" % value
-	return "+%d%%" % int(round(value * 100.0))
+	match def.get("format", "percent"):
+		"flat":
+			return "+%.1f" % value
+		"count":
+			return "+%d" % int(round(value))
+		_:
+			return "+%d%%" % int(round(value * 100.0))
 
 func _get_weapon_choice_text(weapon_id: String) -> Dictionary:
 	var def: Dictionary = WEAPON_DEFS[weapon_id]

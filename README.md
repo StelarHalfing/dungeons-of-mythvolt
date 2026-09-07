@@ -199,7 +199,19 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     XP Gain (same +10%/level curve, folded into `get_xp_mult()` next to
     the Wisdom Orb passive). Damage's and XP Gain's `costs` are exactly
     double Health Regeneration's (`[200, 400, 1000, 2000, 5000]` vs
-    `[100, 200, 500, 1000, 2500]`).
+    `[100, 200, 500, 1000, 2500]`). Two more are whole-number perks
+    for the level-up panel (`"format": "count"`), two levels each at
+    1000 then 5000 coins: Rerolls (+1 free reroll per run on top of
+    the one everyone gets, via `get_free_rerolls()`) and Bans (+1 ban
+    per run; there are none without it, via `get_max_bans()`).
+  - **Bans**: the Ban button beside Reroll on the level-up panel is a
+    mode - press it, the title switches to "Choose an upgrade to
+    ban:", and clicking a choice removes that weapon/passive from the
+    run's level-up pool for good (`GameManager.ban_upgrade()` adds it
+    to `banned_ids`, which `_upgrade_pool()` filters out) and swaps a
+    fresh option into its slot. Press Ban again to cancel. The button
+    is greyed out with no bans left or when a ban would leave the
+    panel with nothing to show.
   - The **Saves** button on the main menu opens a picker with one
     column per slot (built in `MainMenu._build_slot_columns()` from
     `GameManager.SLOT_COUNT`): the slot button shows coins and total
@@ -209,16 +221,14 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     you answer). Selecting a slot only records the choice in
     `settings.json`; a slot's file is first created when it earns
     coins, so unused slots keep reading "Empty".
-  - `MainMenu.gd`'s `upgrade_rows` dictionary maps an upgrade id to
-    its info `Label`/buy `Button` node pair, so `_refresh_upgrade_row()`
-    and the purchase handler work for any number of upgrades without
-    per-upgrade code - adding a third permanent upgrade is a new
-    `PERMANENT_UPGRADE_DEFS` entry, two new nodes under
-    `UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList` in the
-    `.tscn`, and one new entry in `upgrade_rows`. The row list is
-    inside a `ScrollContainer` for the same reason as the level-up
-    panel (see below) - more upgrades than fit on screen scroll
-    instead of overflowing the panel.
+  - `MainMenu._build_upgrade_rows()` creates one info `Label` + buy
+    `Button` pair per `PERMANENT_UPGRADE_DEFS` entry (in table order)
+    and keeps them in `upgrade_rows`, so `_refresh_upgrade_row()` and
+    the purchase handler work for any number of upgrades without
+    per-upgrade code or `.tscn` edits - a new permanent upgrade is a
+    table entry only. The row list is inside a `ScrollContainer` for
+    the same reason as the level-up panel (see below) - more upgrades
+    than fit on screen scroll instead of overflowing the panel.
   - To wipe a save during testing, use Saves > Delete Save on the
     main menu, or delete `user://save_slot_N.json` by hand (and
     `user://settings.json` to reset preferences) — the actual on-disk
@@ -263,16 +273,13 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   enemy death.
 - **More permanent upgrades**: add an entry to
   `PERMANENT_UPGRADE_DEFS` in `GameManager.gd` (display info,
-  `stat_label` and, for a flat bonus, `"format": "flat"`, per-level
-  value, `max_level`, `costs`), then apply
+  `stat_label` and, unless it's a percentage, `"format": "flat"` or
+  `"count"`, per-level value, `max_level`, `costs`), then apply
   `get_permanent_bonus("your_id")` wherever the effect actually
-  matters (see `get_health_regen_rate()` and `get_damage_mult()`) -
-  the shop text comes from the def automatically. Then add the two nodes
-  (info `Label` + buy `Button`) under `UpgradeList` in
-  `MainMenu.tscn` and one entry in `MainMenu.gd`'s `upgrade_rows`
-  dictionary — `_refresh_upgrade_row()` and the purchase handler
-  already work for any number of upgrades, no per-upgrade code
-  needed beyond that.
+  matters (see `get_health_regen_rate()`, `get_damage_mult()` and
+  `get_max_bans()`). That's it: the shop row and its text come from
+  the def automatically (`MainMenu._build_upgrade_rows()`), and slot
+  files pick up the new key on their next save.
 - **Scaling past a few hundred enemies**: at that point, moving
   every enemy in `_process` with a real node each frame becomes the
   bottleneck. The next step is `MultiMeshInstance2D` for rendering
