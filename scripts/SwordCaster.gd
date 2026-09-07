@@ -5,14 +5,14 @@ extends Node2D
 # enemy is within the slash's full depth (reach + how far the slash
 # flies), then spawns a Slash (Slash.gd) into the world aimed at it.
 # Inactive until the "sword" weapon has been picked (level > 0). The
-# weapon's "speed" stat is swings per second (cooldown = 1 / speed, what
-# levels up), "size" is the reach - the slash flies TRAVEL_MULT times
-# that on top, so a max-level sword cleaves deep into a wave - and every
-# 3rd level adds a projectile_count slash aimed at the next-nearest
+# weapon's "speed" stat is swings per second (cooldown = 1 / speed),
+# "size" is the reach, "duration" is how long the slash flies (at
+# Slash.SPEED, stretched by GameManager.get_duration_mult()) - so a
+# max-level sword with Duration bonuses cleaves deep into a wave - and
+# every 3rd level adds a projectile_count slash aimed at the next-nearest
 # enemy in depth.
 
 const SlashScript := preload("res://scripts/Slash.gd")
-const TRAVEL_MULT := 1.5
 
 var swing_timer: float = 0.0
 
@@ -27,17 +27,22 @@ func _process(delta: float) -> void:
 	if swing_timer <= 0.0 and _try_swing(stats):
 		swing_timer = 1.0 / stats["speed"]
 
+# How long a slash flies right now: the weapon's duration stat times
+# the run's duration multiplier.
+static func slash_duration(stats: Dictionary) -> float:
+	return stats["duration"] * GameManager.get_duration_mult()
+
 # How far a slash can hit from the player: its reach plus its flight.
-static func slash_depth(reach: float) -> float:
-	return reach + reach * TRAVEL_MULT
+static func slash_depth(stats: Dictionary) -> float:
+	return stats["size"] + SlashScript.SPEED * slash_duration(stats)
 
 # Returns false (and keeps the cooldown ready) when nothing is in depth.
 func _try_swing(stats: Dictionary) -> bool:
-	var reach: float = stats["size"]
 	var origin: Vector2 = global_position
+	var depth: float = slash_depth(stats)
 	var in_depth: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if origin.distance_to(enemy.global_position) <= slash_depth(reach) + SlashScript.ENEMY_PAD:
+		if origin.distance_to(enemy.global_position) <= depth + SlashScript.ENEMY_PAD:
 			in_depth.append(enemy)
 	if in_depth.is_empty():
 		return false
@@ -55,8 +60,8 @@ func _try_swing(stats: Dictionary) -> bool:
 		# damage the moment it enters the tree (same caveat as the other
 		# casters).
 		slash.direction = (in_depth[i].global_position - origin).normalized()
-		slash.reach = reach
-		slash.travel = reach * TRAVEL_MULT
+		slash.reach = stats["size"]
+		slash.duration = slash_duration(stats)
 		slash.damage = damage
 		world.add_child(slash)
 		slash.global_position = origin

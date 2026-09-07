@@ -2,8 +2,9 @@ extends Node2D
 
 # One sword swing, spawned by SwordCaster.gd into the world at the
 # player's position. A crescent that faces `direction`, sweeps open over
-# SWING_TIME, then flies forward `travel` pixels at SPEED before fading
-# out. Every frame it damages any enemy inside its fan (ARC degrees out
+# SWING_TIME, then flies forward at SPEED for `duration` seconds (the
+# weapon's duration stat times GameManager.get_duration_mult()) before
+# fading out. Every frame it damages any enemy inside its fan (ARC degrees out
 # to `reach` from the crescent's current position) that it hasn't hit
 # yet - once per enemy - so a slash cleaves through a line of enemies
 # rather than stopping at the first. The hit test is geometric against
@@ -13,7 +14,7 @@ extends Node2D
 var direction: Vector2 = Vector2.RIGHT
 var reach: float = 60.0
 var damage: float = 20.0
-var travel: float = 90.0
+var duration: float = 0.2
 
 const SPEED := 450.0
 const ARC := deg_to_rad(110.0)
@@ -34,18 +35,19 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	elapsed += delta
-	var step: float = minf(SPEED * delta, travel - travelled)
+	var step: float = minf(SPEED * delta, _travel() - travelled)
 	if step > 0.0:
 		global_position += direction * step
 		travelled += step
 		_deal_damage()
-	if travelled >= travel and elapsed >= _flight_time() + FADE_TIME:
+	if travelled >= _travel() and elapsed >= duration + FADE_TIME:
 		queue_free()
 		return
 	queue_redraw()
 
-func _flight_time() -> float:
-	return travel / SPEED
+# How far the slash flies in total.
+func _travel() -> float:
+	return SPEED * duration
 
 func _deal_damage() -> void:
 	var half_arc: float = ARC / 2.0
@@ -65,7 +67,7 @@ func _draw() -> void:
 	# The blade sweeps open across the arc, flies as a full crescent,
 	# then fades once it has gone as far as it goes.
 	var sweep: float = clampf(elapsed / SWING_TIME, 0.0, 1.0)
-	var fade: float = 1.0 - clampf((elapsed - _flight_time()) / FADE_TIME, 0.0, 1.0)
+	var fade: float = 1.0 - clampf((elapsed - duration) / FADE_TIME, 0.0, 1.0)
 	var end_angle: float = -half_arc + ARC * sweep
 	if end_angle <= -half_arc + 0.01 or fade <= 0.0:
 		return

@@ -51,6 +51,6 @@ func _try_cast(stats: Dictionary) -> void:
 		# radius every frame) would still show the correct size.
 		tornado.damage = damage
 		tornado.radius = stats["size"]
-		tornado.duration = stats["duration"]
+		tornado.duration = stats["duration"] * GameManager.get_duration_mult()
 		get_parent().get_parent().add_child(tornado)
 		tornado.global_position = enemies[i].global_position

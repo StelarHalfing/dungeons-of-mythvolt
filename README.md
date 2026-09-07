@@ -111,15 +111,21 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     the every-3-levels bonus is exclusive to the Laser Pistol.
   - **Sword** (`SwordCaster.gd`, a child of Player): once its
     cooldown is up it waits for the nearest enemy to come within the
-    slash's depth (`size`, its reach, plus 1.5x that of flight), then
-    spawns a `Slash.gd` into the world aimed at it: a 110-degree
-    crescent that sweeps open, flies forward `size * 1.5` pixels and
-    fades, damaging each enemy inside its fan once as it passes (a
-    geometric check against the enemies group, like Fireball's blast)
-    - so it cleaves through a line of enemies, ~150px deep at level 1
-    and ~290px at 12. `speed` is swings per second, and
+    slash's depth (`size`, its reach, plus its flight), then spawns a
+    `Slash.gd` into the world aimed at it: a 110-degree crescent that
+    sweeps open, flies forward for its `duration` stat (seconds, at
+    450 px/s, times `get_duration_mult()`) and fades, damaging each
+    enemy inside its fan once as it passes (a geometric check against
+    the enemies group, like Fireball's blast) - so it cleaves through
+    a line of enemies, ~150px deep at level 1 and ~350px at 12 before
+    any Duration bonus. `speed` is swings per second, and
     `projectile_count` (+1 every 3rd level) adds a slash at the
     next-nearest enemy in depth.
+  - **Duration** is a stat like damage: `get_duration_mult()` is the
+    permanent Duration upgrade times the Hourglass passive (both
+    Damage-shaped curves, multiplying like `get_damage_mult()`), and
+    stretches everything with a duration - the sword slash's flight
+    and the Tornado's lifetime.
 - **Icons come from one script.** `WeaponIcon.gd` is a `Control`
   keyed by an `icon_id` string (the exact keys used in
   `GameManager.weapons`/`.passives`): ids in its `ICON_TEXTURES`
@@ -208,8 +214,8 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `enemies_defeated % 10` - Minotaur inherits this unchanged) drops a
   `CoinPickup` — same magnet/pickup code as `XPGem`, just paying out
   `GameManager.add_coins()` instead of `add_xp()`.
-  - There are eight permanent upgrades right now, all `level *
-    per_level_value` via `get_permanent_bonus(id)`. Four are stat
+  - There are nine permanent upgrades right now, all `level *
+    per_level_value` via `get_permanent_bonus(id)`. Five are stat
     bonuses: Health
     Regeneration (+0.2 HP/sec/level, applied in `Player.gd`'s
     `_physics_process()` via `get_health_regen_rate()`, which also adds
@@ -221,8 +227,10 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     into `get_coin_mult()` next to the Lucky Coin passive - but those
     two ADD rather than multiply, so both maxed is exactly x2: two
     gold per coin, applied in `add_coins()` with the same integer
-    hundredths carry `add_xp()` uses). Damage's, XP Gain's and Gold
-    Gain's `costs` are exactly double Health Regeneration's
+    hundredths carry `add_xp()` uses), and Duration (same curve,
+    folded into `get_duration_mult()` next to the Hourglass passive -
+    see the Duration note above). Damage's, XP Gain's, Gold Gain's
+    and Duration's `costs` are exactly double Health Regeneration's
     (`[200, 400, 1000, 2000, 5000]` vs `[100, 200, 500, 1000, 2500]`).
     Four more are whole-number perks
     (`"format": "count"`): for the level-up panel, two levels each at

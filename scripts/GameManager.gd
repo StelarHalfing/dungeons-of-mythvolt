@@ -112,6 +112,17 @@ const PERMANENT_UPGRADE_DEFS := {
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
 	},
+	# Damage's curve and costs again; multiplies with the Hourglass
+	# passive in get_duration_mult(), which stretches everything with a
+	# duration: how far a sword slash flies, how long a tornado lasts.
+	"duration": {
+		"display_name": "Duration",
+		"description": "Permanently lengthen slashes and tornadoes.",
+		"stat_label": "duration",
+		"per_level_value": 0.10,
+		"max_level": 5,
+		"costs": [200, 400, 1000, 2000, 5000],
+	},
 	# Whole-number perks for the level-up panel (format "count": shown as
 	# "+1"). Two expensive levels each, so they're a late investment.
 	"rerolls": {
@@ -225,6 +236,9 @@ var xp_carry: int = 0
 # too (coin_carry) - ten coins at x1.1 really do give 11 gold.
 var coin_gain_bonus: float = 0.0
 var coin_carry: int = 0
+# Hourglass's stat (this run's duration multiplier; the permanent
+# Duration upgrade multiplies on top - see get_duration_mult()).
+var duration_mult: float = 1.0
 
 # Static definition of every weapon: base stats and the flat amount
 # added to each stat every time it levels up. Every weapon starts a run
@@ -310,15 +324,16 @@ const WEAPON_DEFS := {
 	"sword": {
 		"display_name": "Sword",
 		"description": "Slashes at the nearest enemy; the slash flies on, cleaving through everything it passes.",
-		# Swung by SwordCaster.gd: size is the reach (pixels) - the slash
-		# flies 1.5x that on top, so it hits ~150px deep at level 1 and
-		# ~290px at 12 - speed is swings/sec (cooldown = 1/speed: 0.9s at
-		# level 1, ~0.56s at 12), damage one-shots a Zombie (20 HP) from the
-		# first pick and reaches 64 at max, hitting each enemy once as it
-		# passes. projectile_count adds a second slash at the next-nearest
-		# enemy every 3rd level.
-		"base": {"damage": 20.0, "size": 60.0, "speed": 1.0 / 0.9, "projectile_count": 1.0},
-		"gain": {"damage": 4.0, "size": 5.0, "speed": 0.06},
+		# Swung by SwordCaster.gd: size is the reach (pixels); duration is
+		# how long the slash flies (seconds, at Slash.SPEED px/s, times
+		# get_duration_mult()) - 90px at level 1 and ~240px at 12 before
+		# any Duration bonus, on top of the reach; speed is swings/sec
+		# (cooldown = 1/speed: 0.9s at level 1, ~0.56s at 12); damage
+		# one-shots a Zombie (20 HP) from the first pick and reaches 64 at
+		# max, hitting each enemy once as it passes. projectile_count adds
+		# a second slash at the next-nearest enemy every 3rd level.
+		"base": {"damage": 20.0, "size": 60.0, "speed": 1.0 / 0.9, "duration": 0.2, "projectile_count": 1.0},
+		"gain": {"damage": 4.0, "size": 5.0, "speed": 0.06, "duration": 0.03},
 		"speed_label": "cooldown",
 		"max_level": 12,
 	},
@@ -399,6 +414,17 @@ const PASSIVE_DEFS := {
 		"per_level_value": 0.1,
 		"max_level": 5,
 	},
+	"hourglass": {
+		"display_name": "Hourglass",
+		"description": "Slashes and tornadoes last longer.",
+		"stat": "duration_mult",
+		"stat_label": "duration",
+		"base": 1.0,
+		# Power Emblem's curve: +20% per level, x2 at max, multiplying
+		# with the permanent Duration upgrade in get_duration_mult().
+		"per_level_value": 0.2,
+		"max_level": 5,
+	},
 }
 
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
@@ -435,7 +461,7 @@ const CHARACTER_DEFS := {
 			"Move speed: 140",
 			"Starting weapon: Sword",
 			"Can unlock: Laser Pistol, Forcefield, Tornado, Grenade, Fireball",
-			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin",
+			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin, Hourglass",
 			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00, a 5th passive slot for 15:00)",
 		],
 		"starting_weapon": "sword",
@@ -530,6 +556,7 @@ func reset() -> void:
 	xp_carry = 0
 	coin_gain_bonus = 0.0
 	coin_carry = 0
+	duration_mult = 1.0
 	_init_weapons()
 	_init_passives()
 	# A new run is starting: make sure the last run's coins are on disk.
@@ -832,6 +859,8 @@ func _get_weapon_choice_text(weapon_id: String) -> Dictionary:
 	var desc: String = "+%.1f%% dmg, +%.1f%% size, %s" % [
 		_percent_gain(stats["damage"], gain["damage"]), _percent_gain(stats["size"], gain["size"]), speed_text
 	]
+	if gain.has("duration"):
+		desc += ", +%.1f%% duration" % _percent_gain(stats["duration"], gain["duration"])
 	if def["base"].has("projectile_count") and next_level % 3 == 0:
 		match weapon_id:
 			"laser_pistol":
@@ -923,6 +952,12 @@ func get_xp_mult() -> float:
 # get_xp_mult() in whole percent (110 = x1.1), the form add_xp() uses.
 func get_xp_mult_percent() -> int:
 	return int(round(get_xp_mult() * 100.0))
+
+# The one multiplier applied to anything with a duration (a sword
+# slash's flight, a tornado's lifetime): the permanent Duration bonus
+# times this run's Hourglass passive, like damage.
+func get_duration_mult() -> float:
+	return (1.0 + get_permanent_bonus("duration")) * duration_mult
 
 # Gold per coin: the permanent Gold Gain bonus plus this run's Lucky
 # Coin bonus, ADDED (not multiplied like damage/XP) so the two maxed
