@@ -49,6 +49,8 @@ scenes/
   XPGem.tscn        - Area2D, magnets to player, grants 1 XP (green)
   RedXPGem.tscn     - same script as XPGem, Minotaur's drop, grants 5 XP (red)
   BlueXPGem.tscn    - same script again, the Slime's drop, grants 3 XP (blue)
+  MjolnirHammer.tscn - Mjolnir's thrown hammer (Area2D, MjolnirHammer.gd); its
+                      lightning is code-drawn by LightningChain.gd
   CoinPickup.tscn   - Area2D, magnets to player, grants a coin
   DamageNumber.tscn - floating text popup on hit, drifts up and fades
   IconSlot.tscn     - one box in the run-collection grid: border + icon, dimmed until acquired
@@ -132,6 +134,20 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     `Zombie.apply_knockback()` as a decelerating shove along the slash
     that replaces chasing until it stops (a TankZombie is shoved in
     every state, without its telegraph/dash being cancelled).
+  - **Mjolnir** (`MjolnirCaster.gd`, a child of Player): on a fixed
+    1.4s cooldown hurls `MjolnirHammer.tscn` at the nearest enemies
+    (one per `projectile_count`). The hammer flies at `speed`, homing
+    on its target, and on touching an enemy deals `damage` and drops a
+    `LightningChain.gd` there, which arcs to the nearest un-hit enemy
+    within `size` (its chain range), deals `damage` again, and carries
+    on from that enemy `chains` times or until nothing is in reach -
+    every strike is a code-drawn fading bolt. Levels: `chains` +1 every
+    3rd level (2 at level 1, 6 at 12), `projectile_count` +1 at levels
+    6 and 12 only (`projectile_levels` in the def, read by
+    `_gains_projectile_at()`), and damage 18 -> 40 so a maxed hammer
+    with the permanent Damage upgrade and Power Emblem both maxed
+    hits for exactly 120. Its level-up text uses `size_label`
+    ("chain range") in place of "size".
   - **Duration** is a stat like damage: `get_duration_mult()` is
     1 + the permanent Duration upgrade (+10%/level to +50%) + the
     Hourglass passive (+10%/level to +50%), ADDED like gold gain
@@ -139,7 +155,7 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     It stretches everything with a duration - the sword slash's flight
     and the Tornado's lifetime.
   - **Knockback** works the same way: `get_knockback_mult()` is 1 + the
-    permanent Knockback upgrade (+10%/level to +50%) + the War Hammer
+    permanent Knockback upgrade (+10%/level to +50%) + the Heavy Club
     passive (+10%/level to +50%), added, so both maxed is exactly x2
     the shove distance. Only the sword's slash has a `knockback` stat
     so far; any weapon can add one and call `apply_knockback()`.
@@ -257,7 +273,7 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     hundredths carry `add_xp()` uses), and Duration (same curve,
     folded into `get_duration_mult()` next to the Hourglass passive -
     see the Duration note above) and Knockback (same curve and costs,
-    folded into `get_knockback_mult()` next to the War Hammer passive,
+    folded into `get_knockback_mult()` next to the Heavy Club passive,
     added like Duration). Damage's, XP Gain's, Gold Gain's, Duration's
     and Knockback's `costs` are exactly double Health Regeneration's
     (`[200, 400, 1000, 2000, 5000]` vs `[100, 200, 500, 1000, 2500]`).

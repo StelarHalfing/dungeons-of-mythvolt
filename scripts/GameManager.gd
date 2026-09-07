@@ -124,7 +124,7 @@ const PERMANENT_UPGRADE_DEFS := {
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
 	},
-	# Damage's curve and costs once more; ADDS to the War Hammer passive
+	# Damage's curve and costs once more; ADDS to the Heavy Club passive
 	# in get_knockback_mult() (both maxed = exactly x2), scaling how far
 	# a hit shoves an enemy - only the sword's slash knocks back so far.
 	"knockback": {
@@ -251,7 +251,7 @@ var coin_carry: int = 0
 # Hourglass's stat: this run's extra duration as a fraction (0.5 =
 # +50%), added to the permanent Duration bonus in get_duration_mult().
 var duration_bonus: float = 0.0
-# War Hammer's stat: this run's extra knockback as a fraction (0.5 =
+# Heavy Club's stat: this run's extra knockback as a fraction (0.5 =
 # +50%), added to the permanent Knockback bonus in get_knockback_mult().
 var knockback_bonus: float = 0.0
 # Gold Dream (the GoldDreamPickup power-up): while gold_dream_timer is
@@ -362,6 +362,25 @@ const WEAPON_DEFS := {
 		"speed_label": "cooldown",
 		"max_level": 12,
 	},
+	"mjolnir": {
+		"display_name": "Mjolnir",
+		"description": "Hurls the hammer at the nearest enemy; lightning leaps from the strike to nearby foes.",
+		# Thrown by MjolnirCaster.gd on a fixed 1.4s cooldown: speed is
+		# the hammer's flight speed, size is how far each lightning jump
+		# can reach (shown as "chain range"), chains is jumps per strike
+		# (+1 every 3rd level: 2 at level 1, 6 at 12) and projectile_count
+		# is hammers per throw, +1 at levels 6 and 12 only (see
+		# projectile_levels and level_up_weapon()). damage applies to the
+		# hammer's target and to every enemy the lightning reaches: 18 at
+		# level 1, 40 at 12 - exactly 120 with the permanent Damage
+		# upgrade (x1.5) and the Power Emblem (x2) both maxed.
+		"base": {"damage": 18.0, "size": 90.0, "speed": 300.0, "chains": 2.0, "projectile_count": 1.0},
+		"gain": {"damage": 2.0, "size": 6.0, "speed": 15.0},
+		"speed_label": "speed",
+		"size_label": "chain range",
+		"projectile_levels": [6, 12],
+		"max_level": 12,
+	},
 }
 
 # Live per-weapon stats: weapons[id] = {"level": int, "damage": float, "size": float, "speed": float}
@@ -451,8 +470,8 @@ const PASSIVE_DEFS := {
 		"per_level_value": 0.1,
 		"max_level": 5,
 	},
-	"war_hammer": {
-		"display_name": "War Hammer",
+	"heavy_club": {
+		"display_name": "Heavy Club",
 		"description": "Every hit shoves enemies further back.",
 		"stat": "knockback_bonus",
 		"stat_label": "knockback",
@@ -498,8 +517,8 @@ const CHARACTER_DEFS := {
 			"Health: 100",
 			"Move speed: 140",
 			"Starting weapon: Sword",
-			"Can unlock: Laser Pistol, Forcefield, Tornado, Grenade, Fireball",
-			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin, Hourglass, War Hammer",
+			"Can unlock: Laser Pistol, Forcefield, Tornado, Grenade, Fireball, Mjolnir",
+			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin, Hourglass, Heavy Club",
 			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00, a 5th passive slot for 15:00)",
 		],
 		"starting_weapon": "sword",
@@ -839,9 +858,22 @@ func level_up_weapon(weapon_id: String) -> void:
 	# Any weapon whose base stats include a projectile_count (Laser
 	# Pistol, Tornado) gets +1 every 3rd level instead of/alongside
 	# its normal gains - a whole extra shot/cast, not a bigger stat
-	# bump. Forcefield has no projectile_count, so it's unaffected.
-	if WEAPON_DEFS[weapon_id]["base"].has("projectile_count") and stats["level"] % 3 == 0:
+	# bump - unless its def names the exact levels in projectile_levels
+	# (Mjolnir: 6 and 12). Forcefield has no projectile_count, so it's
+	# unaffected. A "chains" stat (Mjolnir's lightning jumps) grows by
+	# one every 3rd level the same way.
+	var def: Dictionary = WEAPON_DEFS[weapon_id]
+	if def["base"].has("projectile_count") and _gains_projectile_at(def, stats["level"]):
 		stats["projectile_count"] = stats.get("projectile_count", 1.0) + 1.0
+	if def["base"].has("chains") and stats["level"] % 3 == 0:
+		stats["chains"] = stats.get("chains", 0.0) + 1.0
+
+# Whether a weapon with a projectile_count gains one on reaching
+# `level`: the def's projectile_levels if it lists them, else every 3rd.
+func _gains_projectile_at(def: Dictionary, level: int) -> bool:
+	if def.has("projectile_levels"):
+		return def["projectile_levels"].has(level)
+	return level % 3 == 0
 
 func level_up_passive(id: String) -> void:
 	passives[id]["level"] += 1
@@ -905,12 +937,15 @@ func _get_weapon_choice_text(weapon_id: String) -> Dictionary:
 		speed_text = "-%.1f%% cooldown" % _percent_gain(current_cooldown, current_cooldown - next_cooldown)
 	else:
 		speed_text = "+%.1f%% %s" % [_percent_gain(stats["speed"], gain["speed"]), speed_label]
-	var desc: String = "+%.1f%% dmg, +%.1f%% size, %s" % [
-		_percent_gain(stats["damage"], gain["damage"]), _percent_gain(stats["size"], gain["size"]), speed_text
+	var desc: String = "+%.1f%% dmg, +%.1f%% %s, %s" % [
+		_percent_gain(stats["damage"], gain["damage"]), _percent_gain(stats["size"], gain["size"]),
+		def.get("size_label", "size"), speed_text
 	]
 	if gain.has("duration"):
 		desc += ", +%.1f%% duration" % _percent_gain(stats["duration"], gain["duration"])
-	if def["base"].has("projectile_count") and next_level % 3 == 0:
+	if def["base"].has("chains") and next_level % 3 == 0:
+		desc += ", +1 chain"
+	if def["base"].has("projectile_count") and _gains_projectile_at(def, next_level):
 		match weapon_id:
 			"laser_pistol":
 				desc += ", +1 projectile"
@@ -918,8 +953,12 @@ func _get_weapon_choice_text(weapon_id: String) -> Dictionary:
 				desc += ", +1 tornado"
 			"grenade":
 				desc += ", +1 grenade"
+			"fireball":
+				desc += ", +1 fireball"
 			"sword":
 				desc += ", +1 slash"
+			"mjolnir":
+				desc += ", +1 hammer"
 	return {
 		"name": "%s (Lv %d)" % [def["display_name"], next_level],
 		"desc": desc,
@@ -1011,7 +1050,7 @@ func get_duration_mult() -> float:
 
 # How far a hit shoves an enemy, as a multiplier on the weapon's
 # `knockback` stat (only the sword's slash has one so far): the
-# permanent Knockback bonus plus this run's War Hammer bonus, ADDED like
+# permanent Knockback bonus plus this run's Heavy Club bonus, ADDED like
 # duration so the two maxed +50%s make exactly x2.
 func get_knockback_mult() -> float:
 	return 1.0 + get_permanent_bonus("knockback") + knockback_bonus

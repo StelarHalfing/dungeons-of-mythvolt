@@ -14,6 +14,8 @@ const ICON_TEXTURES := {
 	"grenade": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Fire Orb.png"),
 	"fireball": preload("res://assets/projectile/fireball-1.png"),
 	"sword": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Sword.png"),
+	# The item sheet's iron hammer - also the thrown hammer's sprite.
+	"mjolnir": preload("res://assets/ui/icon_mjolnir.tres"),
 	"attraction_tome": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Book.png"),
 	"power_emblem": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Emblem.png"),
 	# The XP gem's own green orb sprite (an AtlasTexture slice of the orbs
@@ -24,9 +26,9 @@ const ICON_TEXTURES := {
 	# worth more gold.
 	"lucky_coin": preload("res://assets/ui/icon_lucky_coin.tres"),
 	"hourglass": preload("res://assets/ui/icon_hourglass.tres"),
-	# The iron hammer from the item sheet - the passive shoves enemies
+	# The wooden club from the item sheet - the passive shoves enemies
 	# further with every hit.
-	"war_hammer": preload("res://assets/ui/icon_war_hammer.tres"),
+	"heavy_club": preload("res://assets/ui/icon_heavy_club.tres"),
 	# The consolation picks offered once every upgrade is maxed.
 	"heal": preload("res://assets/ui/icon_heal.tres"),
 	"coins": preload("res://allassets/2D Pixel Dungeon Asset Pack/items and trap_animation/coin/coin_1.png"),
