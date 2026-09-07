@@ -28,10 +28,10 @@ var pending_level_ups: int = 0
 # User preferences and meta-progression. Persist across runs (not
 # touched by reset()) and across game restarts (saved to disk).
 var show_damage_numbers: bool = true
-# Defaults to false so a fresh install (no save file yet) always
+# Defaults to false so a fresh install (no settings file yet) always
 # starts windowed - _load_persistent_data() only overwrites this if
-# user://save_data.json exists, i.e. only after the player has
-# explicitly turned fullscreen on at least once via set_fullscreen().
+# SETTINGS_PATH exists, i.e. only after the player has explicitly
+# turned fullscreen on at least once via set_fullscreen().
 var is_fullscreen: bool = false
 # Frame-rate cap applied to Engine.max_fps; 0 = unlimited (the engine
 # default, so a fresh install behaves as before). Always one of
@@ -41,7 +41,12 @@ const FPS_CAP_OPTIONS := [60, 120, 144, 240, 540, 0]
 var coins: int = 0
 var permanent_upgrades: Dictionary = {"health_regen": 0, "damage": 0, "xp_gain": 0}
 
-const SAVE_PATH := "user://save_data.json"
+const SETTINGS_PATH := "user://settings.json"
+const LEGACY_SAVE_PATH := "user://save_data.json"
+const SLOT_COUNT := 3
+# Which save slot's progression is loaded (1..SLOT_COUNT); remembered in
+# settings.json so the game reopens on the slot last played.
+var active_slot: int = 1
 
 # Static definition of every permanent (coin-bought) upgrade: display
 # info, how much each level is worth, its level cap, and the coin
@@ -525,41 +530,111 @@ func get_permanent_xp_mult() -> float:
 func get_xp_mult() -> float:
 	return get_permanent_xp_mult() * xp_mult
 
-func _load_persistent_data() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
-		return
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+# --- Persistence: one global settings file + one file per save slot ---
+#
+# Preferences (damage numbers, fullscreen, FPS cap) and which slot is
+# active live in SETTINGS_PATH; progression (coins, permanent upgrades)
+# lives in the active slot's file. Before slots existed everything was
+# in one save_data.json - _migrate_legacy_save() turns that into
+# settings + slot 1 on first launch, keeping the old file as a backup.
+
+func slot_path(slot: int) -> String:
+	return "user://save_slot_%d.json" % slot
+
+func _read_json(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed = JSON.parse_string(file.get_as_text())
+	file.close()
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+func _write_json(path: String, data: Dictionary) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return
-	var text: String = file.get_as_text()
+	file.store_string(JSON.stringify(data))
 	file.close()
 
-	var parsed = JSON.parse_string(text)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return
-	coins = int(parsed.get("coins", 0))
-	show_damage_numbers = bool(parsed.get("show_damage_numbers", true))
-	is_fullscreen = bool(parsed.get("is_fullscreen", false))
-	var saved_cap: int = int(parsed.get("fps_cap", 0))
+func _load_persistent_data() -> void:
+	_migrate_legacy_save()
+	var settings := _read_json(SETTINGS_PATH)
+	show_damage_numbers = bool(settings.get("show_damage_numbers", true))
+	is_fullscreen = bool(settings.get("is_fullscreen", false))
+	var saved_cap: int = int(settings.get("fps_cap", 0))
 	fps_cap = saved_cap if FPS_CAP_OPTIONS.has(saved_cap) else 0
-	var saved_upgrades: Dictionary = parsed.get("permanent_upgrades", {})
+	active_slot = clamp(int(settings.get("active_slot", 1)), 1, SLOT_COUNT)
+	_load_slot(active_slot)
+
+# Replaces the in-memory progression with the given slot's (an empty or
+# missing slot means a fresh start: 0 coins, no upgrades).
+func _load_slot(slot: int) -> void:
+	coins = 0
+	for id in PERMANENT_UPGRADE_DEFS.keys():
+		permanent_upgrades[id] = 0
+	var data := _read_json(slot_path(slot))
+	coins = int(data.get("coins", 0))
+	var saved_upgrades: Dictionary = data.get("permanent_upgrades", {})
 	for id in saved_upgrades.keys():
 		if permanent_upgrades.has(id):
 			permanent_upgrades[id] = int(saved_upgrades[id])
 
 func _save_persistent_data() -> void:
-	var data := {
-		"coins": coins,
+	_write_json(SETTINGS_PATH, {
 		"show_damage_numbers": show_damage_numbers,
 		"is_fullscreen": is_fullscreen,
 		"fps_cap": fps_cap,
+		"active_slot": active_slot,
+	})
+	_write_json(slot_path(active_slot), {
+		"coins": coins,
 		"permanent_upgrades": permanent_upgrades,
-	}
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file == null:
+	})
+
+# Switches to another slot: loads its progression (progression is saved
+# on every change, so nothing of the old slot is lost) and remembers the
+# choice. Also writes the slot file, so a never-used slot stops reading
+# as "Empty" the moment it's picked.
+func select_slot(slot: int) -> void:
+	slot = clamp(slot, 1, SLOT_COUNT)
+	if slot == active_slot:
 		return
-	file.store_string(JSON.stringify(data))
-	file.close()
+	active_slot = slot
+	_load_slot(slot)
+	_save_persistent_data()
+
+# What the main menu shows on a slot button without loading the slot.
+func slot_summary(slot: int) -> Dictionary:
+	var data := _read_json(slot_path(slot))
+	if data.is_empty():
+		return {"exists": false, "coins": 0, "upgrade_levels": 0}
+	var levels: int = 0
+	for value in data.get("permanent_upgrades", {}).values():
+		levels += int(value)
+	return {"exists": true, "coins": int(data.get("coins", 0)), "upgrade_levels": levels}
+
+func _migrate_legacy_save() -> void:
+	if not FileAccess.file_exists(LEGACY_SAVE_PATH):
+		return
+	var legacy := _read_json(LEGACY_SAVE_PATH)
+	if not FileAccess.file_exists(SETTINGS_PATH):
+		_write_json(SETTINGS_PATH, {
+			"show_damage_numbers": bool(legacy.get("show_damage_numbers", true)),
+			"is_fullscreen": bool(legacy.get("is_fullscreen", false)),
+			"fps_cap": int(legacy.get("fps_cap", 0)),
+			"active_slot": 1,
+		})
+	if not FileAccess.file_exists(slot_path(1)):
+		_write_json(slot_path(1), {
+			"coins": int(legacy.get("coins", 0)),
+			"permanent_upgrades": legacy.get("permanent_upgrades", {}),
+		})
+	# Keep the original as a backup rather than deleting it.
+	var dir := DirAccess.open("user://")
+	if dir != null:
+		dir.rename(LEGACY_SAVE_PATH.get_file(), LEGACY_SAVE_PATH.get_file() + ".migrated")
 
 func set_show_damage_numbers(enabled: bool) -> void:
 	show_damage_numbers = enabled

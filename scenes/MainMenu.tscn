@@ -61,6 +61,41 @@ offset_right = 170.0
 offset_bottom = -20.0
 text = "Quit"
 
+[node name="SaveSlots" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -372.0
+offset_top = -128.0
+offset_right = 372.0
+offset_bottom = -20.0
+theme_override_constants/separation = 6
+
+[node name="SlotLabel" type="Label" parent="SaveSlots"]
+layout_mode = 2
+text = "Save Slot"
+horizontal_alignment = 1
+
+[node name="SlotRow" type="HBoxContainer" parent="SaveSlots"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Slot1" type="Button" parent="SaveSlots/SlotRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 72)
+text = "Slot 1"
+
+[node name="Slot2" type="Button" parent="SaveSlots/SlotRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 72)
+text = "Slot 2"
+
+[node name="Slot3" type="Button" parent="SaveSlots/SlotRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 72)
+text = "Slot 3"
+
 [node name="SettingsPanel" type="Panel" parent="."]
 anchor_left = 0.5
 anchor_top = 0.5

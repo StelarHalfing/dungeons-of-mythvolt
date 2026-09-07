@@ -9,6 +9,16 @@ extends Control
 
 @onready var coins_label: Label = $UpgradesPanel/VBoxContainer/CoinsLabel
 
+# Save-slot picker along the bottom: one button per GameManager slot,
+# the active one marked with the same check icon the select screens use.
+const CHECK_ICON: Texture2D = preload("res://assets/ui/icon_check.tres")
+@onready var save_slots: VBoxContainer = $SaveSlots
+@onready var slot_buttons: Array = [
+	$SaveSlots/SlotRow/Slot1,
+	$SaveSlots/SlotRow/Slot2,
+	$SaveSlots/SlotRow/Slot3,
+]
+
 # Maps upgrade id -> {info_label, buy_button}. Add a row here (plus
 # matching nodes in the .tscn) to add a new permanent upgrade without
 # duplicating the refresh/purchase logic below.
@@ -41,6 +51,10 @@ func _ready() -> void:
 	for id in upgrade_rows.keys():
 		upgrade_rows[id]["button"].pressed.connect(_on_upgrade_buy_pressed.bind(id))
 
+	for i in range(slot_buttons.size()):
+		slot_buttons[i].pressed.connect(_on_slot_pressed.bind(i + 1))
+	_refresh_slots()
+
 	var bus_idx := AudioServer.get_bus_index("Master")
 	volume_slider.value = db_to_linear(AudioServer.get_bus_volume_db(bus_idx))
 	volume_slider.value_changed.connect(_on_volume_changed)
@@ -62,28 +76,45 @@ func _on_play_pressed() -> void:
 	# Character select -> map select -> the game (see RunSetup.gd).
 	get_tree().change_scene_to_file("res://scenes/RunSetup.tscn")
 
-# The title hides with the main buttons while a panel is open, so the
-# (taller) Upgrades panel never overlaps it on a 16:9 window.
+# The title and slot picker hide with the main buttons while a panel is
+# open, so the (taller) Upgrades panel never overlaps them on a 16:9
+# window.
+func _set_menu_visible(shown: bool) -> void:
+	main_buttons.visible = shown
+	$TitleLabel.visible = shown
+	save_slots.visible = shown
+	if shown:
+		_refresh_slots()
+
 func _on_settings_pressed() -> void:
-	main_buttons.visible = false
-	$TitleLabel.visible = false
+	_set_menu_visible(false)
 	settings_panel.visible = true
 
 func _on_settings_back_pressed() -> void:
 	settings_panel.visible = false
-	main_buttons.visible = true
-	$TitleLabel.visible = true
+	_set_menu_visible(true)
 
 func _on_upgrades_pressed() -> void:
-	main_buttons.visible = false
-	$TitleLabel.visible = false
+	_set_menu_visible(false)
 	upgrades_panel.visible = true
 	_refresh_upgrades()
 
 func _on_upgrades_back_pressed() -> void:
 	upgrades_panel.visible = false
-	main_buttons.visible = true
-	$TitleLabel.visible = true
+	_set_menu_visible(true)
+
+func _on_slot_pressed(slot: int) -> void:
+	GameManager.select_slot(slot)
+	_refresh_slots()
+
+func _refresh_slots() -> void:
+	for i in range(slot_buttons.size()):
+		var slot: int = i + 1
+		var summary: Dictionary = GameManager.slot_summary(slot)
+		var button: Button = slot_buttons[i]
+		var detail: String = "%d coins" % summary["coins"] if summary["exists"] else "Empty"
+		button.text = "Slot %d\n%s" % [slot, detail]
+		button.icon = CHECK_ICON if slot == GameManager.active_slot else null
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
