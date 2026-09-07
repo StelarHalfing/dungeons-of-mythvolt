@@ -112,9 +112,10 @@ const PERMANENT_UPGRADE_DEFS := {
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
 	},
-	# Damage's curve and costs again; multiplies with the Hourglass
-	# passive in get_duration_mult(), which stretches everything with a
-	# duration: how far a sword slash flies, how long a tornado lasts.
+	# Damage's curve and costs again; ADDS to the Hourglass passive in
+	# get_duration_mult() (both maxed = exactly x2), which stretches
+	# everything with a duration: how far a sword slash flies, how long
+	# a tornado lasts.
 	"duration": {
 		"display_name": "Duration",
 		"description": "Permanently lengthen slashes and tornadoes.",
@@ -236,9 +237,9 @@ var xp_carry: int = 0
 # too (coin_carry) - ten coins at x1.1 really do give 11 gold.
 var coin_gain_bonus: float = 0.0
 var coin_carry: int = 0
-# Hourglass's stat (this run's duration multiplier; the permanent
-# Duration upgrade multiplies on top - see get_duration_mult()).
-var duration_mult: float = 1.0
+# Hourglass's stat: this run's extra duration as a fraction (0.5 =
+# +50%), added to the permanent Duration bonus in get_duration_mult().
+var duration_bonus: float = 0.0
 
 # Static definition of every weapon: base stats and the flat amount
 # added to each stat every time it levels up. Every weapon starts a run
@@ -417,12 +418,13 @@ const PASSIVE_DEFS := {
 	"hourglass": {
 		"display_name": "Hourglass",
 		"description": "Slashes and tornadoes last longer.",
-		"stat": "duration_mult",
+		"stat": "duration_bonus",
 		"stat_label": "duration",
-		"base": 1.0,
-		# Power Emblem's curve: +20% per level, x2 at max, multiplying
-		# with the permanent Duration upgrade in get_duration_mult().
-		"per_level_value": 0.2,
+		# Stored as the bonus fraction (base 0, +0.1/level, +50% at max)
+		# rather than a multiplier, because it ADDS to the permanent
+		# Duration upgrade in get_duration_mult(): both maxed = exactly x2.
+		"base": 0.0,
+		"per_level_value": 0.1,
 		"max_level": 5,
 	},
 }
@@ -556,7 +558,7 @@ func reset() -> void:
 	xp_carry = 0
 	coin_gain_bonus = 0.0
 	coin_carry = 0
-	duration_mult = 1.0
+	duration_bonus = 0.0
 	_init_weapons()
 	_init_passives()
 	# A new run is starting: make sure the last run's coins are on disk.
@@ -955,9 +957,10 @@ func get_xp_mult_percent() -> int:
 
 # The one multiplier applied to anything with a duration (a sword
 # slash's flight, a tornado's lifetime): the permanent Duration bonus
-# times this run's Hourglass passive, like damage.
+# plus this run's Hourglass bonus, ADDED like gold gain (not multiplied
+# like damage) so the two maxed +50%s make exactly x2.
 func get_duration_mult() -> float:
-	return (1.0 + get_permanent_bonus("duration")) * duration_mult
+	return 1.0 + get_permanent_bonus("duration") + duration_bonus
 
 # Gold per coin: the permanent Gold Gain bonus plus this run's Lucky
 # Coin bonus, ADDED (not multiplied like damage/XP) so the two maxed

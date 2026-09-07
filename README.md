@@ -121,10 +121,11 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     any Duration bonus. `speed` is swings per second, and
     `projectile_count` (+1 every 3rd level) adds a slash at the
     next-nearest enemy in depth.
-  - **Duration** is a stat like damage: `get_duration_mult()` is the
-    permanent Duration upgrade times the Hourglass passive (both
-    Damage-shaped curves, multiplying like `get_damage_mult()`), and
-    stretches everything with a duration - the sword slash's flight
+  - **Duration** is a stat like damage: `get_duration_mult()` is
+    1 + the permanent Duration upgrade (+10%/level to +50%) + the
+    Hourglass passive (+10%/level to +50%), ADDED like gold gain
+    rather than multiplied like damage, so both maxed is exactly x2.
+    It stretches everything with a duration - the sword slash's flight
     and the Tornado's lifetime.
 - **Icons come from one script.** `WeaponIcon.gd` is a `Control`
   keyed by an `icon_id` string (the exact keys used in
