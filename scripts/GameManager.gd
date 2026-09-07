@@ -480,6 +480,7 @@ const MAP_DEFS := {
 			"Skeletons take over from 1:45",
 			"Spawn surge at 6:00 (double rate)",
 			"Slimes join at 8:00 (120 HP) as the surge eases back off",
+			"The surge returns from 10:30, double rate again by 11:00",
 		],
 		"preview": "res://assets/ui/preview_level1.tres",
 	},

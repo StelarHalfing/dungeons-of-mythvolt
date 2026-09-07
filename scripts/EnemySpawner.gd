@@ -38,6 +38,12 @@ const SLIME_START_TIME := 480.0  # 8:00
 const SLIME_RAMP_DURATION := 30.0
 const SLIME_MAX_SHARE := 0.35
 
+# The fourth step: from 10:30 the surge ramps back in over
+# SECOND_SURGE_RAMP_DURATION - double the rate again by 11:00, now with
+# the Slimes still in the mix - and stays for the rest of the run.
+const SECOND_SURGE_START_TIME := 630.0  # 10:30
+const SECOND_SURGE_RAMP_DURATION := 30.0
+
 var spawn_timer: float = 0.0
 var enemies_spawned: int = 0
 
@@ -56,11 +62,16 @@ func current_interval() -> float:
 
 # 1.0 before SURGE_START_TIME, easing linearly to SURGE_INTERVAL_MULT
 # over SURGE_RAMP_DURATION seconds, holding there until SLIME_START_TIME,
-# then easing back to 1.0 over SLIME_RAMP_DURATION as the Slimes arrive.
+# easing back to 1.0 over SLIME_RAMP_DURATION as the Slimes arrive, then
+# easing to SURGE_INTERVAL_MULT again from SECOND_SURGE_START_TIME and
+# staying there.
 func _surge_interval_mult() -> float:
 	var surge_in: float = clamp((GameManager.game_time - SURGE_START_TIME) / SURGE_RAMP_DURATION, 0.0, 1.0)
 	var surge_out: float = clamp((GameManager.game_time - SLIME_START_TIME) / SLIME_RAMP_DURATION, 0.0, 1.0)
-	return lerp(1.0, SURGE_INTERVAL_MULT, surge_in * (1.0 - surge_out))
+	var second_in: float = clamp((GameManager.game_time - SECOND_SURGE_START_TIME) / SECOND_SURGE_RAMP_DURATION, 0.0, 1.0)
+	# 0 = plateau rate, 1 = full surge.
+	var surge_level: float = clamp(surge_in * (1.0 - surge_out) + second_in, 0.0, 1.0)
+	return lerp(1.0, SURGE_INTERVAL_MULT, surge_level)
 
 func spawn_enemy() -> void:
 	var players := get_tree().get_nodes_in_group("player")

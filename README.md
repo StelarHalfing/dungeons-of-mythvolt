@@ -175,7 +175,9 @@ replacing the `_draw()` calls with a `Sprite2D` child.
   `Zombie.gd` with the Slimes Pack bounce frames for every facing)
   take up to 35% of the base chaser slot while the surge eases back
   off over the same 30 seconds - the spawn rate returns to its
-  pre-6:00 level, but with far more HP per spawn.
+  pre-6:00 level, but with far more HP per spawn - and from 10:30 the
+  surge ramps back in (double rate again by 11:00, Slimes included)
+  and stays for the rest of the run.
 - **Minotaur extends Goblin via GDScript inheritance**
   (`extends "res://scripts/Goblin.gd"`), not a from-scratch script.
   `Goblin.gd` splits its behavior into small overridable pieces
