@@ -21,6 +21,10 @@ extends Control
 		"info": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/DamageInfoLabel,
 		"button": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/DamageBuyButton,
 	},
+	"xp_gain": {
+		"info": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/XpGainInfoLabel,
+		"button": $UpgradesPanel/VBoxContainer/ScrollContainer/UpgradeList/XpGainBuyButton,
+	},
 }
 
 func _ready() -> void:
@@ -58,22 +62,28 @@ func _on_play_pressed() -> void:
 	# Character select -> map select -> the game (see RunSetup.gd).
 	get_tree().change_scene_to_file("res://scenes/RunSetup.tscn")
 
+# The title hides with the main buttons while a panel is open, so the
+# (taller) Upgrades panel never overlaps it on a 16:9 window.
 func _on_settings_pressed() -> void:
 	main_buttons.visible = false
+	$TitleLabel.visible = false
 	settings_panel.visible = true
 
 func _on_settings_back_pressed() -> void:
 	settings_panel.visible = false
 	main_buttons.visible = true
+	$TitleLabel.visible = true
 
 func _on_upgrades_pressed() -> void:
 	main_buttons.visible = false
+	$TitleLabel.visible = false
 	upgrades_panel.visible = true
 	_refresh_upgrades()
 
 func _on_upgrades_back_pressed() -> void:
 	upgrades_panel.visible = false
 	main_buttons.visible = true
+	$TitleLabel.visible = true
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
@@ -114,9 +124,10 @@ func _refresh_upgrade_row(id: String) -> void:
 		buy_button.text = "Buy Lv %d (%d coins)" % [level + 1, cost]
 		buy_button.disabled = GameManager.coins < cost
 
-# Health Regeneration is a flat HP/sec value; Damage is a percentage.
+# Health Regeneration is a flat HP/sec value; Damage and XP Gain are
+# percentages.
 func _format_bonus(id: String, value: float) -> String:
-	if id == "damage":
+	if id == "damage" or id == "xp_gain":
 		return "%d%%" % int(round(value * 100.0))
 	return "%.1f HP/sec" % value
 

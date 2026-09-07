@@ -39,7 +39,7 @@ var is_fullscreen: bool = false
 var fps_cap: int = 0
 const FPS_CAP_OPTIONS := [60, 120, 144, 240, 540, 0]
 var coins: int = 0
-var permanent_upgrades: Dictionary = {"health_regen": 0, "damage": 0}
+var permanent_upgrades: Dictionary = {"health_regen": 0, "damage": 0, "xp_gain": 0}
 
 const SAVE_PATH := "user://save_data.json"
 
@@ -62,6 +62,15 @@ const PERMANENT_UPGRADE_DEFS := {
 		"max_level": 5,
 		"costs": [200, 400, 1000, 2000, 5000],
 	},
+	# Same curve as the Wisdom Orb passive (+10%/level, 5 levels); the two
+	# multiply together in get_xp_mult(), like Damage and the Power Emblem.
+	"xp_gain": {
+		"display_name": "XP Gain",
+		"description": "Permanently earn more XP from every gem.",
+		"per_level_value": 0.10,
+		"max_level": 5,
+		"costs": [200, 400, 1000, 2000, 5000],
+	},
 }
 
 # Player-level stats. Passives (PASSIVE_DEFS below) drive these:
@@ -73,10 +82,11 @@ var speed_mult: float = 1.0
 var max_hp_bonus: float = 0.0
 var pickup_range_mult: float = 1.0
 var damage_mult: float = 1.0
-# Wisdom Orb's stat: every XP pickup is worth amount * xp_mult. XP is
-# integer (1 per gem, 5 per red gem), so the boosted value's fraction is
-# carried in xp_carry across pickups instead of rounded away - ten 1-XP
-# gems at x1.1 really do give 11 XP.
+# Wisdom Orb's stat (this run's XP multiplier; the permanent XP Gain
+# upgrade multiplies on top - see get_xp_mult()). XP is integer (1 per
+# gem, 5 per red gem), so the boosted value's fraction is carried in
+# xp_carry across pickups instead of rounded away - ten 1-XP gems at
+# x1.1 really do give 11 XP.
 var xp_mult: float = 1.0
 var xp_carry: float = 0.0
 
@@ -316,7 +326,7 @@ func end_run() -> void:
 
 func add_xp(amount: int) -> void:
 	# Apply the XP multiplier with fractional carry (see xp_carry).
-	var boosted: float = amount * xp_mult + xp_carry
+	var boosted: float = amount * get_xp_mult() + xp_carry
 	var gained: int = int(floor(boosted))
 	xp_carry = boosted - gained
 	xp += gained
@@ -503,6 +513,17 @@ func get_permanent_damage_mult() -> float:
 # source only has to be added here.
 func get_damage_mult() -> float:
 	return get_permanent_damage_mult() * damage_mult
+
+# XP multiplier from the permanent XP Gain upgrade (1.0 = no bonus, up
+# to 1.5 at max level - flat +10%/level, not compounding).
+func get_permanent_xp_mult() -> float:
+	var per_level: float = PERMANENT_UPGRADE_DEFS["xp_gain"]["per_level_value"]
+	return 1.0 + get_upgrade_level("xp_gain") * per_level
+
+# The one multiplier add_xp() applies: the permanent XP Gain bonus times
+# this run's Wisdom Orb passive.
+func get_xp_mult() -> float:
+	return get_permanent_xp_mult() * xp_mult
 
 func _load_persistent_data() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
