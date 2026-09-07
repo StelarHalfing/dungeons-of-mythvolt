@@ -73,6 +73,12 @@ var speed_mult: float = 1.0
 var max_hp_bonus: float = 0.0
 var pickup_range_mult: float = 1.0
 var damage_mult: float = 1.0
+# Wisdom Orb's stat: every XP pickup is worth amount * xp_mult. XP is
+# integer (1 per gem, 5 per red gem), so the boosted value's fraction is
+# carried in xp_carry across pickups instead of rounded away - ten 1-XP
+# gems at x1.1 really do give 11 XP.
+var xp_mult: float = 1.0
+var xp_carry: float = 0.0
 
 # Static definition of every weapon: its starting level (0 = not yet
 # owned, must be picked once to unlock), base stats, and the flat
@@ -196,6 +202,19 @@ const PASSIVE_DEFS := {
 		"per_level_value": 0.2,
 		"max_level": 5,
 	},
+	"wisdom_orb": {
+		"display_name": "Wisdom Orb",
+		"description": "Every XP gem is worth more.",
+		"stat": "xp_mult",
+		"stat_label": "XP gain",
+		"base": 1.0,
+		# +10% XP per level, +50% at max: taken early it buys a couple of
+		# extra level-ups (= extra picks) over a run, which is what makes
+		# it worth a slot, but it never doubles progression the way the
+		# damage/pickup passives double their stat.
+		"per_level_value": 0.1,
+		"max_level": 5,
+	},
 }
 
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
@@ -250,6 +269,8 @@ func reset() -> void:
 	max_hp_bonus = 0.0
 	pickup_range_mult = 1.0
 	damage_mult = 1.0
+	xp_mult = 1.0
+	xp_carry = 0.0
 	_init_weapons()
 	_init_passives()
 
@@ -258,7 +279,11 @@ func end_run() -> void:
 	player_died.emit()
 
 func add_xp(amount: int) -> void:
-	xp += amount
+	# Apply the XP multiplier with fractional carry (see xp_carry).
+	var boosted: float = amount * xp_mult + xp_carry
+	var gained: int = int(floor(boosted))
+	xp_carry = boosted - gained
+	xp += gained
 	while xp >= xp_to_next:
 		xp -= xp_to_next
 		level += 1

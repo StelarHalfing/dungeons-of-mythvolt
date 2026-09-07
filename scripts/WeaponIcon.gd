@@ -15,6 +15,9 @@ const ICON_TEXTURES := {
 	"fireball": preload("res://assets/projectile/fireball-1.png"),
 	"attraction_tome": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Book.png"),
 	"power_emblem": preload("res://allassets/DG Fire Zone Expansion Full Ver/Items/Emblem.png"),
+	# The XP gem's own green orb sprite (an AtlasTexture slice of the orbs
+	# sheet) - the passive makes those gems worth more.
+	"wisdom_orb": preload("res://assets/ui/icon_wisdom_orb.tres"),
 }
 
 var icon_id: String = ""
