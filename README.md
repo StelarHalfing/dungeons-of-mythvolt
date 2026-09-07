@@ -1,9 +1,10 @@
 # The Dungeons of Mythvolt (Godot 4.3)
 
 A Vampire Survivors–style auto-battler survival game. Move with
-WASD or arrow keys. The Knight starts with the Sword (a melee slash
-at the nearest enemy in reach - `starting_weapon` in
-`CHARACTER_DEFS`); kill Goblins to drop XP gems, and level up to
+WASD or arrow keys. The Knight starts with the Sword (a slash at the
+nearest enemy that flies on and cleaves through whatever it passes -
+`starting_weapon` in `CHARACTER_DEFS`); kill Goblins to drop XP gems,
+and level up to
 pick from 3 weapon choices — leveling up a weapon you already own
 boosts its damage/size/speed, and picking the Forcefield for the
 first time unlocks it (an aura that ticks damage to enemies around
@@ -108,14 +109,17 @@ replacing the `_draw()` calls with a `Sprite2D` child.
     `size` is the ring's radius, `speed` is ticks-per-second
     (`1.0 / speed` = seconds between ticks). No projectile count -
     the every-3-levels bonus is exclusive to the Laser Pistol.
-  - **Sword** (`SwordCaster.gd`, a child of Player): melee. Once its
-    cooldown is up it waits for the nearest enemy to come within
-    `size` (its reach), then spawns a `Slash.gd` fan aimed at it that
-    damages every enemy inside a 110-degree arc on its first frame
-    (a geometric check, like Fireball's blast) and draws a sweeping
-    crescent that fades out. `speed` is swings per second, and
+  - **Sword** (`SwordCaster.gd`, a child of Player): once its
+    cooldown is up it waits for the nearest enemy to come within the
+    slash's depth (`size`, its reach, plus 1.5x that of flight), then
+    spawns a `Slash.gd` into the world aimed at it: a 110-degree
+    crescent that sweeps open, flies forward `size * 1.5` pixels and
+    fades, damaging each enemy inside its fan once as it passes (a
+    geometric check against the enemies group, like Fireball's blast)
+    - so it cleaves through a line of enemies, ~150px deep at level 1
+    and ~290px at 12. `speed` is swings per second, and
     `projectile_count` (+1 every 3rd level) adds a slash at the
-    next-nearest enemy in reach.
+    next-nearest enemy in depth.
 - **Icons come from one script.** `WeaponIcon.gd` is a `Control`
   keyed by an `icon_id` string (the exact keys used in
   `GameManager.weapons`/`.passives`): ids in its `ICON_TEXTURES`

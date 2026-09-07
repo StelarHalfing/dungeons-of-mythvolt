@@ -309,12 +309,14 @@ const WEAPON_DEFS := {
 	},
 	"sword": {
 		"display_name": "Sword",
-		"description": "Swings a slash at the nearest enemy in reach.",
-		# Melee, swung by SwordCaster.gd: size is the reach (pixels), speed
-		# is swings/sec (cooldown = 1/speed: 0.9s at level 1, ~0.56s at
-		# 12), damage one-shots a Zombie (20 HP) from the first pick and
-		# reaches 64 at max. projectile_count adds a second slash at the
-		# next-nearest enemy in reach every 3rd level.
+		"description": "Slashes at the nearest enemy; the slash flies on, cleaving through everything it passes.",
+		# Swung by SwordCaster.gd: size is the reach (pixels) - the slash
+		# flies 1.5x that on top, so it hits ~150px deep at level 1 and
+		# ~290px at 12 - speed is swings/sec (cooldown = 1/speed: 0.9s at
+		# level 1, ~0.56s at 12), damage one-shots a Zombie (20 HP) from the
+		# first pick and reaches 64 at max, hitting each enemy once as it
+		# passes. projectile_count adds a second slash at the next-nearest
+		# enemy every 3rd level.
 		"base": {"damage": 20.0, "size": 60.0, "speed": 1.0 / 0.9, "projectile_count": 1.0},
 		"gain": {"damage": 4.0, "size": 5.0, "speed": 0.06},
 		"speed_label": "cooldown",
