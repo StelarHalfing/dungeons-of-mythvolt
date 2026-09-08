@@ -46,17 +46,20 @@ var slow_timer: float = 0.0
 # far behind they'll never catch up - dead weight still paying for
 # movement, contact-damage checks and animation every frame, and
 # nothing ever fights them again until EnemySpawner wipes the field at
-# the 15:01 Reaper. Past RECYCLE_DISTANCE (well beyond EnemySpawner's
-# own spawn_radius, i.e. genuinely off-screen, not just far), recycle
-# it back in as if freshly spawned - same distance a real spawn uses,
-# landing in a cone around the player's current facing (Player.
-# facing_dir) rather than one exact point so a whole batch of
-# stragglers doesn't reappear stacked together. That bounds how many
-# enemies are ever live at once and turns a straggler back into an
-# actual threat instead of permanent simulated cost for nothing.
-const RECYCLE_DISTANCE := 1400.0
-const RECYCLE_SPAWN_RADIUS := 500.0
-const RECYCLE_SPREAD := deg_to_rad(60.0)
+# the 15:01 Reaper. One that has fallen fully off the edge of the
+# screen behind the player wraps round to the edge ahead of them
+# instead, keeping its place along the other axis - see ScreenWrap.gd
+# (XP gems do exactly the same) - so a straggler comes back as an
+# actual threat instead of permanent simulated cost for nothing, and a
+# batch of them comes back spread along the edge the way they were
+# spread behind, not stacked on one point. WRAP_MARGIN allows for the
+# biggest sprite that takes this (the Reaper at 5x) being fully hidden
+# first; WRAP_INSET puts it a body inside the edge so it walks in
+# rather than pops in. The Ancient Keeper has its own _process() and
+# never wraps - it belongs at its totem.
+const ScreenWrapScript := preload("res://scripts/ScreenWrap.gd")
+const WRAP_MARGIN := 96.0
+const WRAP_INSET := 32.0
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -69,20 +72,21 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if slow_timer > 0.0:
 		slow_timer -= delta
-	if _recycle_if_far():
+	if _wrap_if_behind():
 		return
 	if not _update_knockback(delta):
 		_move_toward_player(delta)
 	_update_facing()
 	_update_contact_damage(delta)
 
-func _recycle_if_far() -> bool:
+# True when this enemy just wrapped round the screen (see above), in
+# which case the frame's movement is skipped - it starts its chase
+# afresh from the far edge next frame.
+func _wrap_if_behind() -> bool:
 	var player: Node2D = GameManager.player
-	if player == null or global_position.distance_to(player.global_position) <= RECYCLE_DISTANCE:
+	if player == null:
 		return false
-	var angle: float = player.facing_dir.angle() + randf_range(-RECYCLE_SPREAD / 2.0, RECYCLE_SPREAD / 2.0)
-	global_position = player.global_position + Vector2.RIGHT.rotated(angle) * RECYCLE_SPAWN_RADIUS
-	return true
+	return ScreenWrapScript.wrap_across_screen(self, player, WRAP_MARGIN, WRAP_INSET)
 
 func apply_slow(duration: float = 0.25) -> void:
 	slow_timer = duration
