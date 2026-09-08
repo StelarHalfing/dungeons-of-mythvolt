@@ -6,6 +6,7 @@
 [ext_resource type="Theme" path="res://assets/ui/AppTheme.tres" id="4"]
 
 [node name="InventoryScreen" type="Control"]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

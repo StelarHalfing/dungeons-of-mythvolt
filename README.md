@@ -637,6 +637,21 @@ still drawn in code with `_draw()`.
   and coins sit at the bar's foot), and the grid picks its column count
   from the width it actually has, up to `ItemGridPage.MAX_COLUMNS`, so a
   wide window fills its rows instead of leaving the page half empty.
+  One Godot 4.7 gotcha sits underneath all of this and cost a release:
+  a hand-written `.tscn` that anchors a Control must also declare
+  `layout_mode = 1` on that node, because 4.7 only honours and reports
+  `anchors_preset` in anchors layout mode. Without it the engine reads
+  the node's preset back as Top Left, and anything that re-packs the
+  scene from live nodes - the editor saving a parent scene, or the
+  exporter's text-to-binary conversion - writes `anchors_preset = 0` as
+  an override onto the instanced root, which resets its anchors on load
+  and collapses the whole screen to 0 x 0 (the Inventory screen and the
+  Run Setup pages shipped that way in branch-4 while the editor run
+  looked fine). The instanced roots (`InventoryScreen`, `ItemGridPage`,
+  `SelectPage`, `ChestReveal`, `RunBackpackPanel`) now carry
+  `layout_mode = 1`, and `project.godot` keeps text resources as text on
+  export (`editor/export/convert_text_resources_to_binary=false`) so the
+  build ships the exact scenes the harnesses verified.
 
 ## Where to go from here
 

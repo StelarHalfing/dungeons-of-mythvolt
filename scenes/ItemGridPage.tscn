@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/ItemGridPage.gd" id="1"]
 
 [node name="ItemGridPage" type="Control"]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

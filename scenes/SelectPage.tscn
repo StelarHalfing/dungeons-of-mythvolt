@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/SelectPage.gd" id="1"]
 
 [node name="SelectPage" type="Control"]
+layout_mode = 1
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1")

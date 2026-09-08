@@ -6,6 +6,7 @@
 [ext_resource type="Theme" path="res://assets/ui/AppTheme.tres" id="4"]
 
 [node name="RunBackpackPanel" type="Panel"]
+layout_mode = 1
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
