@@ -26,9 +26,14 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	# Base _process() is overridden here (different per-state
 	# movement), so slow_timer's countdown has to happen here too -
-	# Zombie's _process() never runs for a TankZombie instance.
+	# Zombie's _process() never runs for a TankZombie instance. Same
+	# for the off-screen recycle check (see Zombie._recycle_if_far()) -
+	# a straggling Tank Zombie is dead weight exactly like any other
+	# enemy that fell behind.
 	if slow_timer > 0.0:
 		slow_timer -= delta
+	if _recycle_if_far():
+		return
 	var speed_mult: float = SLOWED_SPEED_MULT if slow_timer > 0.0 else 1.0
 
 	# A knockback shoves it in every state: it replaces chasing, and

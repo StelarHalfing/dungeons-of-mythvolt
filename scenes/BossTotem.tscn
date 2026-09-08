@@ -10,6 +10,8 @@ radius = 56.0
 
 [node name="BossTotem" type="Area2D"]
 script = ExtResource("1")
+collision_layer = 8
+collision_mask = 1
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -24)

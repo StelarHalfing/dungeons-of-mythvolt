@@ -41,6 +41,23 @@ var is_dead: bool = false
 const SLOWED_SPEED_MULT := 0.4
 var slow_timer: float = 0.0
 
+# Most enemies are slower than the player (this base Zombie's `speed`
+# is well under Player.base_speed), so over a long run plenty fall so
+# far behind they'll never catch up - dead weight still paying for
+# movement, contact-damage checks and animation every frame, and
+# nothing ever fights them again until EnemySpawner wipes the field at
+# the 15:01 Reaper. Past RECYCLE_DISTANCE (well beyond EnemySpawner's
+# own spawn_radius, i.e. genuinely off-screen, not just far), recycle
+# it back in as if freshly spawned - same distance a real spawn uses,
+# landing in a cone around the player's current facing (Player.
+# facing_dir) rather than one exact point so a whole batch of
+# stragglers doesn't reappear stacked together. That bounds how many
+# enemies are ever live at once and turns a straggler back into an
+# actual threat instead of permanent simulated cost for nothing.
+const RECYCLE_DISTANCE := 1400.0
+const RECYCLE_SPAWN_RADIUS := 500.0
+const RECYCLE_SPREAD := deg_to_rad(60.0)
+
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 func _ready() -> void:
@@ -52,10 +69,20 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if slow_timer > 0.0:
 		slow_timer -= delta
+	if _recycle_if_far():
+		return
 	if not _update_knockback(delta):
 		_move_toward_player(delta)
 	_update_facing()
 	_update_contact_damage(delta)
+
+func _recycle_if_far() -> bool:
+	var player: Node2D = GameManager.player
+	if player == null or global_position.distance_to(player.global_position) <= RECYCLE_DISTANCE:
+		return false
+	var angle: float = player.facing_dir.angle() + randf_range(-RECYCLE_SPREAD / 2.0, RECYCLE_SPREAD / 2.0)
+	global_position = player.global_position + Vector2.RIGHT.rotated(angle) * RECYCLE_SPAWN_RADIUS
+	return true
 
 func apply_slow(duration: float = 0.25) -> void:
 	slow_timer = duration

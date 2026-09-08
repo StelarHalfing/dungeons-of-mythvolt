@@ -255,6 +255,8 @@ animations = [{
 
 [node name="Skeleton" type="Area2D"]
 script = ExtResource("1")
+collision_layer = 2
+collision_mask = 1
 max_hp = 60.0
 xp_gem_count = 2
 

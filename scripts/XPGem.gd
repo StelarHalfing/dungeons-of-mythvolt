@@ -27,6 +27,15 @@ const TIERS := [
 ]
 const MAX_GEMS := 100
 
+# A gem past this far, with the player actively moving further away
+# from it (not just standing still or wandering back toward it), snaps
+# to the player's side instead of getting left behind for good - see
+# _process(). Comfortably past the pickup range but well inside the
+# camera's view (1280x720 at zoom 1.25), so it reads as "swept along"
+# rather than an off-screen jump.
+const LEASH_RANGE := 400.0
+const LEASH_SIDE_OFFSET := 50.0
+
 var homing: bool = false
 var current_speed: float = 0.0
 
@@ -76,13 +85,34 @@ func _process(delta: float) -> void:
 	var player: Node2D = GameManager.player
 	if player == null:
 		return
-	var dist: float = global_position.distance_to(player.global_position)
+	var to_gem: Vector2 = global_position - player.global_position
+	var dist: float = to_gem.length()
 	var pickup_range: float = 60.0 * GameManager.pickup_range_mult
 	if dist < pickup_range:
 		homing = true
+	if not homing and dist > LEASH_RANGE and _player_moving_away(player, to_gem):
+		_leash_to_player(player, to_gem)
+		return
 	if homing:
 		current_speed = min(current_speed + 800.0 * delta, 500.0)
 		global_position = global_position.move_toward(player.global_position, current_speed * delta)
+
+# True while the player is actually walking further from this gem (not
+# standing still, and not wandering back toward it) - `velocity` points
+# roughly the opposite way from `to_gem` (the player-to-gem vector).
+func _player_moving_away(player: Node2D, to_gem: Vector2) -> bool:
+	return player.velocity.length() > 0.0 and player.velocity.dot(to_gem) < 0.0
+
+# Snaps the gem to the player's side, in whichever direction they're
+# heading - the side it's already trailing on (so it swings around
+# rather than jumping across the player), just outside the pickup
+# range so it starts homing in smoothly next frame instead of a second
+# teleport onto the player.
+func _leash_to_player(player: Node2D, to_gem: Vector2) -> void:
+	var side: Vector2 = player.velocity.normalized().orthogonal()
+	if side.dot(to_gem) < 0.0:
+		side = -side
+	global_position = player.global_position + side * LEASH_SIDE_OFFSET
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):

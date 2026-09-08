@@ -8,6 +8,8 @@ radius = 3.0
 
 [node name="XPGem" type="Area2D"]
 script = ExtResource("1")
+collision_layer = 8
+collision_mask = 1
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_1")

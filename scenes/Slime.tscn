@@ -160,6 +160,8 @@ animations = [{
 
 [node name="Slime" type="Area2D"]
 script = ExtResource("1")
+collision_layer = 2
+collision_mask = 1
 speed = 45.0
 max_hp = 500.0
 contact_damage = 15.0
