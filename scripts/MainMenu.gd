@@ -27,7 +27,7 @@ extends Control
 # with the confirmation dialog in the middle, so nothing behind it can
 # be clicked until the player answers.
 const CHECK_ICON: Texture2D = preload("res://assets/ui/icon_check.tres")
-const SLOT_BUTTON_SIZE := Vector2(230, 130)
+const SLOT_BUTTON_SIZE := Vector2(230, 166)
 const DELETE_BUTTON_SIZE := Vector2(230, 78)
 @onready var save_slot_button: Button = $SaveSlotButton
 @onready var save_panel: Panel = $SavePanel
@@ -35,12 +35,18 @@ const DELETE_BUTTON_SIZE := Vector2(230, 78)
 @onready var confirm_overlay: Control = $ConfirmOverlay
 @onready var confirm_message: Label = $ConfirmOverlay/ConfirmPanel/VBoxContainer/MessageLabel
 @onready var cancel_button: Button = $ConfirmOverlay/ConfirmPanel/VBoxContainer/ButtonRow/CancelButton
+@onready var confirm_button: Button = $ConfirmOverlay/ConfirmPanel/VBoxContainer/ButtonRow/ConfirmButton
 # Index i is slot i + 1.
 var slot_buttons: Array[Button] = []
 var slot_checks: Array[TextureRect] = []
 var delete_buttons: Array[Button] = []
-# Slot awaiting the delete confirmation (0 = none).
-var pending_delete_slot: int = 0
+# What the Confirm button runs (ask_confirm()); invalid when no question
+# is up. Used for slot deletes and the Inventory screen's salvages.
+var pending_confirm: Callable = Callable()
+
+# The Inventory screen (InventoryScreen.tscn): opened by the Inventory
+# button among the main buttons, closed by its own Back.
+@onready var inventory_screen: Control = $InventoryScreen
 
 # Unlocks panel (the "Unlocks" button in the bottom-right corner): one
 # row per GameManager.UNLOCK_DEFS entry, built in _build_unlock_rows(),
@@ -72,6 +78,9 @@ func _ready() -> void:
 	$MainButtons/PlayButton.pressed.connect(_on_play_pressed)
 	$MainButtons/SettingsButton.pressed.connect(_on_settings_pressed)
 	$MainButtons/UpgradesButton.pressed.connect(_on_upgrades_pressed)
+	$MainButtons/InventoryButton.pressed.connect(_on_inventory_pressed)
+	inventory_screen.closed.connect(func(): _set_menu_visible(true))
+	inventory_screen.confirm_requested.connect(ask_confirm)
 	$QuitButton.pressed.connect(_on_quit_pressed)
 	$SettingsPanel/VBoxContainer/BackButton.pressed.connect(_on_settings_back_pressed)
 	$UpgradesPanel/VBoxContainer/BackButton.pressed.connect(_on_upgrades_back_pressed)
@@ -90,8 +99,8 @@ func _ready() -> void:
 	confirm_overlay.visible = false
 	save_slot_button.pressed.connect(_on_save_pressed)
 	$SavePanel/VBoxContainer/BackButton.pressed.connect(_on_save_back_pressed)
-	$ConfirmOverlay/ConfirmPanel/VBoxContainer/ButtonRow/ConfirmButton.pressed.connect(_on_confirm_delete)
-	cancel_button.pressed.connect(_on_cancel_delete)
+	$ConfirmOverlay/ConfirmPanel/VBoxContainer/ButtonRow/ConfirmButton.pressed.connect(_on_confirm_pressed)
+	cancel_button.pressed.connect(_on_cancel_pressed)
 	_build_slot_columns()
 	_refresh_slots()
 
@@ -126,6 +135,10 @@ func _set_menu_visible(shown: bool) -> void:
 	unlocks_button.visible = shown
 	if shown:
 		_refresh_slots()
+
+func _on_inventory_pressed() -> void:
+	_set_menu_visible(false)
+	inventory_screen.open()
 
 func _on_unlocks_pressed() -> void:
 	_set_menu_visible(false)
@@ -252,25 +265,33 @@ func _on_slot_pressed(slot: int) -> void:
 	_refresh_slots()
 
 func _on_delete_pressed(slot: int) -> void:
-	pending_delete_slot = slot
-	confirm_message.text = "Resetting Slot %d will delete all of its data. Are you sure?" % slot
+	ask_confirm("Resetting Slot %d will delete all of its data. Are you sure?" % slot, "Yes, Delete", func():
+		GameManager.delete_slot(slot)
+		_refresh_slots())
+
+# Puts the confirmation dialog up over everything: yes_text on the
+# Confirm button, which runs on_confirm; Cancel just closes it.
+func ask_confirm(message: String, yes_text: String, on_confirm: Callable) -> void:
+	pending_confirm = on_confirm
+	confirm_message.text = message
+	confirm_button.text = yes_text
 	confirm_overlay.visible = true
 	# Keyboard/gamepad focus starts on the safe answer, and the two
 	# dialog buttons' focus neighbours point only at each other (see the
 	# .tscn), so focus can't wander to the buttons under the overlay.
 	cancel_button.grab_focus()
 
-func _on_confirm_delete() -> void:
-	if pending_delete_slot > 0:
-		GameManager.delete_slot(pending_delete_slot)
+func _on_confirm_pressed() -> void:
+	var action: Callable = pending_confirm
 	_close_confirm()
-	_refresh_slots()
+	if action.is_valid():
+		action.call()
 
-func _on_cancel_delete() -> void:
+func _on_cancel_pressed() -> void:
 	_close_confirm()
 
 func _close_confirm() -> void:
-	pending_delete_slot = 0
+	pending_confirm = Callable()
 	confirm_overlay.visible = false
 
 func _refresh_slots() -> void:
@@ -281,6 +302,7 @@ func _refresh_slots() -> void:
 		if summary["exists"]:
 			lines.append("%d coins" % summary["coins"])
 			lines.append("Upgrades: %d" % summary["upgrade_levels"])
+			lines.append("Items: %d" % summary["items"])
 		else:
 			lines.append("Empty")
 		slot_buttons[i].text = "\n".join(lines)

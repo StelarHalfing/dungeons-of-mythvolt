@@ -10,7 +10,7 @@ weapon you already own boosts its damage/size/speed (to a cap of level
 Forcefield, Tornado, Grenade, Fireball and Mjolnir - see the weapon
 notes below), and a passive (Attraction Tome, Power Emblem, Wisdom
 Orb, Vitality Elixir, Lucky Coin, Hourglass, Heavy Club, Haste
-Crystal) boosts a stat of yours instead. Don't like the three on
+Crystal, Four-Leaf Clover) boosts a stat of yours instead. Don't like the three on
 offer? The Reroll button under them swaps in new ones: the first
 reroll of a run is free, the next costs 50 coins and the price doubles
 with every reroll after that (`GameManager.reroll_upgrades()`; the
@@ -42,7 +42,7 @@ difficulty notes below. Survive as long as you can.
 
 ```
 scenes/
-  MainMenu.tscn     - entry point: Play / Settings / Upgrades / Saves (+ Quit, Unlocks)
+  MainMenu.tscn     - entry point: Play / Settings / Upgrades / Inventory / Saves (+ Quit, Unlocks)
   RunSetup.tscn     - character select then map select (two SelectPage.tscn
                       instances of SelectCard.tscn cards), then Main.tscn
   Main.tscn         - root gameplay scene: Background + BossTotem + Player + EnemySpawner + HUD
@@ -76,16 +76,41 @@ scenes/
   DamageNumber.tscn - floating text popup on hit, drifts up and fades (pooled)
   DeathBurst.tscn   - one-shot particle burst at a corpse
   IconSlot.tscn     - one box in the run-collection grid: border + icon, dimmed until acquired
-  HUD.tscn          - HP/XP/coin display, weapon/passive collection grid,
-                       level-up panel, pause panel, game over panel, the boss
-                       HP bar (top centre while a boss lives) and the totem
-                       pointer (TotemPointer.gd)
+  HUD.tscn          - HP/XP/coin display, the collection grid (weapons, passives,
+                       the five worn armour pieces and the three-cell run backpack),
+                       kill counter and "Secure loot at 15:00" note (top right),
+                       level-up panel, pause panel (with the Backpack panel), the
+                       Victory / You Died panel, the chest reveal, the boss HP bar
+                       (top centre while a boss lives) and the totem pointer
+                       (TotemPointer.gd)
+  Chest.tscn        - Area2D: a treasure chest on the field (Chest.gd); walk into it
+                       to roll one piece of armour and start the reveal; wraps round
+                       the screen edge like a gem if left behind
+  ChestReveal.tscn  - the paused "Treasure Found!" reveal on the HUD (ChestReveal.gd,
+                       beams and starburst drawn by ChestRevealFx.gd); the fanfare
+                       scales with rarity
+  ItemCell.tscn     - one armour box: icon in a rarity-coloured frame, tooltip,
+                       drag and drop (ItemCell.gd) - the HUD rows, the Inventory
+                       screen and the pause menu's Backpack panel are built from it
+  ItemGridPage.tscn - a titled, scrolling grid of ItemCells with an optional action
+                       button: one per Inventory tab, and the stowed cells in the
+                       run's Backpack panel
+  EquipBar.tscn     - the Knight with the five wear slots around him, a Salvage (or
+                       Drop) zone and the coins; slides in on the Inventory tab,
+                       run_mode in the pause menu's Backpack panel
+  InventoryScreen.tscn - the main menu's Inventory: five tabs (Inventory, Key Items,
+                       Ingredients, Potions, Backpack), the Equip bar, Extract All
+  RunBackpackPanel.tscn - the pause menu's Backpack: what is worn (finds movable,
+                       brought-in gear greyed) and the three stowed cells
 scripts/
   GameManager.gd    - autoload singleton: XP, level, run timer,
                        weapon stats (WEAPON_DEFS), passives (PASSIVE_DEFS),
                        kill count, coins and permanent upgrades
-                       (PERMANENT_UPGRADE_DEFS), save/load to disk, and the
-                       cached `player` reference everything reads
+                       (PERMANENT_UPGRADE_DEFS), the armour tables
+                       (ARMOR_DEFS / RARITY_DEFS / AFFIX_DEFS) with the rolls,
+                       chests, the run backpack and the 15:00 securing, the
+                       inventory / equipped / haul a save slot keeps, save/load
+                       to disk, and the cached `player` reference everything reads
   WeaponCaster.gd   - shared base for the caster nodes: the cooldown gate
   MainMenu.gd, RunSetup.gd, SelectPage.gd, SelectCard.gd, Main.gd, Background.gd,
   Player.gd, EnemySpawner.gd, Zombie.gd, TankZombie.gd, Reaper.gd,
@@ -94,6 +119,8 @@ scripts/
   GrenadeCaster.gd, Grenade.gd, FireballCaster.gd, Fireball.gd, ExplosionFlash.gd,
   MjolnirCaster.gd, MjolnirHammer.gd, LightningChain.gd, Projectile.gd,
   XPGem.gd, CoinPickup.gd, MagnetPickup.gd, GoldDreamPickup.gd,
+  Chest.gd, ChestReveal.gd, ChestRevealFx.gd, ItemCell.gd, ItemGridPage.gd,
+  EquipBar.gd, InventoryScreen.gd, RunBackpackPanel.gd,
   DamageNumber.gd, DeathBurst.gd, IconSlot.gd, WeaponIcon.gd, HUD.gd
 allassets/
   Third-party art and audio packs, one folder per pack. The original DG /
@@ -259,9 +286,10 @@ still drawn in code with `_draw()`.
     `get_damage_mult()`), **Wisdom Orb** (`xp_mult`, +10%/level),
     **Vitality Elixir** (`regen_bonus`, +0.2 HP/sec/level), **Lucky Coin**
     (`coin_gain_bonus`, +10%/level), **Hourglass** (`duration_bonus`),
-    **Heavy Club** (`knockback_bonus`) and **Haste Crystal**
-    (`attack_speed_bonus`), the last four added to their permanent
-    upgrade as described above. A new passive is a def entry naming an
+    **Heavy Club** (`knockback_bonus`), **Haste Crystal**
+    (`attack_speed_bonus`) and **Four-Leaf Clover** (`luck_bonus`,
+    +10%/level, folded into `get_luck_mult()`), the last five added to
+    their permanent upgrade as described above. A new passive is a def entry naming an
     existing (or new) `GameManager` var plus an `ICON_TEXTURES` entry.
 - **Icons come from one script.** `WeaponIcon.gd` is a `Control`
   keyed by an `icon_id` string (the exact keys used in
@@ -383,9 +411,9 @@ still drawn in code with `_draw()`.
   only starts from `CHASE`, and the slam goes first if both are due.
   `predict_position()` tells the Grenade the boss stands still for the
   rest of a charge or a barrage's launch window. It drops one purple
-  gem worth 250 XP
-  and one 500-coin pile (a single `CoinPickup` at 2x with
-  `coin_value = 500`, so Gold Gain/Lucky Coin apply as to any coin).
+  gem worth 5000 XP
+  and one 2500-coin pile (a single `CoinPickup` at 2x with
+  `coin_value = 2500`, so Gold Gain/Lucky Coin apply as to any coin).
   The HUD does two things for it: `TotemPointer.gd` (a Control filling
   the HUD layer) draws an arrow orbiting the player, aimed at the
   totem, with the walk time left under it - hidden within 420px of the
@@ -467,8 +495,14 @@ still drawn in code with `_draw()`.
     cooldown, the casters' cooldowns, the Forcefield's tick interval -
     is multiplied by `get_cooldown_mult()` = 1 / (1 + the upgrade + the
     Haste Crystal passive), so both maxed halves every cooldown; its
-    `costs` are double Damage's). Damage's, XP Gain's, Gold Gain's,
-    Duration's and Knockback's `costs` are exactly double Health
+    `costs` are double Damage's), and Luck (+10%/level, Damage's costs,
+    folded into `get_luck_mult()` next to the Four-Leaf Clover passive,
+    added like Gold Gain so both maxed is exactly x2: luck scales the
+    armour rarity table and affix rolls - see
+    `docs/inventory-extraction-plan.md` - and multiplies the Magnet /
+    Gold Dream drop chances in `Zombie.die()`). Damage's, XP Gain's,
+    Gold Gain's, Duration's, Knockback's and Luck's `costs` are exactly
+    double Health
     Regeneration's (`[200, 400, 1000, 2000, 5000]` vs
     `[100, 200, 500, 1000, 2500]`), and Cooldown's double those again
     (`[400, 800, 2000, 4000, 10000]`).
@@ -530,6 +564,71 @@ still drawn in code with `_draw()`.
   which flips `DisplayServer.window_set_mode()` between
   `WINDOW_MODE_FULLSCREEN` and `WINDOW_MODE_WINDOWED` immediately and
   saves the choice for next launch.
+- **Armour is rolled, chests drop it, 15:00 keeps it.** The design and
+  its tuning numbers live in `docs/inventory-extraction-plan.md`; the
+  short version: five wear slots (`ARMOR_SLOTS`: helmet, armor, boots,
+  shield, gloves) where the slot only picks the icon, and every stat
+  on a piece is a rolled affix. Rarity (`RARITY_DEFS`) sets how many
+  and how strong - Common one affix at 5-10%, Rare two at 12-20%, Epic
+  three at 25-35%, Legendary four at 40-50% - drawn without repeats
+  from `AFFIX_DEFS` (every passive stat except projectile count, plus
+  max HP, luck and move speed). A piece is
+  `{"id", "rarity", "affixes": [{"stat", "value"}]}` and stored as its
+  rolls. Worn affixes are summed into `armor_bonus` by
+  `_apply_armor()` and read by the getters (`_armor()`), where they
+  ADD into the run-side term of their stat exactly like the passive
+  that shares it, so the add-then-multiply rules above need no special
+  case; `Player.gd` reads `get_max_hp()` / `get_speed_mult()` and the
+  pickups `get_pickup_range_mult()` rather than the raw vars. Rarity
+  shows as the frame and name colour, never a sprite tint (icons:
+  `assets/ui/armor_<slot>_<rarity>.tres`).
+  **Luck** (`get_luck_mult()`: the permanent Luck upgrade + the
+  Four-Leaf Clover passive + armour luck, added; both maxed = x2 =
+  `LUCK_MAX_MULT`) slides each rarity's weight from its Luck x1 value
+  (94/5/1/0 - no Legendary without luck) to its x2 value (60/29/15/1)
+  and keeps extrapolating past x2, skews every affix value roll upward
+  (`t = randf() ** (1 / luck)`), and multiplies the chest, Magnet and
+  Gold Dream drop chances.
+  **Chests** (`Chest.tscn`): every kill rolls `CHEST_DROP_CHANCE` x
+  luck (0.25% at x1) through `try_drop_chest()`, never while one is on
+  the field and never within `CHEST_MIN_INTERVAL` (45 s) of the last;
+  the Ancient Keeper drops a Rare-or-better one outright. Walking into
+  one calls `open_chest()`: `stow_or_wear()` decides where the piece
+  goes (worn if its slot is empty or it out-ranks what is worn; else
+  into the three-cell run `backpack`; else it swaps with the lowest
+  stowed piece it beats or is left behind), the rarity's gold is paid
+  through `add_coins()`, and the run pauses (`is_paused_for_chest`)
+  for `ChestReveal.tscn` - the Vampire-Survivors-style "Treasure
+  Found!" panel whose beams, coins, show length and flash scale with
+  rarity. The HUD grid's third and fourth rows show what is worn and
+  what is stowed; the pause menu's Backpack panel
+  (`RunBackpackPanel.tscn`) moves pieces between them with the same
+  drag and drop as the menu.
+  **Extraction**: at `EXTRACT_TIME` (900 s, next to
+  `EnemySpawner.REAPER_TIME`) `_secure_run_loot()` copies every find,
+  worn or stowed, into the slot's `haul` and writes the slot at once
+  (a haul left un-extracted just grows); the run counts as won, so the
+  end panel reads Victory with `Items secured: N`. `end_run()` before
+  that deletes the finds (`_lose_run_loot()`: backpack emptied, each
+  slot back to the brought-in piece) and the panel reads You Died with
+  `Items lost: N`. The slot file's new keys - `inventory`, `equipped`,
+  `haul`, `key_items`, `ingredients`, `potions` - all go through
+  `_clamped_item()` on the way in, so a hand-edited file is coerced,
+  never trusted.
+  **The Inventory screen** (`InventoryScreen.tscn`, the main menu's
+  Inventory button): five tabs across the top; the Inventory tab
+  slides in the `EquipBar` (the Knight with the five slots, a Salvage
+  zone, the coins) and shows the bag sorted best-first as
+  `ItemCell`s. Drag and drop is Godot's own (`_get_drag_data` /
+  `_can_drop_data` / `_drop_data` in `ItemCell.gd`): a piece dropped on
+  its slot equips and swaps the old one back (`GameManager.equip()`),
+  the wrong slots refuse it and dim while the right one and the
+  Salvage zone light up, a slot's piece dropped on the bag unequips,
+  anything dropped on Salvage pays the rarity's coins - Epic and
+  Legendary ask first through `MainMenu.ask_confirm()`. Double-click
+  and right-click do the same without dragging. The Backpack tab shows
+  the haul look-only with Extract All (`extract_all()`); Key Items,
+  Ingredients and Potions are empty tabs whose save keys are reserved.
 
 ## Where to go from here
 

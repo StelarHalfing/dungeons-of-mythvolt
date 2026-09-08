@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1"]
 [ext_resource type="Theme" path="res://assets/ui/AppTheme.tres" id="2"]
 [ext_resource type="Theme" path="res://assets/ui/MenuPanelTheme.tres" id="3"]
 [ext_resource type="FontFile" path="res://allassets/m5x7.ttf" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/InventoryScreen.tscn" id="5"]
 
 [sub_resource type="FontVariation" id="font_bold"]
 base_font = ExtResource("4")
@@ -39,31 +40,38 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -140.0
-offset_top = -161.0
+offset_top = -180.0
 offset_right = 140.0
-offset_bottom = 161.0
+offset_bottom = 180.0
 theme_override_constants/separation = 8
 
 [node name="PlayButton" type="Button" parent="MainButtons"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 102)
+custom_minimum_size = Vector2(0, 84)
 theme_override_fonts/font = SubResource("font_bold")
-theme_override_font_sizes/font_size = 64
+theme_override_font_sizes/font_size = 56
 text = "Play"
 
 [node name="SettingsButton" type="Button" parent="MainButtons"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 102)
+custom_minimum_size = Vector2(0, 84)
 theme_override_fonts/font = SubResource("font_bold")
-theme_override_font_sizes/font_size = 64
+theme_override_font_sizes/font_size = 56
 text = "Settings"
 
 [node name="UpgradesButton" type="Button" parent="MainButtons"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 102)
+custom_minimum_size = Vector2(0, 84)
 theme_override_fonts/font = SubResource("font_bold")
-theme_override_font_sizes/font_size = 64
+theme_override_font_sizes/font_size = 56
 text = "Upgrades"
+
+[node name="InventoryButton" type="Button" parent="MainButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 84)
+theme_override_fonts/font = SubResource("font_bold")
+theme_override_font_sizes/font_size = 56
+text = "Inventory"
 
 [node name="QuitButton" type="Button" parent="."]
 anchor_top = 1.0
@@ -151,9 +159,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -390.0
-offset_top = -196.0
+offset_top = -214.0
 offset_right = 390.0
-offset_bottom = 196.0
+offset_bottom = 214.0
 theme = ExtResource("3")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="SavePanel"]
@@ -290,6 +298,8 @@ theme_override_constants/separation = 2
 layout_mode = 2
 custom_minimum_size = Vector2(0, 56)
 text = "Back"
+
+[node name="InventoryScreen" parent="." instance=ExtResource("5")]
 
 [node name="ConfirmOverlay" type="Control" parent="."]
 visible = false

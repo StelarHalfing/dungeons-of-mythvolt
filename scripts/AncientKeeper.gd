@@ -60,8 +60,8 @@ const BARRAGE_TINT := Color(1.0, 0.6, 0.25)
 @export var barrage_radius_max: float = 140.0
 @export var barrage_rock_count: int = 3
 @export var barrage_erupt_lifetime: float = 0.5
-@export var boss_xp: int = 250
-@export var boss_coins: int = 500
+@export var boss_xp: int = 5000
+@export var boss_coins: int = 2500
 
 enum State { CHASE, CHARGE, BARRAGE }
 
@@ -130,7 +130,7 @@ func _player_in_range() -> bool:
 func _spawn_ring(player: Node2D, telegraph: float, lock: float, radius_min: float, radius_max: float, ring_damage: float) -> Node2D:
 	# The lock can't outlast the telegraph it is the tail of.
 	lock = minf(lock, telegraph)
-	var player_speed: float = player.base_speed * GameManager.speed_mult
+	var player_speed: float = player.base_speed * GameManager.get_speed_mult()
 	var dodge_time: float = maxf(lock - reaction_time, 0.0)
 	var ring = RockSlamScene.instantiate()
 	ring.radius = clampf(player_speed * dodge_time, radius_min, radius_max)
@@ -217,3 +217,6 @@ func _drop_loot() -> void:
 	coin.scale = Vector2(2.0, 2.0)
 	get_parent().add_child(coin)
 	coin.global_position = global_position + Vector2(24.0, 0.0)
+	# And a chest on the other side, Rare or better - the boss's real
+	# prize. No roll, no throttle (GameManager.spawn_chest).
+	GameManager.spawn_chest(global_position + Vector2(-24.0, 0.0), 1)

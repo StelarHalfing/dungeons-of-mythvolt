@@ -14,7 +14,7 @@ func _process(delta: float) -> void:
 	if player == null:
 		return
 	var dist: float = global_position.distance_to(player.global_position)
-	var pickup_range: float = 60.0 * GameManager.pickup_range_mult
+	var pickup_range: float = 60.0 * GameManager.get_pickup_range_mult()
 	if dist < pickup_range:
 		homing = true
 	if homing:

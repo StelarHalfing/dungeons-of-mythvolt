@@ -45,6 +45,24 @@ const IconSlotScene := preload("res://scenes/IconSlot.tscn")
 @onready var weapon_grid: GridContainer = $WeaponGrid
 var weapon_slots: Array = []
 var passive_slots: Array = []
+# Armour rows under the passives (ItemCell.tscn: icon in a rarity frame,
+# affix lines as tooltip): the five worn pieces (GameManager.run_worn),
+# then the three stowed in the run backpack; blank spacers pad both
+# rows out to the grid's six columns.
+const ItemCellScene := preload("res://scenes/ItemCell.tscn")
+var worn_cells: Dictionary = {}
+var backpack_cells: Array = []
+# The chest-opening reveal (ChestReveal.gd), played off
+# GameManager.chest_opened while the run is paused for it.
+@onready var chest_reveal: Control = $ChestReveal
+# Top right: the kill count, and under it whether this run's finds are
+# still at risk ("Secure loot at 15:00") or banked ("Loot secured").
+@onready var kills_label: Label = $KillsLabel
+@onready var secure_label: Label = $SecureLabel
+# The pause menu's Backpack panel (RunBackpackPanel.gd): opened by the
+# Backpack button beside Settings, Back (or Escape) returns to the
+# pause panel.
+@onready var run_backpack_panel: Panel = $RunBackpackPanel
 # Banner under the run clock announcing an unlock earned mid-run
 # (GameManager.unlock_earned); fades out after TOAST_HOLD seconds.
 @onready var unlock_toast: Label = $UnlockToast
@@ -70,6 +88,8 @@ func _ready() -> void:
 	GameManager.level_up_choices.connect(_on_level_up_choices)
 	GameManager.player_died.connect(_on_player_died)
 	GameManager.unlock_earned.connect(_on_unlock_earned)
+	GameManager.chest_opened.connect(chest_reveal.play)
+	GameManager.haul_secured.connect(_on_haul_secured)
 	_build_collection_grid()
 
 	for i in range(upgrade_buttons.size()):
@@ -80,7 +100,9 @@ func _ready() -> void:
 	$GameOverPanel/VBoxContainer/MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	$PausePanel/VBoxContainer/ResumeButton.pressed.connect(_resume)
 	$PausePanel/VBoxContainer/SettingsButton.pressed.connect(_on_pause_settings_pressed)
+	$PausePanel/VBoxContainer/BackpackButton.pressed.connect(_on_pause_backpack_pressed)
 	$PausePanel/VBoxContainer/QuitGameButton.pressed.connect(_on_quit_game_pressed)
+	run_backpack_panel.back_pressed.connect(_on_backpack_back_pressed)
 	$GameSettingsPanel/VBoxContainer/BackButton.pressed.connect(_on_pause_settings_back_pressed)
 
 	var volume_slider: HSlider = $GameSettingsPanel/VBoxContainer/VolumeSlider
@@ -110,14 +132,62 @@ func _build_collection_grid() -> void:
 	weapon_grid.columns = GameManager.GRID_SLOTS_PER_ROW
 	weapon_slots = _add_slot_row(true, GameManager.get_weapon_slots())
 	passive_slots = _add_slot_row(false, GameManager.get_passive_slots())
+	_add_armor_rows()
 	_refresh_collection_grid()
+
+func _add_armor_rows() -> void:
+	worn_cells.clear()
+	backpack_cells.clear()
+	for i in range(GameManager.GRID_SLOTS_PER_ROW):
+		if i < GameManager.ARMOR_SLOTS.size():
+			var cell = ItemCellScene.instantiate()
+			weapon_grid.add_child(cell)
+			worn_cells[GameManager.ARMOR_SLOTS[i]] = cell
+		else:
+			weapon_grid.add_child(_grid_spacer())
+	for i in range(GameManager.GRID_SLOTS_PER_ROW):
+		if i < GameManager.BACKPACK_SLOTS:
+			var cell = ItemCellScene.instantiate()
+			weapon_grid.add_child(cell)
+			backpack_cells.append(cell)
+		else:
+			weapon_grid.add_child(_grid_spacer())
+
+func _grid_spacer() -> Control:
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(48, 48)
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return spacer
 
 # An unlock earned this run opens its slot right away: rebuild the grid
 # so the lock disappears, and say why.
 func _on_unlock_earned(id: String) -> void:
 	_build_collection_grid()
 	var def: Dictionary = GameManager.UNLOCK_DEFS[id]
-	unlock_toast.text = "%s unlocked - %s" % [def["display_name"], def["description"].trim_suffix(".").to_lower()]
+	_show_toast("%s unlocked - %s" % [def["display_name"], def["description"].trim_suffix(".").to_lower()])
+
+func _on_haul_secured(count: int) -> void:
+	if count == 0:
+		_show_toast("15:00 - you made it!")
+	elif count == 1:
+		_show_toast("Secured 1 item - extract it from the Backpack in the main menu")
+	else:
+		_show_toast("Secured %d items - extract them from the Backpack in the main menu" % count)
+
+# The banner under the clock: shows `text`, holds, then fades.
+# Toasts queue rather than overwrite: at 15:00 the fifth passive slot
+# unlocks and the haul is secured in the same tick, and both deserve
+# their TOAST_HOLD.
+var toast_queue: Array = []
+
+func _show_toast(text: String) -> void:
+	if unlock_toast.visible and toast_tween != null and toast_tween.is_valid():
+		toast_queue.append(text)
+		return
+	_display_toast(text)
+
+func _display_toast(text: String) -> void:
+	unlock_toast.text = text
 	unlock_toast.modulate.a = 1.0
 	unlock_toast.visible = true
 	if toast_tween != null:
@@ -125,7 +195,12 @@ func _on_unlock_earned(id: String) -> void:
 	toast_tween = create_tween()
 	toast_tween.tween_interval(TOAST_HOLD)
 	toast_tween.tween_property(unlock_toast, "modulate:a", 0.0, TOAST_FADE)
-	toast_tween.tween_callback(func(): unlock_toast.visible = false)
+	toast_tween.tween_callback(_on_toast_done)
+
+func _on_toast_done() -> void:
+	unlock_toast.visible = false
+	if not toast_queue.is_empty():
+		_display_toast(toast_queue.pop_front())
 
 # Returns the row's open (unlocked) slots, left to right.
 func _add_slot_row(is_weapon: bool, open_slots: int) -> Array:
@@ -146,6 +221,11 @@ func _refresh_collection_grid() -> void:
 		weapon_slots[i].icon_id = GameManager.weapon_order[i] if i < GameManager.weapon_order.size() else ""
 	for i in range(passive_slots.size()):
 		passive_slots[i].icon_id = GameManager.passive_order[i] if i < GameManager.passive_order.size() else ""
+	for slot in worn_cells.keys():
+		var worn = GameManager.run_worn.get(slot)
+		worn_cells[slot].set_item(worn if worn is Dictionary else {})
+	for i in range(backpack_cells.size()):
+		backpack_cells[i].set_item(GameManager.backpack[i] if i < GameManager.backpack.size() else {})
 
 func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("ui_cancel"):
@@ -154,6 +234,8 @@ func _process(_delta: float) -> void:
 
 	time_label.text = GameManager.format_time()
 	coins_label.text = "Coins: %d" % GameManager.coins
+	kills_label.text = "Kills: %d" % GameManager.enemies_defeated
+	secure_label.text = "Loot secured" if GameManager.run_secured else "Secure loot at 15:00"
 	gold_dream_label.visible = GameManager.is_gold_dream_active()
 	if gold_dream_label.visible:
 		gold_dream_label.text = "Gold Dream %.1fs" % GameManager.gold_dream_timer
@@ -246,8 +328,17 @@ func _on_player_died() -> void:
 	pause_panel.visible = false
 	game_settings_panel.visible = false
 	game_over_panel.visible = true
+	# Past 15:00 the run is a win whatever ends it (the Reaper, usually):
+	# the same panel, titled Victory, with the finds it banked; before
+	# it, the finds the death cost.
+	var won: bool = GameManager.run_secured
+	$GameOverPanel/VBoxContainer/GameOverLabel.text = "Victory!" if won else "You Died"
 	$GameOverPanel/VBoxContainer/SurvivedLabel.text = "You survived " + GameManager.format_time()
 	$GameOverPanel/VBoxContainer/DefeatedLabel.text = "Enemies defeated: %d" % GameManager.enemies_defeated
+	if won:
+		$GameOverPanel/VBoxContainer/ItemsLabel.text = "Items secured: %d" % GameManager.secured_count
+	else:
+		$GameOverPanel/VBoxContainer/ItemsLabel.text = "Items lost: %d" % GameManager.lost_count
 
 func _on_restart_pressed() -> void:
 	get_tree().paused = false
@@ -261,11 +352,13 @@ func _on_quit_game_pressed() -> void:
 	GameManager.end_run()
 
 func _try_toggle_pause() -> void:
-	if game_settings_panel.visible:
+	if run_backpack_panel.visible:
+		_on_backpack_back_pressed()
+	elif game_settings_panel.visible:
 		_on_pause_settings_back_pressed()
 	elif pause_panel.visible:
 		_resume()
-	elif not upgrade_panel.visible and not game_over_panel.visible:
+	elif not upgrade_panel.visible and not game_over_panel.visible and not chest_reveal.visible:
 		_pause()
 
 func _pause() -> void:
@@ -276,8 +369,17 @@ func _pause() -> void:
 func _resume() -> void:
 	pause_panel.visible = false
 	game_settings_panel.visible = false
+	run_backpack_panel.close()
 	GameManager.is_menu_paused = false
 	get_tree().paused = false
+
+func _on_pause_backpack_pressed() -> void:
+	pause_panel.visible = false
+	run_backpack_panel.open()
+
+func _on_backpack_back_pressed() -> void:
+	run_backpack_panel.close()
+	pause_panel.visible = true
 
 func _on_pause_settings_pressed() -> void:
 	pause_panel.visible = false

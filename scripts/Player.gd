@@ -15,7 +15,7 @@ var fire_timer: float = 0.0
 func _ready() -> void:
 	add_to_group("player")
 	GameManager.player = self
-	max_hp = 100.0 + GameManager.max_hp_bonus
+	max_hp = GameManager.get_max_hp()
 	hp = max_hp
 
 # Drops the shared reference on the way out (see GameManager.player) so
@@ -28,11 +28,16 @@ func _physics_process(delta: float) -> void:
 	if GameManager.is_paused_for_upgrade:
 		return
 
-	# Pick up any "max HP" upgrades gained mid-run as free extra HP.
-	var new_max: float = 100.0 + GameManager.max_hp_bonus
+	# Max HP follows GameManager.get_max_hp() every frame: a gain (a
+	# Helmet found mid-run, a max-HP upgrade) is free extra HP, and a
+	# drop just lowers the cap. The drop matters at run start - this
+	# node's _ready() runs before Main.gd's GameManager.reset(), so the
+	# first value it read may still carry last run's armour.
+	var new_max: float = GameManager.get_max_hp()
 	if new_max > max_hp:
 		hp += (new_max - max_hp)
-		max_hp = new_max
+	max_hp = new_max
+	hp = minf(hp, max_hp)
 
 	# HP/sec from the permanent Health Regeneration upgrade plus this
 	# run's Vitality Elixir passive - the one place regen is applied.
@@ -41,7 +46,7 @@ func _physics_process(delta: float) -> void:
 		hp = min(hp + regen_rate * delta, max_hp)
 
 	var input_dir: Vector2 = get_input_dir()
-	velocity = input_dir * base_speed * GameManager.speed_mult
+	velocity = input_dir * base_speed * GameManager.get_speed_mult()
 	move_and_slide()
 	_update_sprite(input_dir)
 

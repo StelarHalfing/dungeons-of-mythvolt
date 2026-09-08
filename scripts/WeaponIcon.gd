@@ -32,13 +32,58 @@ const ICON_TEXTURES := {
 	# The blue diamond from the item sheet - the passive speeds up every
 	# weapon's cooldown.
 	"haste_crystal": preload("res://assets/ui/icon_haste_crystal.tres"),
+	# The full clover frame of the Pixel VFX "Luck_Up" buff animation -
+	# the passive makes every luck roll go your way more often.
+	"four_leaf_clover": preload("res://assets/ui/icon_four_leaf_clover.tres"),
 	# The consolation picks offered once every upgrade is maxed.
 	"heal": preload("res://assets/ui/icon_heal.tres"),
 	"coins": preload("res://allassets/2D Pixel Dungeon Asset Pack/items and trap_animation/coin/coin_1.png"),
 }
 
+# Armour: one texture per wear slot per rarity (RARITY_DEFS order).
+# Boots, shields and the glove are 16px cells of the DG item sheet -
+# brown, steel-blue, purple, gold for Common to Legendary (the glove
+# comes in one colour, so its rarity shows on the cell's frame only);
+# helmets and armour are 32px cells of the ElvGames Armor_Icons sheet -
+# leather for Common and Rare, steel for Epic, steel with the blue gem
+# inlay for Legendary. See assets/ui/armor_*.tres for the slices.
+const ARMOR_TEXTURES := {
+	"helmet": [
+		preload("res://assets/ui/armor_helmet_0.tres"),
+		preload("res://assets/ui/armor_helmet_1.tres"),
+		preload("res://assets/ui/armor_helmet_2.tres"),
+		preload("res://assets/ui/armor_helmet_3.tres"),
+	],
+	"armor": [
+		preload("res://assets/ui/armor_armor_0.tres"),
+		preload("res://assets/ui/armor_armor_1.tres"),
+		preload("res://assets/ui/armor_armor_2.tres"),
+		preload("res://assets/ui/armor_armor_3.tres"),
+	],
+	"boots": [
+		preload("res://assets/ui/armor_boots_0.tres"),
+		preload("res://assets/ui/armor_boots_1.tres"),
+		preload("res://assets/ui/armor_boots_2.tres"),
+		preload("res://assets/ui/armor_boots_3.tres"),
+	],
+	"shield": [
+		preload("res://assets/ui/armor_shield_0.tres"),
+		preload("res://assets/ui/armor_shield_1.tres"),
+		preload("res://assets/ui/armor_shield_2.tres"),
+		preload("res://assets/ui/armor_shield_3.tres"),
+	],
+	"gloves": [
+		preload("res://assets/ui/armor_gloves.tres"),
+		preload("res://assets/ui/armor_gloves.tres"),
+		preload("res://assets/ui/armor_gloves.tres"),
+		preload("res://assets/ui/armor_gloves.tres"),
+	],
+}
+
 var icon_id: String = ""
 var dimmed: bool = false
+# A piece of armour to draw instead of an id (see configure_item()).
+var item: Dictionary = {}
 # Draw nothing at all - the collection grid's "there's something to
 # collect here, but you don't have it yet" look.
 var blank: bool = false
@@ -46,7 +91,17 @@ var blank: bool = false
 func configure(id: String, is_dimmed: bool) -> void:
 	icon_id = id
 	dimmed = is_dimmed
+	item = {}
 	blank = false
+	queue_redraw()
+
+# Show a piece of armour: its slot's texture for its rarity. An empty
+# dictionary draws nothing.
+func configure_item(new_item: Dictionary) -> void:
+	item = new_item
+	icon_id = ""
+	dimmed = false
+	blank = new_item.is_empty()
 	queue_redraw()
 
 func set_blank() -> void:
@@ -62,6 +117,10 @@ func _draw() -> void:
 	var s: float = min(rect_size.x, rect_size.y)
 	var center: Vector2 = rect_size / 2.0
 
+	if not item.is_empty():
+		var rarity: int = clampi(int(item["rarity"]), 0, 3)
+		_draw_texture_icon(center, s, ARMOR_TEXTURES[item["id"]][rarity])
+		return
 	if ICON_TEXTURES.has(icon_id):
 		_draw_texture_icon(center, s, ICON_TEXTURES[icon_id])
 		return

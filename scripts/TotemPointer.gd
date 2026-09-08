@@ -49,7 +49,7 @@ func _draw() -> void:
 	draw_colored_polygon(points, COLOR)
 	draw_polyline(outline, OUTLINE, 2.0)
 
-	var walk_speed: float = _player.base_speed * GameManager.speed_mult
+	var walk_speed: float = _player.base_speed * GameManager.get_speed_mult()
 	var seconds: int = int(ceil(to_totem.length() / maxf(walk_speed, 1.0)))
 	var text: String = "Boss Totem  %d:%02d" % [seconds / 60, seconds % 60]
 	var font: Font = get_theme_font("font", "Label")

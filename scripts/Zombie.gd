@@ -25,7 +25,9 @@ extends Area2D
 const DamageNumberScript := preload("res://scripts/DamageNumber.gd")
 const XPGemScript := preload("res://scripts/XPGem.gd")
 
-const MAGNET_DROP_CHANCE := 0.001  # 0.1% chance per kill
+# 0.1% chance per kill at Luck x1; both the Magnet and the Gold Dream
+# roll multiply it by GameManager.get_luck_mult() (0.2% at max luck).
+const MAGNET_DROP_CHANCE := 0.001
 
 var hp: float
 var damage_tick_timer: float = 0.0
@@ -231,6 +233,8 @@ func _spawn_damage_number(amount: float) -> void:
 func die() -> void:
 	GameManager.enemies_defeated += 1
 	_drop_loot()
+	# A chest, luck-weighted and throttled (GameManager.try_drop_chest).
+	GameManager.try_drop_chest(global_position)
 
 	# A coin every 10th kill - every kill while a Gold Dream is running.
 	if GameManager.is_gold_dream_active() or GameManager.enemies_defeated % 10 == 0:
@@ -238,13 +242,13 @@ func die() -> void:
 		get_parent().add_child(coin)
 		coin.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
 
-	if randf() < MAGNET_DROP_CHANCE:
+	if randf() < MAGNET_DROP_CHANCE * GameManager.get_luck_mult():
 		var magnet = magnet_pickup_scene.instantiate()
 		get_parent().add_child(magnet)
 		magnet.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
 
 	# The Gold Dream power-up is just as rare as the Magnet (its own roll).
-	if randf() < MAGNET_DROP_CHANCE:
+	if randf() < MAGNET_DROP_CHANCE * GameManager.get_luck_mult():
 		var dream = gold_dream_pickup_scene.instantiate()
 		get_parent().add_child(dream)
 		dream.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))

@@ -7,6 +7,13 @@ signal xp_changed(current: int, needed: int)
 signal level_changed(new_level: int)
 signal player_died
 signal level_up_choices(choices: Array)
+# A chest was opened: the piece it held and where it went (see
+# stow_or_wear()); the HUD plays the reveal off this while the run is
+# paused, and close_chest() resumes it.
+signal chest_opened(item: Dictionary, outcome: Dictionary)
+# The run reached EXTRACT_TIME: this run's finds (worn and stowed) were
+# copied into the slot's haul. count is how many.
+signal haul_secured(count: int)
 
 var level: int = 1
 var xp: int = 0
@@ -14,6 +21,9 @@ var xp_to_next: int = 5
 var game_time: float = 0.0
 var is_paused_for_upgrade: bool = false
 var is_menu_paused: bool = false
+# Paused for the chest reveal (open_chest() / close_chest()), the same
+# way is_paused_for_upgrade holds the run for a level-up pick.
+var is_paused_for_chest: bool = false
 var is_game_over: bool = false
 # The live Player node: set by Player._ready(), cleared when it leaves the
 # tree (back to the menu, a restart) and null between runs. Everything
@@ -153,6 +163,19 @@ const PERMANENT_UPGRADE_DEFS := {
 		"max_level": 5,
 		"costs": [400, 800, 2000, 4000, 10000],
 	},
+	# Damage's curve and costs; ADDS to the Four-Leaf Clover passive in
+	# get_luck_mult() (both maxed = exactly x2 = LUCK_MAX_MULT). Luck
+	# scales the chest drop chance, slides the armour rarity table from
+	# almost-all-Common towards 60/29/15/1, skews every affix value roll
+	# upward and multiplies the Magnet / Gold Dream drop chances.
+	"luck": {
+		"display_name": "Luck",
+		"description": "Permanently improve every luck roll: chests, rarities, affixes and rare drops.",
+		"stat_label": "luck",
+		"per_level_value": 0.10,
+		"max_level": 5,
+		"costs": [200, 400, 1000, 2000, 5000],
+	},
 	# Whole-number perks for the level-up panel (format "count": shown as
 	# "+1"). Two expensive levels each, so they're a late investment.
 	"rerolls": {
@@ -253,10 +276,13 @@ var weapon_order: Array = []
 var passive_order: Array = []
 
 # Player-level stats. Passives (PASSIVE_DEFS below) drive these:
-# pickup_range_mult is the Attraction Tome's stat (read by XPGem/
-# CoinPickup/MagnetPickup), damage_mult is the Power Emblem's (folded
-# into every weapon's damage via get_damage_mult()); speed_mult/
-# max_hp_bonus are still free hooks for future passives.
+# pickup_range_mult is the Attraction Tome's stat, damage_mult is the
+# Power Emblem's; speed_mult/max_hp_bonus are still free hooks for
+# future passives. Nothing outside this file reads them raw: armour
+# affixes (armor_bonus, see _apply_armor()) add on top inside the
+# getters - get_pickup_range_mult(), get_speed_mult(), get_max_hp(),
+# get_damage_mult() - and those are what Player, the pickups and the
+# weapons call.
 var speed_mult: float = 1.0
 var max_hp_bonus: float = 0.0
 var pickup_range_mult: float = 1.0
@@ -529,6 +555,18 @@ const PASSIVE_DEFS := {
 		"per_level_value": 0.1,
 		"max_level": 5,
 	},
+	"four_leaf_clover": {
+		"display_name": "Four-Leaf Clover",
+		"description": "Every luck roll goes your way more often.",
+		"stat": "luck_bonus",
+		"stat_label": "luck",
+		# The bonus fraction (base 0, +0.1/level, +50% at max), ADDED to
+		# the permanent Luck upgrade in get_luck_mult(): both maxed =
+		# exactly x2, the rarity table's max-luck anchor (LUCK_MAX_MULT).
+		"base": 0.0,
+		"per_level_value": 0.1,
+		"max_level": 5,
+	},
 }
 
 # Live passive levels: passives[id] = {"level": int}. 0 = not yet picked.
@@ -553,6 +591,107 @@ const FALLBACK_DEFS := {
 	},
 }
 
+# --- Armour: wear slots, rarities, affixes ---
+# (design: docs/inventory-extraction-plan.md)
+#
+# A piece of armour is a Dictionary {"id": ARMOR_DEFS key, "rarity":
+# 0..RARITY_DEFS.size()-1, "affixes": [{"stat": AFFIX_DEFS key, "value":
+# whole percent}]}. The slot (id) only picks the icon; every stat on a
+# piece is a rolled affix, and the rarity sets how many and how strong.
+# Items are stored as their rolls (roll_armor()) and never re-rolled.
+const ARMOR_SLOTS := ["helmet", "armor", "boots", "shield", "gloves"]
+const ARMOR_DEFS := {
+	"helmet": {"display_name": "Helmet"},
+	"armor": {"display_name": "Armor"},
+	"boots": {"display_name": "Boots"},
+	"shield": {"display_name": "Shield"},
+	"gloves": {"display_name": "Gloves"},
+}
+# Ascending; the index is the item's "rarity". weight is the pick weight
+# at Luck x1 and weight_max the pick weight at LUCK_MAX_MULT - the Luck
+# upgrade and the Four-Leaf Clover passive both maxed, x2. At base luck
+# a piece is almost always Common (94/5/1/0: no Legendary without
+# Luck); at max luck the table is 60/29/15/1 (57/28/14/1%).
+# roll_rarity() slides linearly between the two by luck and keeps
+# extrapolating past x2 (clamped at zero), so luck sources added later
+# keep pushing Common down. affixes is how many buffs a piece carries,
+# value_min/max the whole-percent range each buff rolls in (luck-skewed
+# - _roll_value()), color the frame and name colour (never a sprite
+# tint), salvage the coins the Equip bar's Salvage zone pays, coins the
+# gold a chest of that rarity throws out alongside the piece (through
+# add_coins(), so Gold Gain applies - the reveal's counter ticks it up).
+const LUCK_MAX_MULT := 2.0
+const RARITY_DEFS := [
+	{"name": "Common", "weight": 94.0, "weight_max": 60.0, "affixes": 1, "value_min": 5, "value_max": 10, "color": Color.WHITE, "salvage": 50, "coins": 10},
+	{"name": "Rare", "weight": 5.0, "weight_max": 29.0, "affixes": 2, "value_min": 12, "value_max": 20, "color": Color(0.45, 0.8, 1.0), "salvage": 150, "coins": 25},
+	{"name": "Epic", "weight": 1.0, "weight_max": 15.0, "affixes": 3, "value_min": 25, "value_max": 35, "color": Color(0.85, 0.5, 1.0), "salvage": 500, "coins": 60},
+	{"name": "Legendary", "weight": 0.0, "weight_max": 1.0, "affixes": 4, "value_min": 40, "value_max": 50, "color": Color(1.0, 0.85, 0.35), "salvage": 1500, "coins": 150},
+]
+# The affix pool: every passive stat except projectile count, plus max
+# HP, luck and move speed. stat_label/format feed format_bonus() like
+# PASSIVE_DEFS'; scale turns the rolled whole-percent value into the
+# number the getter adds - 1.0 for a plain fraction, 2.0 for regen so
+# 100% reads as 2.0 HP/s and a Legendary roll (40-50%) lands level with
+# a maxed Vitality Elixir (1.0 HP/s). An affix adds into the run-side
+# term of its stat, exactly like the passive that shares it.
+const AFFIX_DEFS := {
+	"damage": {"stat_label": "damage", "format": "percent", "scale": 1.0},
+	"max_hp": {"stat_label": "max HP", "format": "percent", "scale": 1.0},
+	"luck": {"stat_label": "luck", "format": "percent", "scale": 1.0},
+	"xp_gain": {"stat_label": "XP gain", "format": "percent", "scale": 1.0},
+	"gold_gain": {"stat_label": "gold gain", "format": "percent", "scale": 1.0},
+	"pickup_range": {"stat_label": "pickup range", "format": "percent", "scale": 1.0},
+	"regen": {"stat_label": "HP/sec", "format": "flat", "scale": 2.0},
+	"duration": {"stat_label": "duration", "format": "percent", "scale": 1.0},
+	"knockback": {"stat_label": "knockback", "format": "percent", "scale": 1.0},
+	"attack_speed": {"stat_label": "attack speed", "format": "percent", "scale": 1.0},
+	"move_speed": {"stat_label": "move speed", "format": "percent", "scale": 1.0},
+}
+# How many run finds can be stowed (the in-run backpack) on top of the
+# five worn: 5 + 3 is the most a run can bring out.
+const BACKPACK_SLOTS := 3
+# Chests (Chest.tscn): every kill rolls CHEST_DROP_CHANCE x luck, but
+# never while a chest is still on the field and never within
+# CHEST_MIN_INTERVAL of the last drop - late game (~27 spawns/s) that
+# settles to about one a minute; early on they are rare and earned.
+# The Ancient Keeper's chest bypasses the roll (spawn_chest()).
+const CHEST_DROP_CHANCE := 0.0025
+const CHEST_MIN_INTERVAL := 45.0
+const ChestScene: PackedScene = preload("res://scenes/Chest.tscn")
+var last_chest_time: float = -CHEST_MIN_INTERVAL
+# Extraction: at EXTRACT_TIME every run find, worn or stowed, is copied
+# into the slot's haul (_secure_run_loot()) and the run counts as won -
+# the end panel says Victory whenever the player got here. Die before
+# it and end_run() deletes the finds instead (_lose_run_loot()). Its
+# own constant next to EnemySpawner.REAPER_TIME (15:01) so the two can
+# drift apart once the late game grows.
+const EXTRACT_TIME := 900.0
+var run_secured: bool = false
+var secured_count: int = 0
+var lost_count: int = 0
+
+# Persistent (saved with the slot, see _apply_slot()/_save_slot()): the
+# unequipped pieces, what is equipped per ARMOR_SLOTS key (null for
+# none), the haul secured at 15:00 and waiting for the Backpack tab's
+# Extract All, and the three future tabs' contents (empty until their
+# systems exist; the keys are reserved so the save format doesn't churn).
+var inventory: Array = []
+var equipped: Dictionary = {}
+var haul: Array = []
+var key_items: Dictionary = {}
+var ingredients: Dictionary = {}
+var potions: Dictionary = {}
+# Run-only: the pieces stowed this run (at most BACKPACK_SLOTS), what is
+# worn right now per slot (the equipped gear plus this run's finds - a
+# find carries an in-memory "found": true that never reaches the save),
+# and the per-affix totals over run_worn that the getters read.
+var backpack: Array = []
+var run_worn: Dictionary = {}
+var armor_bonus: Dictionary = {}
+# Four-Leaf Clover's stat: this run's extra luck as a fraction, added
+# to the permanent Luck upgrade and armour luck in get_luck_mult().
+var luck_bonus: float = 0.0
+
 # Playable characters and maps offered on the run-setup screens
 # (RunSetup.tscn builds one card per entry). `traits` are the lines shown
 # in the description panel - keep them true to the actual numbers in
@@ -568,7 +707,7 @@ const CHARACTER_DEFS := {
 			"Move speed: 140",
 			"Starting weapon: Sword",
 			"Can unlock: Laser Pistol, Forcefield, Tornado, Grenade, Fireball, Mjolnir",
-			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin, Hourglass, Heavy Club, Haste Crystal",
+			"Passives: Attraction Tome, Power Emblem, Wisdom Orb, Vitality Elixir, Lucky Coin, Hourglass, Heavy Club, Haste Crystal, Four-Leaf Clover",
 			"Slots: 2 weapons, 2 passives (more from the Upgrades shop; a 5th weapon slot for surviving 10:00, a 5th passive slot for 15:00)",
 		],
 		"starting_weapon": "sword",
@@ -638,10 +777,11 @@ func _apply_passive(id: String) -> void:
 	set(def["stat"], def["base"] + passive_level * def["per_level_value"])
 
 func _process(delta: float) -> void:
-	if not is_paused_for_upgrade and not is_menu_paused and not is_game_over:
+	if not is_paused_for_upgrade and not is_paused_for_chest and not is_menu_paused and not is_game_over:
 		game_time += delta
 		gold_dream_timer = maxf(gold_dream_timer - delta, 0.0)
 		_check_unlocks()
+		_check_extraction()
 	_tick_slot_save(delta)
 
 func activate_gold_dream() -> void:
@@ -677,15 +817,71 @@ func reset() -> void:
 	knockback_bonus = 0.0
 	attack_speed_bonus = 0.0
 	gold_dream_timer = 0.0
+	luck_bonus = 0.0
+	is_paused_for_chest = false
+	last_chest_time = -CHEST_MIN_INTERVAL
+	run_secured = false
+	secured_count = 0
+	lost_count = 0
+	backpack.clear()
+	_seed_run_worn()
 	_init_weapons()
 	_init_passives()
 	# A new run is starting: make sure the last run's coins are on disk.
 	_flush_slot()
 
 func end_run() -> void:
+	# Dying (or quitting) before 15:00 loses every find, worn or stowed;
+	# after it they were already secured into the haul.
+	if not run_secured:
+		lost_count = run_find_count()
+		_lose_run_loot()
 	is_game_over = true
 	_flush_slot()
 	player_died.emit()
+
+# How many of this run's finds are on the body or in the backpack.
+func run_find_count() -> int:
+	var count: int = backpack.size()
+	for slot in ARMOR_SLOTS:
+		var worn = run_worn.get(slot)
+		if worn is Dictionary and worn.get("found", false):
+			count += 1
+	return count
+
+func _check_extraction() -> void:
+	if run_secured or game_time < EXTRACT_TIME:
+		return
+	_secure_run_loot()
+
+# 15:00: copy every find into the slot's haul (the Backpack tab's
+# "from your last run"; a haul left un-extracted just grows) and write
+# the slot now - an achievement, not a coin trickle. The finds stay on
+# for the rest of the run.
+func _secure_run_loot() -> void:
+	run_secured = true
+	secured_count = 0
+	for slot in ARMOR_SLOTS:
+		var worn = run_worn.get(slot)
+		if worn is Dictionary and worn.get("found", false):
+			haul.append(_clean_item(worn))
+			secured_count += 1
+	for item in backpack:
+		haul.append(_clean_item(item))
+		secured_count += 1
+	_save_slot()
+	haul_secured.emit(secured_count)
+
+# Death before 15:00: the finds are gone. The backpack empties and each
+# slot goes back to what was brought in (still safe in the save).
+func _lose_run_loot() -> void:
+	backpack.clear()
+	for slot in ARMOR_SLOTS:
+		var worn = run_worn.get(slot)
+		if worn is Dictionary and worn.get("found", false):
+			var brought = equipped.get(slot)
+			run_worn[slot] = brought.duplicate(true) if brought is Dictionary else null
+	_apply_armor()
 
 func add_xp(amount: int) -> void:
 	# Apply the XP multiplier in whole percent with an integer carry (see
@@ -1081,19 +1277,19 @@ func get_permanent_bonus(id: String) -> float:
 # Total HP/sec right now: the permanent Health Regeneration upgrade plus
 # this run's Vitality Elixir passive (both flat, so they add).
 func get_health_regen_rate() -> float:
-	return get_permanent_bonus("health_regen") + regen_bonus
+	return get_permanent_bonus("health_regen") + regen_bonus + _armor("regen")
 
 # The one multiplier every weapon applies to its base damage: the
 # permanent (coin-bought) bonus times this run's Power Emblem passive.
 # Weapons call this rather than either piece so a new global damage
 # source only has to be added here.
 func get_damage_mult() -> float:
-	return (1.0 + get_permanent_bonus("damage")) * damage_mult
+	return (1.0 + get_permanent_bonus("damage")) * (damage_mult + _armor("damage"))
 
 # The one multiplier add_xp() applies: the permanent XP Gain bonus times
 # this run's Wisdom Orb passive.
 func get_xp_mult() -> float:
-	return (1.0 + get_permanent_bonus("xp_gain")) * xp_mult
+	return (1.0 + get_permanent_bonus("xp_gain")) * (xp_mult + _armor("xp_gain"))
 
 # get_xp_mult() in whole percent (110 = x1.1), the form add_xp() uses.
 func get_xp_mult_percent() -> int:
@@ -1104,14 +1300,14 @@ func get_xp_mult_percent() -> int:
 # plus this run's Hourglass bonus, ADDED like gold gain (not multiplied
 # like damage) so the two maxed +50%s make exactly x2.
 func get_duration_mult() -> float:
-	return 1.0 + get_permanent_bonus("duration") + duration_bonus
+	return 1.0 + get_permanent_bonus("duration") + duration_bonus + _armor("duration")
 
 # How far a hit shoves an enemy, as a multiplier on the weapon's
 # `knockback` stat (only the sword's slash has one so far): the
 # permanent Knockback bonus plus this run's Heavy Club bonus, ADDED like
 # duration so the two maxed +50%s make exactly x2.
 func get_knockback_mult() -> float:
-	return 1.0 + get_permanent_bonus("knockback") + knockback_bonus
+	return 1.0 + get_permanent_bonus("knockback") + knockback_bonus + _armor("knockback")
 
 # Multiplier on every weapon's seconds between attacks (the Laser
 # Pistol's fixed cooldown, the casters' cooldowns, the Forcefield's tick
@@ -1119,7 +1315,7 @@ func get_knockback_mult() -> float:
 # Crystal bonus), so each +10% is 10% more attacks per second and both
 # maxed (+50% each, added) is exactly half the cooldown.
 func get_cooldown_mult() -> float:
-	return 1.0 / (1.0 + get_permanent_bonus("cooldown") + attack_speed_bonus)
+	return 1.0 / (1.0 + get_permanent_bonus("cooldown") + attack_speed_bonus + _armor("attack_speed"))
 
 # Projectiles per volley for a weapon: its own projectile_count stat
 # plus the permanent Projectile Count upgrade. Weapons without a
@@ -1136,7 +1332,7 @@ func get_projectile_count(weapon_id: String) -> int:
 # +50%s make exactly x2 - two gold per coin, never a fraction over -
 # plus another +100% while a Gold Dream is running.
 func get_coin_mult() -> float:
-	var mult: float = 1.0 + get_permanent_bonus("coin_gain") + coin_gain_bonus
+	var mult: float = 1.0 + get_permanent_bonus("coin_gain") + coin_gain_bonus + _armor("gold_gain")
 	if is_gold_dream_active():
 		mult += GOLD_DREAM_COIN_BONUS
 	return mult
@@ -1144,11 +1340,341 @@ func get_coin_mult() -> float:
 func get_coin_mult_percent() -> int:
 	return int(round(get_coin_mult() * 100.0))
 
+# Luck scales the chest drop chance, the rarity table (RARITY_DEFS),
+# the affix value roll and the Magnet/Gold Dream drop chances: the
+# permanent Luck upgrade plus this run's Four-Leaf Clover bonus plus
+# armour luck, ADDED like gold gain so upgrade and passive both maxed
+# is exactly x2 (LUCK_MAX_MULT) before armour.
+func get_luck_mult() -> float:
+	return 1.0 + get_permanent_bonus("luck") + luck_bonus + _armor("luck")
+
+# The player's max HP: the 100 base plus any flat bonus, then the armour
+# max_hp affixes as a percentage on top. Player reads this every
+# physics frame, so a Helmet found mid-run is free HP at once.
+func get_max_hp() -> float:
+	return (100.0 + max_hp_bonus) * (1.0 + _armor("max_hp"))
+
+# Multiplier on Player.base_speed: the passive hook plus armour move
+# speed. Player, the Ancient Keeper's prediction and the totem pointer
+# all read this rather than speed_mult.
+func get_speed_mult() -> float:
+	return speed_mult + _armor("move_speed")
+
+# Multiplier on the 60px pickup range (XPGem, CoinPickup, MagnetPickup,
+# GoldDreamPickup): the Attraction Tome plus armour pickup range.
+func get_pickup_range_mult() -> float:
+	return pickup_range_mult + _armor("pickup_range")
+
+# --- Armour: rolling, wearing, inventory ---
+
+# A fresh piece: a uniform slot, a luck-weighted rarity no lower than
+# min_rarity (the Ancient Keeper's chest passes 1 = Rare), and the
+# rarity's count of distinct affixes each rolled in the rarity's range.
+func roll_armor(min_rarity: int = 0) -> Dictionary:
+	var rarity: int = roll_rarity(min_rarity)
+	return {
+		"id": ARMOR_SLOTS[randi() % ARMOR_SLOTS.size()],
+		"rarity": rarity,
+		"affixes": roll_affixes(rarity),
+	}
+
+# Weighted pick over the tiers from min_rarity up. Each tier's weight
+# slides from its Luck x1 value to its LUCK_MAX_MULT value as luck
+# rises (t = 0 at x1, 1 at x2, past 1 beyond - a tier that runs out
+# stays at zero). Falls back to the floor tier if nothing above it has
+# any weight (a Rare-or-better roll at base luck can't be Legendary).
+func roll_rarity(min_rarity: int = 0) -> int:
+	min_rarity = clampi(min_rarity, 0, RARITY_DEFS.size() - 1)
+	var t: float = (get_luck_mult() - 1.0) / (LUCK_MAX_MULT - 1.0)
+	var weights: Array = []
+	var total: float = 0.0
+	for i in range(RARITY_DEFS.size()):
+		var weight: float = 0.0
+		if i >= min_rarity:
+			weight = maxf(lerpf(RARITY_DEFS[i]["weight"], RARITY_DEFS[i]["weight_max"], t), 0.0)
+		weights.append(weight)
+		total += weight
+	if total <= 0.0:
+		return min_rarity
+	var pick: float = randf() * total
+	for i in range(weights.size()):
+		pick -= weights[i]
+		if pick < 0.0:
+			return i
+	return RARITY_DEFS.size() - 1
+
+# The rarity's count of affixes, drawn from AFFIX_DEFS without
+# replacement so a piece never carries the same stat twice. Every stat
+# is equally likely.
+func roll_affixes(rarity: int) -> Array:
+	rarity = clampi(rarity, 0, RARITY_DEFS.size() - 1)
+	var pool: Array = AFFIX_DEFS.keys()
+	pool.shuffle()
+	var affixes: Array = []
+	for i in range(mini(RARITY_DEFS[rarity]["affixes"], pool.size())):
+		affixes.append({"stat": pool[i], "value": _roll_value(rarity)})
+	return affixes
+
+# One buff's value in whole percent: uniform across the rarity's range
+# at Luck x1; the 1/luck exponent skews it upward, so at Luck x2 the
+# average roll sits two thirds of the way up instead of halfway.
+func _roll_value(rarity: int) -> int:
+	var def: Dictionary = RARITY_DEFS[rarity]
+	var t: float = pow(randf(), 1.0 / get_luck_mult())
+	return int(round(lerpf(def["value_min"], def["value_max"], t)))
+
+# The strings every item cell, tooltip and toast is built from:
+# "Helmet", "Legendary", "+47% damage" / "+0.9 HP/sec" (the last two
+# through format_bonus(), so armour reads like the shop and passives).
+func item_name(item: Dictionary) -> String:
+	return ARMOR_DEFS[item["id"]]["display_name"]
+
+func rarity_name(item: Dictionary) -> String:
+	return RARITY_DEFS[item["rarity"]]["name"]
+
+func affix_text(affix: Dictionary) -> String:
+	var def: Dictionary = AFFIX_DEFS[affix["stat"]]
+	return "%s %s" % [format_bonus(def, affix["value"] / 100.0 * def["scale"]), def["stat_label"]]
+
+func _armor(key: String) -> float:
+	return armor_bonus.get(key, 0.0)
+
+# Recomputes the per-affix totals the getters read from what is worn
+# right now. A Legendary helmet rolling damage 47 contributes 0.47 to
+# armor_bonus["damage"]; two worn pieces that both rolled damage add.
+# Runs at the start of every run and whenever run_worn changes.
+func _apply_armor() -> void:
+	armor_bonus.clear()
+	for slot in ARMOR_SLOTS:
+		var item = run_worn.get(slot)
+		if not (item is Dictionary):
+			continue
+		for affix in item["affixes"]:
+			var key: String = affix["stat"]
+			armor_bonus[key] = armor_bonus.get(key, 0.0) + affix["value"] / 100.0 * AFFIX_DEFS[key]["scale"]
+
+# A new run wears the equipped gear and nothing else. Copies, so a run
+# can swap pieces in and out without touching the save's dictionaries.
+func _seed_run_worn() -> void:
+	run_worn.clear()
+	for slot in ARMOR_SLOTS:
+		var item = equipped.get(slot)
+		run_worn[slot] = item.duplicate(true) if item is Dictionary else null
+	_apply_armor()
+
+# Moves an inventory piece into its slot; whatever was there goes back
+# to the inventory, so a swap is one call. False if the piece isn't in
+# the inventory (the Equip bar only ever offers those).
+func equip(item: Dictionary) -> bool:
+	var index: int = inventory.find(item)
+	if index < 0 or not ARMOR_DEFS.has(item.get("id")):
+		return false
+	inventory.remove_at(index)
+	var slot: String = item["id"]
+	var previous = equipped.get(slot)
+	if previous is Dictionary:
+		inventory.append(previous)
+	equipped[slot] = item
+	_save_slot()
+	return true
+
+func unequip(slot: String) -> bool:
+	var item = equipped.get(slot)
+	if not (item is Dictionary):
+		return false
+	equipped[slot] = null
+	inventory.append(item)
+	_save_slot()
+	return true
+
+# Turns an unequipped piece into its rarity's coins - flat, like the
+# Coin Bonus pick, so Gold Gain doesn't apply. Returns the coins paid,
+# 0 if the piece wasn't in the inventory.
+func salvage(item: Dictionary) -> int:
+	var index: int = inventory.find(item)
+	if index < 0:
+		return 0
+	inventory.remove_at(index)
+	var paid: int = RARITY_DEFS[item["rarity"]]["salvage"]
+	coins += paid
+	_save_slot()
+	return paid
+
+# The Backpack tab's Extract All: last run's secured haul becomes
+# inventory. Returns how many pieces moved.
+func extract_all() -> int:
+	var moved: int = haul.size()
+	if moved == 0:
+		return 0
+	inventory.append_array(haul)
+	haul = []
+	_save_slot()
+	return moved
+
+# "Legendary Helmet" over its affix lines - the tooltip on every item
+# cell, in and out of a run.
+func item_tooltip(item: Dictionary) -> String:
+	var lines: PackedStringArray = ["%s %s" % [rarity_name(item), item_name(item)]]
+	for affix in item["affixes"]:
+		lines.append(affix_text(affix))
+	return "\n".join(lines)
+
+# --- Chests and the run backpack ---
+
+func chest_drop_chance() -> float:
+	return CHEST_DROP_CHANCE * get_luck_mult()
+
+# The throttle: one chest on the field at a time, and CHEST_MIN_INTERVAL
+# between drops. Read before the roll so a horde's kills don't carpet
+# the floor with chests.
+func can_drop_chest() -> bool:
+	if game_time - last_chest_time < CHEST_MIN_INTERVAL:
+		return false
+	return get_tree().get_nodes_in_group("chests").is_empty()
+
+# Called from Zombie.die(): rolls a chest at the corpse. True if one
+# dropped.
+func try_drop_chest(pos: Vector2) -> bool:
+	if not can_drop_chest() or randf() >= chest_drop_chance():
+		return false
+	return spawn_chest(pos, 0) != null
+
+# Puts a chest on the field next to the player's world node, no roll
+# and no throttle (the Ancient Keeper's guaranteed chest uses this with
+# min_rarity 1). Restarts the interval either way. Null if there is no
+# run to drop it into.
+func spawn_chest(pos: Vector2, min_rarity: int = 0) -> Node:
+	if player == null or player.get_parent() == null:
+		return null
+	var chest = ChestScene.instantiate()
+	chest.min_rarity = min_rarity
+	player.get_parent().add_child(chest)
+	chest.global_position = pos
+	last_chest_time = game_time
+	return chest
+
+# A chest was walked into (Chest.open()): decide where its piece goes,
+# pay the rarity's gold, pause the run and hand the HUD the reveal. The
+# outcome carries "coins" - the gold actually banked, multipliers and
+# all - for the reveal's counter.
+func open_chest(item: Dictionary) -> Dictionary:
+	var outcome: Dictionary = stow_or_wear(item)
+	var before: int = coins
+	add_coins(RARITY_DEFS[item["rarity"]]["coins"])
+	outcome["coins"] = coins - before
+	is_paused_for_chest = true
+	get_tree().paused = true
+	chest_opened.emit(item, outcome)
+	return outcome
+
+# The reveal is done: resume, unless something else still holds the
+# run (a level-up owed in the same frame, the pause menu, game over).
+func close_chest() -> void:
+	is_paused_for_chest = false
+	if not is_paused_for_upgrade and not is_menu_paused and not is_game_over:
+		get_tree().paused = false
+
+# Where a chest's piece goes, decided on the spot (decision 6 of the
+# plan): worn if its slot is empty or it out-ranks what is worn there -
+# a displaced run find drops into the backpack, a displaced brought-in
+# piece just stops applying (it is still safe in the save); otherwise
+# stowed if a backpack slot is free; otherwise it swaps with the
+# lowest-rarity stowed piece when it beats it, and whichever loses is
+# left behind. Returns {"outcome": "worn" | "stowed" | "swapped" |
+# "left", "displaced": the run find pushed off the body or null,
+# "left": the piece left behind or null}.
+func stow_or_wear(item: Dictionary) -> Dictionary:
+	item["found"] = true
+	var slot: String = item["id"]
+	var worn = run_worn.get(slot)
+	var result: Dictionary = {"outcome": "", "displaced": null, "left": null}
+	if not (worn is Dictionary) or item["rarity"] > worn["rarity"]:
+		run_worn[slot] = item
+		result["outcome"] = "worn"
+		if worn is Dictionary and worn.get("found", false):
+			result["displaced"] = worn
+			result["left"] = _stow(worn)
+		_apply_armor()
+	else:
+		result["left"] = _stow(item)
+		if result["left"] == null:
+			result["outcome"] = "stowed"
+		elif is_same(result["left"], item):
+			result["outcome"] = "left"
+		else:
+			result["outcome"] = "swapped"
+	return result
+
+# Puts a piece in the backpack: straight in if a slot is free, else in
+# place of the lowest-rarity stowed piece it beats. Returns the piece
+# that ends up left behind, or null if none was.
+func _stow(item: Dictionary):
+	if backpack.size() < BACKPACK_SLOTS:
+		backpack.append(item)
+		return null
+	var lowest: int = 0
+	for i in range(1, backpack.size()):
+		if backpack[i]["rarity"] < backpack[lowest]["rarity"]:
+			lowest = i
+	if item["rarity"] > backpack[lowest]["rarity"]:
+		var loser: Dictionary = backpack[lowest]
+		backpack[lowest] = item
+		return loser
+	return item
+
+# The pause menu's Backpack panel (phase 6 UI) drives these three.
+# Wear a stowed piece: the run find it displaces takes the freed
+# backpack slot; a displaced brought-in piece just stops applying.
+func wear_from_backpack(index: int) -> bool:
+	if index < 0 or index >= backpack.size():
+		return false
+	var item: Dictionary = backpack[index]
+	var slot: String = item["id"]
+	var worn = run_worn.get(slot)
+	backpack.remove_at(index)
+	run_worn[slot] = item
+	if worn is Dictionary and worn.get("found", false):
+		backpack.append(worn)
+	_apply_armor()
+	return true
+
+# Stow a worn run find (only if a slot is free); the brought-in piece
+# for that slot, if any, goes back on. Brought-in gear itself can't be
+# stowed - it is already safe.
+func stow_worn(slot: String) -> bool:
+	var worn = run_worn.get(slot)
+	if not (worn is Dictionary) or not worn.get("found", false) or backpack.size() >= BACKPACK_SLOTS:
+		return false
+	backpack.append(worn)
+	var brought = equipped.get(slot)
+	run_worn[slot] = brought.duplicate(true) if brought is Dictionary else null
+	_apply_armor()
+	return true
+
+# Leave a stowed piece behind for good.
+func drop_from_backpack(index: int) -> bool:
+	if index < 0 or index >= backpack.size():
+		return false
+	backpack.remove_at(index)
+	return true
+
+# Leave a worn find behind for good; the brought-in piece for that
+# slot, if any, goes back on. Brought-in gear itself can't be discarded.
+func discard_worn(slot: String) -> bool:
+	var worn = run_worn.get(slot)
+	if not (worn is Dictionary) or not worn.get("found", false):
+		return false
+	var brought = equipped.get(slot)
+	run_worn[slot] = brought.duplicate(true) if brought is Dictionary else null
+	_apply_armor()
+	return true
+
 # --- Persistence: one global settings file + one file per save slot ---
 #
 # Preferences (damage numbers, fullscreen, FPS cap) and which slot is
 # active live in SETTINGS_PATH; progression (coins, permanent upgrades,
-# earned unlocks)
+# earned unlocks, the armour inventory, equipped gear, last run's
+# secured haul and the future key items / ingredients / potions)
 # lives in the active slot's file. Before slots existed everything was
 # in one save_data.json - _migrate_legacy_save() turns that into
 # settings + slot 1 the first time this build runs, and leaves the old
@@ -1232,6 +1758,95 @@ func _apply_slot(data: Dictionary) -> void:
 	var saved_unlocks: Dictionary = _as_dict(data.get("unlocks"))
 	for id in UNLOCK_DEFS.keys():
 		unlocks[id] = saved_unlocks.get(id, false) == true
+	inventory = _clamped_items(data.get("inventory"))
+	equipped = _clamped_equipped(data.get("equipped"))
+	haul = _clamped_items(data.get("haul"))
+	key_items = _clamped_counts(data.get("key_items"), true)
+	ingredients = _clamped_counts(data.get("ingredients"), false)
+	potions = _clamped_counts(data.get("potions"), false)
+
+# The one reading of a piece from disk (inventory, equipped and haul
+# alike): anything that isn't a piece is {}; unknown ids and stats are
+# dropped, the rarity clamped, duplicate stats keep the first, the affix
+# list is cut to the rarity's count and every value pulled into the
+# rarity's range - so retuning a range later re-clamps old loot on its
+# next load, which is the intended way to rebalance it.
+func _clamped_item(value) -> Dictionary:
+	if not (value is Dictionary) or not ARMOR_DEFS.has(value.get("id")):
+		return {}
+	var rarity: int = clampi(_as_int(value.get("rarity"), 0), 0, RARITY_DEFS.size() - 1)
+	var def: Dictionary = RARITY_DEFS[rarity]
+	var saved: Array = value.get("affixes") if value.get("affixes") is Array else []
+	var affixes: Array = []
+	var seen: Dictionary = {}
+	for entry in saved:
+		if affixes.size() >= def["affixes"]:
+			break
+		if not (entry is Dictionary) or not AFFIX_DEFS.has(entry.get("stat")) or seen.has(entry["stat"]):
+			continue
+		seen[entry["stat"]] = true
+		affixes.append({
+			"stat": entry["stat"],
+			"value": clampi(_as_int(entry.get("value"), def["value_min"]), def["value_min"], def["value_max"]),
+		})
+	return {"id": value["id"], "rarity": rarity, "affixes": affixes}
+
+func _clamped_items(value) -> Array:
+	var items: Array = []
+	if value is Array:
+		for entry in value:
+			var item: Dictionary = _clamped_item(entry)
+			if not item.is_empty():
+				items.append(item)
+	return items
+
+# One entry per ARMOR_SLOTS key, null when nothing is equipped there; a
+# piece saved under the wrong slot is dropped.
+func _clamped_equipped(value) -> Dictionary:
+	var saved: Dictionary = _as_dict(value)
+	var result: Dictionary = {}
+	for slot in ARMOR_SLOTS:
+		var item: Dictionary = _clamped_item(saved.get(slot))
+		result[slot] = item if not item.is_empty() and item["id"] == slot else null
+	return result
+
+# The future tabs' contents: string keys with a positive count, or true
+# for the flag-style key items. No defs exist yet, so anything
+# well-typed is kept as-is.
+func _clamped_counts(value, flags: bool) -> Dictionary:
+	var saved: Dictionary = _as_dict(value)
+	var result: Dictionary = {}
+	for key in saved.keys():
+		if not (key is String):
+			continue
+		if flags:
+			# `== true` against a JSON number raises in GDScript 4, so
+			# type-check first: only a real true survives.
+			if saved[key] is bool and saved[key]:
+				result[key] = true
+		else:
+			var count: int = _as_int(saved[key], 0)
+			if count > 0:
+				result[key] = count
+	return result
+
+# What a piece looks like on disk: id, rarity and affixes only, so the
+# in-memory "found" flag on run finds never reaches the save.
+func _clean_item(item: Dictionary) -> Dictionary:
+	return {"id": item["id"], "rarity": item["rarity"], "affixes": item["affixes"].duplicate(true)}
+
+func _clean_items(items: Array) -> Array:
+	var result: Array = []
+	for item in items:
+		result.append(_clean_item(item))
+	return result
+
+func _clean_equipped() -> Dictionary:
+	var result: Dictionary = {}
+	for slot in ARMOR_SLOTS:
+		var item = equipped.get(slot)
+		result[slot] = _clean_item(item) if item is Dictionary else null
+	return result
 
 func _load_slot(slot: int) -> void:
 	_apply_slot(_read_json(slot_path(slot)))
@@ -1256,6 +1871,12 @@ func _save_slot() -> void:
 		"coins": coins,
 		"permanent_upgrades": permanent_upgrades,
 		"unlocks": unlocks,
+		"inventory": _clean_items(inventory),
+		"equipped": _clean_equipped(),
+		"haul": _clean_items(haul),
+		"key_items": key_items,
+		"ingredients": ingredients,
+		"potions": potions,
 	})
 
 # Writes the active slot if any coins are waiting to be saved.
@@ -1313,12 +1934,17 @@ func slot_summary(slot: int) -> Dictionary:
 		_flush_slot()
 	var path: String = slot_path(slot)
 	if not FileAccess.file_exists(path):
-		return {"exists": false, "coins": 0, "upgrade_levels": 0}
+		return {"exists": false, "coins": 0, "upgrade_levels": 0, "items": 0}
 	var data := _read_json(path)
 	var levels: int = 0
 	for level in _clamped_upgrades(data).values():
 		levels += level
-	return {"exists": true, "coins": maxi(_as_int(data.get("coins"), 0), 0), "upgrade_levels": levels}
+	# Every piece the slot owns: in the bag, worn, or waiting in the haul.
+	var items: int = _clamped_items(data.get("inventory")).size() + _clamped_items(data.get("haul")).size()
+	for item in _clamped_equipped(data.get("equipped")).values():
+		if item is Dictionary:
+			items += 1
+	return {"exists": true, "coins": maxi(_as_int(data.get("coins"), 0), 0), "upgrade_levels": levels, "items": items}
 
 # One-time upgrade of the pre-slot save_data.json into settings.json +
 # slot 1. Gated on the settings file rather than on the legacy file, so
