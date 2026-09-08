@@ -69,6 +69,8 @@ func _ready() -> void:
 		slots_area.add_child(cell)
 		cell.dropped.connect(_on_cell_dropped)
 		cell.activated.connect(_on_cell_activated)
+		if not run_mode:
+			cell.secondary.connect(_on_cell_secondary)
 		cells[slot] = cell
 		var caption := Label.new()
 		caption.text = GameManager.ARMOR_DEFS[slot]["display_name"]
@@ -136,6 +138,15 @@ func _on_cell_dropped(_cell, data: Dictionary) -> void:
 
 func _on_cell_activated(cell) -> void:
 	unequip_requested.emit(cell.slot_filter)
+
+# Right-click a worn piece: the same salvage the bag cells offer and
+# the same one dragging it to the zone does - InventoryScreen._salvage
+# unequips an "equip" payload first and still asks for Epic and above.
+# Menu mode only: run mode's Drop is destructive and is deliberately
+# left to the zone, where a drag has already refused brought-in gear
+# (ItemCell.is_draggable()) that a right-click would not.
+func _on_cell_secondary(cell) -> void:
+	salvage_requested.emit(cell.drag_payload())
 
 # The Salvage / Drop zone: any drop over it from the bag or a slot (menu
 # mode), or from a stowed cell or a worn find (run mode).

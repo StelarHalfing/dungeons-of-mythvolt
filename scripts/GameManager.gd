@@ -1763,7 +1763,12 @@ func _apply_slot(data: Dictionary) -> void:
 	permanent_upgrades = _clamped_upgrades(data)
 	var saved_unlocks: Dictionary = _as_dict(data.get("unlocks"))
 	for id in UNLOCK_DEFS.keys():
-		unlocks[id] = saved_unlocks.get(id, false) == true
+		# `== true` against a JSON number raises in GDScript 4, which
+		# would abort the load here and silently leave everything read
+		# below (inventory, equipped, haul, the counts) empty. Same
+		# type-check _clamped_counts() uses: only a real true survives.
+		var saved_unlock = saved_unlocks.get(id)
+		unlocks[id] = saved_unlock is bool and saved_unlock
 	inventory = _clamped_items(data.get("inventory"))
 	equipped = _clamped_equipped(data.get("equipped"))
 	haul = _clamped_items(data.get("haul"))

@@ -45,10 +45,15 @@ var erupted: bool = false
 
 func _process(delta: float) -> void:
 	elapsed += delta
+	# Both phases animate - the ring pulses and its fill rushes out
+	# while it telegraphs, then the rubble disc fades under the
+	# rocks - so the canvas is dirtied every frame the node is
+	# alive. The child rock sprites tween on their own and never
+	# dirty this node, so nothing else would redraw the disc.
+	queue_redraw()
 	if not erupted:
 		if not is_locked():
 			_follow_player()
-		queue_redraw()
 		if elapsed >= telegraph_time:
 			_erupt()
 	elif elapsed >= telegraph_time + erupt_lifetime:

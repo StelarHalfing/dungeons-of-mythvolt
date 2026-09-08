@@ -58,6 +58,26 @@ const REAPER_TIME := 901.0  # 15:01
 @export var reaper_scene: PackedScene = preload("res://scenes/Reaper.tscn")
 var reaper_summoned: bool = false
 
+# Where a fresh spawn goes. `spawn_radius` is a plain distance, but the
+# screen is not round: at the shipped 1280x720 with Player.tscn's 1.25
+# camera zoom the visible world is 1024x576, so 500 px is well outside
+# the frame sideways and well *inside* the vertical wrap threshold
+# (288 half-height + Zombie.WRAP_MARGIN 96 = 384). A spawn placed
+# behind a player walking up or down therefore started past that
+# threshold and ScreenWrap teleported it to the leading edge on its
+# very first frame, arriving ~256 px in front instead of walking in
+# from 500 px behind. Wrapping stragglers round is the intended design
+# (see ScreenWrap.gd) and stays exactly as it is - it is the spawn
+# point that has to respect the frame, so the offset is fitted per
+# axis to a band around the visible rect: at least HIDE_MARGIN outside
+# it, so the spawn is off-screen and walks in, and at most CAP_MARGIN
+# outside it, which stays inside WRAP_MARGIN so nothing wraps at birth.
+# Both margins are read off the visible rect, so this holds at any
+# window shape or zoom rather than only at 1280x720.
+const ScreenWrapScript := preload("res://scripts/ScreenWrap.gd")
+const SPAWN_HIDE_MARGIN := 48.0
+const SPAWN_CAP_MARGIN := 64.0
+
 var spawn_timer: float = 0.0
 var enemies_spawned: int = 0
 
@@ -98,8 +118,7 @@ func spawn_enemy() -> void:
 	var player: Node2D = GameManager.player
 	if player == null:
 		return
-	var angle: float = randf() * TAU
-	var pos: Vector2 = player.global_position + Vector2.RIGHT.rotated(angle) * spawn_radius
+	var pos: Vector2 = _spawn_point(player)
 
 	enemies_spawned += 1
 	var spawn_tank_zombie: bool = (
@@ -133,7 +152,24 @@ func _summon_reaper() -> void:
 		return
 	var reaper = reaper_scene.instantiate()
 	get_parent().add_child(reaper)
-	reaper.global_position = player.global_position + Vector2.RIGHT.rotated(randf() * TAU) * spawn_radius
+	reaper.global_position = _spawn_point(player)
+
+# A point `spawn_radius` px from the player in a random direction, with
+# the distance pulled along that same ray until the offset sits in the
+# off-screen-but-inside-the-wrap-margin band on every axis (see the
+# note by SPAWN_HIDE_MARGIN). The direction is never changed, so the
+# spawn is still uniform around the player.
+func _spawn_point(player: Node2D) -> Vector2:
+	var dir: Vector2 = Vector2.RIGHT.rotated(randf() * TAU)
+	var half: Vector2 = ScreenWrapScript.visible_world_rect(self).size * 0.5
+	# How far along this ray the offset first clears the rect grown by
+	# each margin: whichever axis it crosses first is the one that puts
+	# it outside. A ray parallel to an axis never crosses the other, so
+	# the components carry an epsilon floor rather than dividing by zero.
+	var along := Vector2(maxf(absf(dir.x), 0.0001), maxf(absf(dir.y), 0.0001))
+	var min_radius: float = minf((half.x + SPAWN_HIDE_MARGIN) / along.x, (half.y + SPAWN_HIDE_MARGIN) / along.y)
+	var max_radius: float = minf((half.x + SPAWN_CAP_MARGIN) / along.x, (half.y + SPAWN_CAP_MARGIN) / along.y)
+	return player.global_position + dir * clampf(spawn_radius, min_radius, max_radius)
 
 # 0.0 before SKELETON_START_TIME, ramping linearly to 1.0 over
 # SKELETON_RAMP_DURATION seconds, then staying at 1.0 forever after.

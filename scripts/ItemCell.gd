@@ -10,7 +10,7 @@ extends Panel
 #    to salvage; takes a drop from an equip cell (= unequip).
 #  - "equip": an Equip bar slot (`slot_filter` names it). Takes only a
 #    piece for that slot from the bag; drag out or double-click to
-#    unequip.
+#    unequip; right-click to salvage (unequipped first).
 #  - "haul": last run's haul on the Backpack tab. Look only until
 #    Extract All.
 #  - "static": the HUD rows, key items: no drag, no drop.
