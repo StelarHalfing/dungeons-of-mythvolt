@@ -169,8 +169,12 @@ func _update_shake(delta: float) -> void:
 	elif camera.offset != Vector2.ZERO:
 		camera.offset = Vector2.ZERO
 
-func take_damage(amount: float) -> void:
-	if invuln_timer > 0 or GameManager.is_paused_for_upgrade:
+# pierce_invuln: land even inside the 0.5s of invulnerability a hit
+# grants - for a telegraphed attack the player had every chance to dodge
+# (the Ancient Keeper's rock slam, RockSlam.gd), which a stray contact
+# tick a moment earlier must not cancel. It still grants i-frames after.
+func take_damage(amount: float, pierce_invuln: bool = false) -> void:
+	if GameManager.is_paused_for_upgrade or (invuln_timer > 0 and not pierce_invuln):
 		return
 	hp -= amount
 	invuln_timer = 0.5

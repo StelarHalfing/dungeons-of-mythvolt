@@ -30,7 +30,7 @@ Upgrades screen on permanent bonuses. Starting at 1:30 into a run, a
 Tank Zombie — a slow, 300 HP enemy with a periodic dash attack — takes
 every 25th spawn and drops a red gem worth 5 XP instead of the usual
 green one; Skeletons (60 HP, two gems) replace Zombies from 1:45 and
-Slimes (500 HP, blue 3 XP gems) take over from 8:00 - see the
+Slimes (500 HP, gold 20 XP gems) take over from 8:00 - see the
 difficulty notes below. Survive as long as you can.
 
 ## How to run
@@ -49,8 +49,8 @@ scenes/
   BossTotem.tscn    - Area2D: the pillar 5 minutes' walk left of spawn; press E to
                       summon the Ancient Keeper (one-shot)
   AncientKeeper.tscn - the summonable boss (AncientKeeper.gd extends Zombie.gd):
-                      7500 HP, 2/3 Zombie speed, CC-immune, rock slam attack
-  RockSlam.tscn     - the slam's ground marker + eruption (RockSlam.gd)
+                      7500 HP, 2/3 Zombie speed, CC-immune, rock slam + rock barrage
+  RockSlam.tscn     - the ground ring both attacks use: tracks, locks, erupts (RockSlam.gd)
   Player.tscn       - CharacterBody2D, movement + the Laser Pistol's auto-fire,
                       with the Forcefield and one caster node per other weapon
                       under it (SwordCaster, TornadoCaster, GrenadeCaster,
@@ -58,7 +58,7 @@ scenes/
   Zombie.tscn       - Area2D, base enemy: chases player, contact damage (20 HP)
   TankZombie.tscn   - Area2D extending Zombie: 300 HP, half speed, dash attack
   Skeleton.tscn     - Zombie.gd with scene-tuned stats: 60 HP, drops two gems
-  Slime.tscn        - Zombie.gd again: 500 HP, slow, drops a blue gem
+  Slime.tscn        - Zombie.gd again: 500 HP, slow, drops a gold 20 XP gem
   Reaper.tscn       - the 15:01 finale (Reaper.gd extends Zombie.gd)
   Projectile.tscn   - Area2D, the Laser Pistol's shot
   Fireball.tscn     - Area2D, the Fireball's shot (explodes on impact)
@@ -69,7 +69,7 @@ scenes/
   XPGem.tscn        - Area2D, magnets to player, grants its xp_value (1 by default);
                       colour/size come from the value's tier (see XPGem.gd TIERS)
   RedXPGem.tscn     - XPGem.tscn inherited with xp_value 5, the Tank Zombie's drop
-  BlueXPGem.tscn    - XPGem.tscn inherited with xp_value 3, the Slime's drop
+  GoldXPGem.tscn    - XPGem.tscn inherited with xp_value 20, the Slime's drop
   CoinPickup.tscn   - Area2D, magnets to player, grants a coin
   MagnetPickup.tscn - rare drop: pulls every gem and coin on the field in
   GoldDreamPickup.tscn - rare drop: 10 seconds of double gold and a coin per kill
@@ -318,7 +318,7 @@ still drawn in code with `_draw()`.
   bigger surge ramps in (`SECOND_SURGE_INTERVAL_MULT`: a quarter of the
   plateau interval by 11:00, four times the rate and twice the first
   surge, Slimes included) and stays for the rest of the run. A Slime
-  drops one blue `BlueXPGem` worth 3 XP in place of green gems. At
+  drops one gold `GoldXPGem` worth 20 XP in place of green gems. At
   15:01 (`REAPER_TIME`, one second after the 15-minute survival unlock)
   the run ends: `_summon_reaper()` frees every enemy on the field (no
   drops), spawning stops for good, and one `Reaper.tscn` (`Reaper.gd`
@@ -351,21 +351,39 @@ still drawn in code with `_draw()`.
   (`_unhandled_input`, one shot) to spawn `AncientKeeper.tscn` 260px
   away. `AncientKeeper.gd` extends `Zombie.gd`: 7500 HP, speed 40 (2/3
   of a Zombie), 35 contact damage, immune to knockback and slows like
-  the Reaper, and a `CHASE` → `CHARGE` state machine for its **rock
-  slam**: every 4-5s (trigger to trigger, rolled fresh each time) with
-  the player within 600px it stops, tints red and charges for 1.5s
-  while `RockSlam.tscn` draws a red ring on the ground at the player's
-  *predicted* position (`player.global_position + player.velocity *
-  1.5`) with an inner fill that grows to meet the ring as the slam
-  lands; at 1.5s the floor there erupts (the background's own prop
-  rocks popped up and faded) and the player takes 45 if still inside.
-  The ring's radius is 55% of the ground the player can cover during
-  the telegraph (`0.55 * base_speed * speed_mult * 1.5`, clamped to
-  60-220px - 115px at base speed), which is what makes it a dodge
-  rather than a coin flip: keep running and you arrive dead centre,
-  stop or turn the instant it appears and you clear it, react late and
-  it lands. `predict_position()` tells the Grenade the boss stands
-  still for the rest of a charge. It drops one purple gem worth 250 XP
+  the Reaper, and a `CHASE` → `CHARGE` / `BARRAGE` state machine for
+  two attacks that share one ground ring, `RockSlam.tscn`: a circle
+  that *hunts* the player - glued to their feet (red, pulsing) for the
+  first part of its telegraph, then locked where they were for its lock
+  window (the ring turns amber and its inner fill rushes out to meet
+  it) - after which the floor there erupts (the background's own prop
+  rocks popped up and faded) and the player takes the hit if still
+  inside, *through* the 0.5s contact-damage i-frames
+  (`Player.take_damage(amount, pierce_invuln)`), so a zombie's touch a
+  moment earlier can't eat the boss's attacks. Every ring is winnable
+  by reacting: its radius is the ground the player covers in its lock
+  window minus a shared `reaction_time` of 0.4s, sized off the
+  player's actual speed so a speed passive keeps the same window in
+  seconds - anyone who starts moving within 0.4s of the ring turning
+  amber, from a standstill in any direction, and keeps going clears it;
+  someone already moving clears it with room to spare; standing still,
+  or starting later than that, gets hit. The **rock slam**: every 4-5s
+  (trigger to trigger, rolled fresh each time) with the player within
+  600px it stops, tints red (flaring amber when the ring locks) and
+  charges for 1.8s - 0.8s tracking, a 1.0s lock - for one big ring
+  (`base_speed * speed_mult * 0.6`, clamped to 60-220px - 84px at base
+  speed) and a 45 hit. The **rock barrage**: every 3s it stops for half
+  a second, tinted orange, and launches three small rings 0.25s apart,
+  each on a 1.1s telegraph (0.35s tracking, a 0.75s lock) with a
+  `base_speed * speed_mult * 0.35` radius (clamped 32-140px - 49px at
+  base speed), three rocks, a quicker fade and a 15 hit, then walks on
+  while they play out; a player who reacts to the first amber ring in
+  time and keeps moving clears all three, one who stands still takes
+  the same 45 a slam deals. Both cooldowns run all the time, an attack
+  only starts from `CHASE`, and the slam goes first if both are due.
+  `predict_position()` tells the Grenade the boss stands still for the
+  rest of a charge or a barrage's launch window. It drops one purple
+  gem worth 250 XP
   and one 500-coin pile (a single `CoinPickup` at 2x with
   `coin_value = 500`, so Gold Gain/Lucky Coin apply as to any coin).
   The HUD does two things for it: `TotemPointer.gd` (a Control filling

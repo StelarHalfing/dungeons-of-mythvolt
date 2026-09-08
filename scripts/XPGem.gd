@@ -1,7 +1,7 @@
 extends Area2D
 
 # XP orbs. A gem's xp_value picks its tier (TIERS: orb colour and size),
-# so the scene variants (XPGem/BlueXPGem/RedXPGem) differ only by value,
+# so the scene variants (XPGem/GoldXPGem/RedXPGem) differ only by value,
 # and a gem whose value grows (add_value()) re-tiers itself in place.
 #
 # Capped: spawn() is the one way to drop a gem. Past MAX_GEMS on the

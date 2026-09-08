@@ -2,5 +2,5 @@
 
 [ext_resource type="PackedScene" path="res://scenes/XPGem.tscn" id="1"]
 
-[node name="BlueXPGem" instance=ExtResource("1")]
-xp_value = 3
+[node name="GoldXPGem" instance=ExtResource("1")]
+xp_value = 20

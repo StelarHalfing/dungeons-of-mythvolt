@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/Zombie.gd" id="1"]
 [ext_resource type="Texture2D" path="res://allassets/DG Monsters Expansion/Slimes Pack/Green Slime.png" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/BlueXPGem.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/GoldXPGem.tscn" id="3"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 12.0

@@ -266,7 +266,7 @@ var damage_mult: float = 1.0
 var regen_bonus: float = 0.0
 # Wisdom Orb's stat (this run's XP multiplier; the permanent XP Gain
 # upgrade multiplies on top - see get_xp_mult()). XP is integer (1 per
-# gem, 3 per a Slime's blue gem, 5 per red), so the boosted value's fraction is carried
+# gem, 20 per a Slime's gold gem, 5 per red), so the boosted value's fraction is carried
 # across pickups instead of rounded away - ten 1-XP gems at x1.1 really
 # do give 11 XP. The carry is kept in whole hundredths of an XP (see
 # add_xp()) because a float carry isn't exact: 1.2 is really
