@@ -16,6 +16,9 @@ signal drop_received(data: Dictionary)
 
 const ItemCellScene := preload("res://scenes/ItemCell.tscn")
 const CELL_SIZE := Vector2(72, 72)
+# Widest the grid is allowed to get. Past this an ultrawide window would
+# string every piece out on one line instead of reading as a block.
+const MAX_COLUMNS := 16
 
 # Drag sources whose drops land on this page ("equip" for the bag).
 var accept_drops_from: Array = []
@@ -35,6 +38,20 @@ var cells: Array = []
 func _ready() -> void:
 	action_button.visible = false
 	action_button.pressed.connect(func(): action_pressed.emit())
+	scroll.resized.connect(_update_columns)
+	_update_columns()
+
+# As many cells as fit across (up to MAX_COLUMNS), so a wide window
+# fills its rows instead of leaving the grid stuck at ten columns with
+# the rest of the page empty, and a narrow one drops a column rather
+# than scrolling sideways. The vertical scrollbar's width is always
+# reserved, so the count can't flicker as the bar appears and goes.
+func _update_columns() -> void:
+	var h_sep: float = float(grid.get_theme_constant("h_separation"))
+	var bar_width: float = scroll.get_v_scroll_bar().get_combined_minimum_size().x
+	var available: float = scroll.size.x - bar_width
+	var columns: int = int(floor((available + h_sep) / (CELL_SIZE.x + h_sep)))
+	grid.columns = clampi(columns, 1, MAX_COLUMNS)
 
 # min_cells pads the grid with empty cells in the same mode (the run
 # backpack always shows its three cells, so an empty one is a drop

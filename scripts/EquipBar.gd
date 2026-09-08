@@ -24,14 +24,22 @@ const CELL_SIZE := Vector2(72, 72)
 const SLIDE_TIME := 0.2
 const HIDDEN_X := -340.0
 const SHOWN_X := 0.0
-# Bar-local cell positions (the bar is 300 x 600).
+# The slots, their captions and the portrait are laid out inside a
+# fixed 300 x 314 block which _layout_slots() centres in the $Slots
+# area, so the bar reads the same whatever height the screen gives it
+# (600 in the pause menu's Backpack panel, the window height minus the
+# tabs row on the Inventory screen). Positions are block-local.
+const BLOCK_SIZE := Vector2(300, 314)
 const SLOT_POSITIONS := {
-	"helmet": Vector2(114, 44),
-	"armor": Vector2(22, 150),
-	"shield": Vector2(206, 150),
-	"gloves": Vector2(60, 262),
-	"boots": Vector2(168, 262),
+	"helmet": Vector2(114, 0),
+	"armor": Vector2(22, 106),
+	"shield": Vector2(206, 106),
+	"gloves": Vector2(60, 218),
+	"boots": Vector2(168, 218),
 }
+const PORTRAIT_POSITION := Vector2(102, 106)
+const CAPTION_OFFSET := Vector2(-14, 74)
+const CAPTION_SIZE := Vector2(100, 22)
 const ZONE_ACCEPTS := ["inventory", "equip"]
 const RUN_ZONE_ACCEPTS := ["run_stowed", "run_worn"]
 
@@ -42,9 +50,12 @@ const RUN_ZONE_ACCEPTS := ["run_stowed", "run_worn"]
 @export var run_mode: bool = false
 var cells: Dictionary = {}
 var shown: bool = false
+var _captions: Dictionary = {}
 var _tween: Tween
 
 @onready var title_label: Label = $Title
+@onready var slots_area: Control = $Slots
+@onready var portrait: TextureRect = $Slots/Portrait
 @onready var salvage_zone: Panel = $SalvageZone
 @onready var salvage_label: Label = $SalvageZone/Label
 @onready var coins_label: Label = $CoinsLabel
@@ -54,21 +65,33 @@ func _ready() -> void:
 		var cell = ItemCellScene.instantiate()
 		cell.custom_minimum_size = CELL_SIZE
 		cell.size = CELL_SIZE
-		cell.position = SLOT_POSITIONS[slot]
 		cell.set_mode("run_worn" if run_mode else "equip", slot)
-		add_child(cell)
+		slots_area.add_child(cell)
 		cell.dropped.connect(_on_cell_dropped)
 		cell.activated.connect(_on_cell_activated)
 		cells[slot] = cell
 		var caption := Label.new()
 		caption.text = GameManager.ARMOR_DEFS[slot]["display_name"]
-		caption.position = SLOT_POSITIONS[slot] + Vector2(-14.0, 74.0)
-		caption.size = Vector2(100, 22)
+		caption.size = CAPTION_SIZE
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		caption.add_theme_font_size_override("font_size", 18)
 		caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(caption)
+		slots_area.add_child(caption)
+		_captions[slot] = caption
+	slots_area.resized.connect(_layout_slots)
+	_layout_slots()
 	refresh()
+
+# Centres the slot block in the space the bar has, so a taller window
+# spreads the gear out instead of leaving dead panel below the coins.
+func _layout_slots() -> void:
+	var origin := Vector2(
+		maxf((slots_area.size.x - BLOCK_SIZE.x) * 0.5, 0.0),
+		maxf((slots_area.size.y - BLOCK_SIZE.y) * 0.5, 0.0))
+	portrait.position = origin + PORTRAIT_POSITION
+	for slot in cells.keys():
+		cells[slot].position = origin + SLOT_POSITIONS[slot]
+		_captions[slot].position = origin + SLOT_POSITIONS[slot] + CAPTION_OFFSET
 
 func refresh() -> void:
 	var source: Dictionary = GameManager.run_worn if run_mode else GameManager.equipped

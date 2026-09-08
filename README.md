@@ -629,6 +629,14 @@ still drawn in code with `_draw()`.
   and right-click do the same without dragging. The Backpack tab shows
   the haul look-only with Extract All (`extract_all()`); Key Items,
   Ingredients and Potions are empty tabs whose save keys are reserved.
+  The screen holds at any window shape the `expand` stretch can hand it
+  (1280x720 base, so one axis is always the base and the other grows):
+  the tabs row spans the width and centres itself, the Equip bar keeps
+  its 300 x 600 proportions and centres vertically below the tabs
+  (`EquipBar._layout_slots()` centres the slot block, the Salvage zone
+  and coins sit at the bar's foot), and the grid picks its column count
+  from the width it actually has, up to `ItemGridPage.MAX_COLUMNS`, so a
+  wide window fills its rows instead of leaving the page half empty.
 
 ## Where to go from here
 
