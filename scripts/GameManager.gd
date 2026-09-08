@@ -776,8 +776,14 @@ func _apply_passive(id: String) -> void:
 	var passive_level: int = passives[id]["level"]
 	set(def["stat"], def["base"] + passive_level * def["per_level_value"])
 
+# The run clock, and everything keyed off it. Gated on a live `player`
+# as well as the pause/over flags: those all start false and only a run
+# ever sets them, so without it the clock ran from launch on the title,
+# shop and inventory screens - ten idle minutes there awarded the
+# survive-10:00 unlock and wrote the save slot, and fifteen secured an
+# empty haul. `player` is null between runs (see its declaration).
 func _process(delta: float) -> void:
-	if not is_paused_for_upgrade and not is_paused_for_chest and not is_menu_paused and not is_game_over:
+	if player != null and not is_paused_for_upgrade and not is_paused_for_chest and not is_menu_paused and not is_game_over:
 		game_time += delta
 		gold_dream_timer = maxf(gold_dream_timer - delta, 0.0)
 		_check_unlocks()

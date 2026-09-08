@@ -39,15 +39,19 @@ func _process(delta: float) -> void:
 	# A knockback shoves it in every state: it replaces chasing, and
 	# displaces a telegraph or dash without cancelling them.
 	var knocked: bool = _update_knockback(delta)
+
+	# Ticks in every state, not just CHASE (the same way the Ancient
+	# Keeper's cooldowns do): with the reset at trigger time below, that
+	# is what makes "once every 8 seconds" measure trigger-to-trigger.
+	# Frozen through TELEGRAPH and DASH it measured 9.3s instead.
+	# dash_interval is far longer than telegraph_time + dash_duration, so
+	# it can never run out before the cycle is back in CHASE.
+	dash_timer -= delta
 	match state:
 		State.CHASE:
 			if not knocked:
 				_move_toward_player(delta)
-			dash_timer -= delta
 			if dash_timer <= 0.0:
-				# Reset now so "once every 8 seconds" measures
-				# trigger-to-trigger, regardless of how long the
-				# telegraph/dash itself takes.
 				dash_timer = dash_interval
 				_start_telegraph()
 		State.TELEGRAPH:

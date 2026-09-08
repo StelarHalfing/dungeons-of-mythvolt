@@ -14,3 +14,6 @@ func apply_knockback(_direction: Vector2, _distance: float) -> void:
 
 func apply_slow(_duration: float = 0.25) -> void:
 	pass
+
+func apply_pull(_center: Vector2, _distance: float) -> void:
+	pass

@@ -178,15 +178,19 @@ func _update_shake(delta: float) -> void:
 # grants - for a telegraphed attack the player had every chance to dodge
 # (the Ancient Keeper's rock slam, RockSlam.gd), which a stray contact
 # tick a moment earlier must not cancel. It still grants i-frames after.
-func take_damage(amount: float, pierce_invuln: bool = false) -> void:
+# Returns whether the hit landed: a caller that re-arms its own damage
+# cooldown on the way out (Zombie._update_contact_damage()) must not
+# spend that cooldown on a hit the i-frames swallowed.
+func take_damage(amount: float, pierce_invuln: bool = false) -> bool:
 	if GameManager.is_paused_for_upgrade or (invuln_timer > 0 and not pierce_invuln):
-		return
+		return false
 	hp -= amount
 	invuln_timer = 0.5
 	_flash()
 	shake_time = SHAKE_DURATION
 	if hp <= 0:
 		die()
+	return true
 
 func die() -> void:
 	# GameManager.end_run() flags the game over, writes any coins still

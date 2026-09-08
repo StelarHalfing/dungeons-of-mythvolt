@@ -212,7 +212,11 @@ func _settle() -> void:
 	state = State.SETTLED
 	elapsed = 0.0
 	fx.progress = 1.0
-	chest.play("open")
+	# The chest is deliberately not re-played here: _open() already ran the
+	# opening clip, and play() with the animation the sprite is already
+	# parked on at its end frame restarts it - the chest snapped back to
+	# near-closed and opened a second time under the settled piece. A skip
+	# during the clip's first 0.4s just lets it finish on its own.
 	sparkles.emitting = false
 	item_cell.visible = true
 	coin_label.visible = true

@@ -70,7 +70,10 @@ func _deal_damage() -> void:
 # than moving them by the tornado's own delta - simpler and avoids
 # ever needing to know if the tornado moved this frame before or
 # after a given enemy did. Tank Zombies are exempt from the pull (see
-# class comment above) and get slowed instead.
+# class comment above) and get slowed instead. The pull goes through
+# Zombie.apply_pull() so the CC-immune bosses can refuse it - moving
+# their global_position from here dragged them regardless of the
+# apply_knockback()/apply_slow() no-ops they already override.
 func _pull_enemies(delta: float) -> void:
 	for area in get_overlapping_areas():
 		if not area.is_in_group("enemies"):
@@ -78,7 +81,7 @@ func _pull_enemies(delta: float) -> void:
 		if area.is_in_group("tank_zombies"):
 			area.apply_slow()
 		else:
-			area.global_position = area.global_position.move_toward(global_position, PULL_SPEED * delta)
+			area.apply_pull(global_position, PULL_SPEED * delta)
 
 func _draw() -> void:
 	draw_circle(Vector2.ZERO, radius, Color(0.55, 0.55, 0.6, 0.12))

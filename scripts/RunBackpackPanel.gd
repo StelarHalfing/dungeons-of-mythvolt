@@ -8,9 +8,10 @@ extends Panel
 # three backpack cells. Drag a stowed piece onto its slot to wear it
 # (the find it displaces takes the freed cell), drag a worn find into
 # the cells to stow it (only while one is free), let go over Drop to
-# leave a piece behind for good. Double-click does the same as the
-# drags. Every change goes through GameManager's backpack ops and the
-# panel re-reads afterwards, so it can never disagree with the HUD rows.
+# leave a piece behind for good - that drag is the only way to leave one
+# behind, a double-click wears or stows instead. Every change goes
+# through GameManager's backpack ops and the panel re-reads afterwards,
+# so it can never disagree with the HUD rows.
 
 signal back_pressed
 

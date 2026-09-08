@@ -48,14 +48,15 @@ func _cast(stats: Dictionary) -> bool:
 	for i in range(swings):
 		var slash := Node2D.new()
 		slash.set_script(SlashScript)
-		# Set before add_child(): Slash._ready() aims and deals its first
-		# damage the moment it enters the tree (same caveat as the other
-		# casters).
+		# Set before add_child(), the position included: Slash._ready()
+		# aims and deals its first damage the moment it enters the tree
+		# (same caveat as the other casters), and positioning it afterwards
+		# ran that opening pass from the world origin.
 		slash.direction = (in_depth[i].global_position - origin).normalized()
 		slash.reach = stats["size"]
 		slash.duration = slash_duration(stats)
 		slash.damage = damage
 		slash.knockback = stats.get("knockback", 0.0) * GameManager.get_knockback_mult()
+		slash.position = origin
 		world.add_child(slash)
-		slash.global_position = origin
 	return true

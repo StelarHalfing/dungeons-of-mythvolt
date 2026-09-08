@@ -117,6 +117,9 @@ func apply_knockback(_direction: Vector2, _distance: float) -> void:
 func apply_slow(_duration: float = 0.25) -> void:
 	pass
 
+func apply_pull(_center: Vector2, _distance: float) -> void:
+	pass
+
 func _roll_slam_interval() -> float:
 	return randf_range(slam_interval_min, slam_interval_max)
 

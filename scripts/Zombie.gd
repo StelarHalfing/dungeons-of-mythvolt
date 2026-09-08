@@ -30,6 +30,11 @@ const XPGemScript := preload("res://scripts/XPGem.gd")
 const MAGNET_DROP_CHANCE := 0.001
 
 var hp: float
+# Cooldown between contact hits while the player overlaps this enemy.
+# Exactly the length of the i-frames a hit grants (Player.take_damage()),
+# which is why _update_contact_damage() only re-arms it on a hit that
+# actually landed.
+const DAMAGE_TICK_INTERVAL := 0.5
 var damage_tick_timer: float = 0.0
 var overlapping_player: Node2D = null
 var is_dead: bool = false
@@ -92,6 +97,14 @@ func _wrap_if_behind() -> bool:
 
 func apply_slow(duration: float = 0.25) -> void:
 	slow_timer = duration
+
+# The Tornado's vortex pull (Tornado._pull_enemies()): re-centers this
+# enemy up to `distance` px toward `center` this frame. A hook like
+# apply_knockback()/apply_slow() above rather than the tornado writing
+# global_position itself, so the CC-immune bosses (Reaper,
+# AncientKeeper) can refuse it the same way they refuse the other two.
+func apply_pull(center: Vector2, distance: float) -> void:
+	global_position = global_position.move_toward(center, distance)
 
 # Knockback (a sword slash, today): the enemy is shoved `distance` px
 # along `direction` as an impulse velocity that decelerates at
@@ -199,12 +212,20 @@ func _facing_animation(dir: Vector2) -> String:
 	else:
 		return "walk_down" if dir.y > 0.0 else "walk_up"
 
+# One contact hit per DAMAGE_TICK_INTERVAL while the player overlaps.
+# The cooldown is re-armed only when take_damage() reports the hit
+# landed: it is exactly as long as the i-frames that hit grants, and the
+# two count down in different loops (this one in _process() with the
+# frame delta, invuln_timer in _physics_process() with the fixed step),
+# so this timer routinely expired a hair inside the window its own
+# previous hit opened. Re-arming on a swallowed hit spent a whole extra
+# tick, which at a high or uncapped fps cap halved contact damage;
+# retrying next frame instead lands it the moment the window closes.
 func _update_contact_damage(delta: float) -> void:
 	if overlapping_player != null:
 		damage_tick_timer -= delta
-		if damage_tick_timer <= 0:
-			overlapping_player.take_damage(contact_damage)
-			damage_tick_timer = 0.5
+		if damage_tick_timer <= 0 and overlapping_player.take_damage(contact_damage):
+			damage_tick_timer = DAMAGE_TICK_INTERVAL
 
 func take_damage(amount: float) -> void:
 	# Already dying (die() is queued below): a second hit in the same frame
