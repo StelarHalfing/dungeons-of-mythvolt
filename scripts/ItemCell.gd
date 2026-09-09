@@ -7,10 +7,11 @@ extends Panel
 # `mode` says what the box is in, which decides what can be dragged out
 # of it and dropped onto it (Godot's built-in drag and drop):
 #  - "inventory": a bag cell. Drag out; double-click to equip; right-click
-#    to salvage; takes a drop from an equip cell (= unequip).
+#    to salvage (always asks first); takes a drop from an equip cell
+#    (= unequip).
 #  - "equip": an Equip bar slot (`slot_filter` names it). Takes only a
 #    piece for that slot from the bag; drag out or double-click to
-#    unequip; right-click to salvage (unequipped first).
+#    unequip; right-click to salvage (unequipped first, always asks).
 #  - "haul": last run's haul on the Backpack tab. Look only until
 #    Extract All.
 #  - "static": the HUD rows, key items: no drag, no drop.

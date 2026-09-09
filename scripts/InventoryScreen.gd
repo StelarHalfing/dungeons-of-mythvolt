@@ -8,8 +8,9 @@ extends Control
 # the bar and GameManager's data ops (equip / unequip / salvage /
 # extract_all), which write the slot themselves; after any change the
 # whole screen re-reads GameManager, so the pages and the bar can never
-# disagree. Salvaging an Epic or Legendary asks first through the main
-# menu's confirm dialog (confirm_requested).
+# disagree. Salvaging asks first through the main menu's confirm dialog
+# (confirm_requested) whenever it was a right-click, and for an Epic or
+# Legendary however it was asked for - see _salvage().
 
 signal closed
 signal confirm_requested(message: String, yes_text: String, on_confirm: Callable)
@@ -49,7 +50,7 @@ func _ready() -> void:
 	bag.accept_drops_from = ["equip"]
 	bag.drop_received.connect(_on_bag_drop)
 	bag.cell_activated.connect(func(cell): _equip(cell.item))
-	bag.cell_secondary.connect(func(cell): _salvage(cell.drag_payload()))
+	bag.cell_secondary.connect(func(cell): _salvage(cell.drag_payload(), true))
 	pages[TAB_BACKPACK].action_pressed.connect(_extract_all)
 	equip_bar.equip_requested.connect(_equip)
 	equip_bar.unequip_requested.connect(_unequip)
@@ -123,7 +124,13 @@ func _unequip(slot: String) -> void:
 
 # data is a drag payload: {"item", "source", "from_slot"}. A piece off a
 # slot is unequipped first, then salvaged like any bag piece.
-func _salvage(data: Dictionary) -> void:
+# Salvaging is destructive and there is no undo, so what decides whether
+# it asks first is how easy the gesture was to trigger by accident, not
+# only what the piece is worth. A drag to the Salvage zone is deliberate
+# enough to go straight through below Epic; a right-click is a single
+# click on the piece itself, so it always asks (always_confirm) - before
+# that, one stray right-click destroyed a Common or Rare outright.
+func _salvage(data: Dictionary, always_confirm: bool = false) -> void:
 	var item: Dictionary = data["item"]
 	var source: String = str(data.get("source", ""))
 	var from_slot: String = str(data.get("from_slot", ""))
@@ -132,7 +139,7 @@ func _salvage(data: Dictionary) -> void:
 			GameManager.unequip(from_slot)
 		GameManager.salvage(item)
 		refresh()
-	if int(item["rarity"]) >= CONFIRM_FROM_RARITY:
+	if always_confirm or int(item["rarity"]) >= CONFIRM_FROM_RARITY:
 		var paid: int = GameManager.RARITY_DEFS[int(item["rarity"])]["salvage"]
 		confirm_requested.emit("Salvage your %s %s for %d coins?" % [GameManager.rarity_name(item), GameManager.item_name(item), paid], "Salvage", do_salvage)
 	else:

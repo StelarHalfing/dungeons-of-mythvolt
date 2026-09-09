@@ -15,7 +15,7 @@ extends Panel
 
 signal equip_requested(item: Dictionary)
 signal unequip_requested(slot: String)
-signal salvage_requested(data: Dictionary)
+signal salvage_requested(data: Dictionary, always_confirm: bool)
 # run_mode only: a piece let go over the Drop zone is to be left behind.
 signal drop_requested(data: Dictionary)
 
@@ -141,12 +141,16 @@ func _on_cell_activated(cell) -> void:
 
 # Right-click a worn piece: the same salvage the bag cells offer and
 # the same one dragging it to the zone does - InventoryScreen._salvage
-# unequips an "equip" payload first and still asks for Epic and above.
+# unequips an "equip" payload first. It always asks first, whatever the
+# rarity (the `true`): a right-click is one click on the piece itself,
+# with no gesture to abandon halfway, so without a prompt a mis-click
+# destroys the gear outright. Dragging to the zone keeps the narrower
+# Epic-and-above gate - the drag is already the deliberate part.
 # Menu mode only: run mode's Drop is destructive and is deliberately
 # left to the zone, where a drag has already refused brought-in gear
 # (ItemCell.is_draggable()) that a right-click would not.
 func _on_cell_secondary(cell) -> void:
-	salvage_requested.emit(cell.drag_payload())
+	salvage_requested.emit(cell.drag_payload(), true)
 
 # The Salvage / Drop zone: any drop over it from the bag or a slot (menu
 # mode), or from a stowed cell or a worn find (run mode).
@@ -162,7 +166,7 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	if run_mode:
 		drop_requested.emit(data)
 	else:
-		salvage_requested.emit(data)
+		salvage_requested.emit(data, false)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_BEGIN:
