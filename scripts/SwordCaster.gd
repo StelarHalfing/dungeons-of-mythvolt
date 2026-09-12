@@ -33,7 +33,7 @@ func _cast(stats: Dictionary) -> bool:
 	var origin: Vector2 = global_position
 	var depth: float = slash_depth(stats)
 	var in_depth: Array = []
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in live_enemies():
 		if origin.distance_to(enemy.global_position) <= depth + SlashScript.ENEMY_PAD:
 			in_depth.append(enemy)
 	if in_depth.is_empty():

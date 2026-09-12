@@ -55,7 +55,7 @@ scenes/
                       with the Forcefield and one caster node per other weapon
                       under it (SwordCaster, TornadoCaster, GrenadeCaster,
                       FireballCaster, MjolnirCaster)
-  Zombie.tscn       - Area2D, base enemy: chases player, contact damage (20 HP)
+  Zombie.tscn       - Area2D, base enemy: chases player, 20 HP, 10 contact damage
   TankZombie.tscn   - Area2D extending Zombie: 300 HP, half speed, dash attack
   Skeleton.tscn     - Zombie.gd with scene-tuned stats: 60 HP, drops two gems
   Slime.tscn        - Zombie.gd again: 500 HP, slow, drops a gold 20 XP gem
@@ -322,9 +322,9 @@ still drawn in code with `_draw()`.
   banner under the timer, and `_save_slot()` writes it at once). A slot is a
   real cap: `_upgrade_pool()` only offers a weapon or passive you
   don't own yet while a slot is free for it, so with two base slots a
-  run holds the Laser Pistol plus one more weapon until the upgrades
-  are bought. Adding a weapon or passive is a def entry plus an
-  `ICON_TEXTURES` entry.
+  run holds the Sword (the Knight's starting weapon) plus one more
+  weapon until the upgrades are bought. Adding a weapon or passive is
+  a def entry plus an `ICON_TEXTURES` entry.
 - **No custom Input Map actions** — movement reads raw key state
   (`Input.is_key_pressed`) so there's nothing to misconfigure in
   Project Settings. If you want gamepad support, this is the first
@@ -369,7 +369,7 @@ still drawn in code with `_draw()`.
   damage-numbers/coin-drops unchanged. `EnemySpawner.gd` decides which
   scene to instantiate per spawn (see the difficulty notes above).
   `XPGem.gd` similarly keys everything off one `xp_value` export:
-  `RedXPGem.tscn`/`BlueXPGem.tscn` are inherited scenes that only
+  `RedXPGem.tscn`/`GoldXPGem.tscn` are inherited scenes that only
   change that number, and the gem's colour and size follow from it.
 - **The Ancient Keeper is summoned, not scheduled.** `BossTotem.tscn`
   sits in `Main.tscn` five minutes of base-speed walking
@@ -624,11 +624,14 @@ still drawn in code with `_draw()`.
   its slot equips and swaps the old one back (`GameManager.equip()`),
   the wrong slots refuse it and dim while the right one and the
   Salvage zone light up, a slot's piece dropped on the bag unequips,
-  anything dropped on Salvage pays the rarity's coins - Epic and
-  Legendary ask first through `MainMenu.ask_confirm()`. Double-click
-  and right-click do the same without dragging. The Backpack tab shows
-  the haul look-only with Extract All (`extract_all()`); Key Items,
-  Ingredients and Potions are empty tabs whose save keys are reserved.
+  anything dropped on Salvage pays the rarity's coins - dragged
+  there, only Epic and Legendary ask first through
+  `MainMenu.ask_confirm()`. Without dragging, double-click equips or
+  unequips and right-click salvages; a right-click always asks first,
+  whatever the rarity, because it is one stray click on the piece
+  itself. The Backpack tab shows the haul look-only with Extract All
+  (`extract_all()`); Key Items, Ingredients and Potions are empty tabs
+  whose save keys are reserved.
   The screen holds at any window shape the `expand` stretch can hand it
   (1280x720 base, so one axis is always the base and the other grows):
   the tabs row spans the width and centres itself, the Equip bar keeps

@@ -1609,7 +1609,19 @@ func stow_or_wear(item: Dictionary) -> Dictionary:
 			result["outcome"] = "left"
 		else:
 			result["outcome"] = "swapped"
+	if run_secured and not is_same(result["left"], item):
+		_secure_late_find(item)
 	return result
+
+# A find from a chest opened after 15:00: _secure_run_loot() has already
+# run and will never see it, so copy it into the haul the same way it
+# would have. Keeps the reveal's "Worn!"/"Stowed", the HUD's "Loot
+# secured" and the end panel's count honest. A piece the swap rules left
+# behind never entered the run, so it isn't secured - the reveal says so.
+func _secure_late_find(item: Dictionary) -> void:
+	haul.append(_clean_item(item))
+	secured_count += 1
+	_save_slot()
 
 # Puts a piece in the backpack: straight in if a slot is free, else in
 # place of the lowest-rarity stowed piece it beats. Returns the piece
@@ -1725,6 +1737,12 @@ func _as_int(value, default: int) -> int:
 		return int(value)
 	return default
 
+# bool() only takes a bool, int or float in GDScript 4 - a string or a
+# container raises and aborts the caller, so a hand-edited settings file
+# would swallow every line after the cast.
+func _as_bool(value, default: bool) -> bool:
+	return value if value is bool else default
+
 func _as_dict(value) -> Dictionary:
 	return value if value is Dictionary else {}
 
@@ -1736,8 +1754,8 @@ func _load_persistent_data() -> void:
 # Sets every preference from a settings dictionary (missing keys keep
 # their defaults; unknown values are dropped).
 func _apply_settings(data: Dictionary) -> void:
-	show_damage_numbers = bool(data.get("show_damage_numbers", true))
-	is_fullscreen = bool(data.get("is_fullscreen", false))
+	show_damage_numbers = _as_bool(data.get("show_damage_numbers"), true)
+	is_fullscreen = _as_bool(data.get("is_fullscreen"), false)
 	var saved_cap: int = _as_int(data.get("fps_cap"), 0)
 	fps_cap = saved_cap if FPS_CAP_OPTIONS.has(saved_cap) else 0
 	active_slot = clampi(_as_int(data.get("active_slot"), 1), 1, SLOT_COUNT)
