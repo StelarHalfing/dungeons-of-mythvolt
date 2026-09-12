@@ -20,7 +20,7 @@ func _cast(stats: Dictionary) -> bool:
 	return true
 
 func _try_cast(stats: Dictionary) -> void:
-	var enemies := get_tree().get_nodes_in_group("enemies")
+	var enemies: Array = live_enemies()
 	if enemies.is_empty():
 		return
 

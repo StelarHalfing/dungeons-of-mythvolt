@@ -108,7 +108,14 @@ func get_input_dir() -> Vector2:
 	return dir
 
 func try_fire() -> void:
-	var enemies := get_tree().get_nodes_in_group("enemies")
+	# Skip anything killed earlier this frame: a Zombie stays in the
+	# group until its deferred die() runs, so a Forcefield tick can leave
+	# a corpse there and the shot would be wasted (see
+	# WeaponCaster.live_enemies(), which does this for the casters).
+	var enemies: Array = []
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy.get("is_dead"):
+			enemies.append(enemy)
 	if enemies.is_empty():
 		return
 

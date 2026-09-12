@@ -28,6 +28,19 @@ func _process(delta: float) -> void:
 	if cast_timer <= 0.0 and _cast(stats):
 		cast_timer = _cooldown(stats) * GameManager.get_cooldown_mult()
 
+# The "enemies" group minus anything already killed this frame. A Zombie
+# sets is_dead and defers die(), so a corpse stays in the group until the
+# end of the frame; the Forcefield damages from its own _process, before
+# the casters run, so a cast later in the same frame could otherwise
+# spend a swing (and its cooldown) on a corpse take_damage() ignores.
+# LightningChain and MjolnirHammer guard the same way.
+func live_enemies() -> Array:
+	var live: Array = []
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy.get("is_dead"):
+			live.append(enemy)
+	return live
+
 # Fires the weapon. Return false to leave the cooldown ready and try
 # again next frame (the Sword waits for something to come within reach).
 func _cast(_stats: Dictionary) -> bool:

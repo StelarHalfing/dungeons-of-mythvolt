@@ -32,7 +32,7 @@ extraction is the run's win condition made tangible.
 
 ## What already exists to build on
 
-- **Per-slot save file** (`user://slot_N.json`: coins, permanent
+- **Per-slot save file** (`user://save_slot_N.json`: coins, permanent
   upgrades, unlocks) with exactly one reader (`_apply_slot()`) and one
   writer (`_save_slot()`), everything on disk treated as untrusted and
   clamped. Inventory goes in the same file the same way.
@@ -368,7 +368,8 @@ the coins label.
   already uses for deletes.
 - Without dragging: double-click an inventory cell to equip it into
   its slot, double-click an equip slot to unequip, right-click to
-  salvage (same confirmation). Mouse only, like the rest of the menu.
+  salvage (which always asks first, whatever the rarity). Mouse
+  only, like the rest of the menu.
 
 **Backpack tab.** The same grid page fed by `haul`, with a line above
 it, `From your last run - 5 items`, and one big **Extract All** button
