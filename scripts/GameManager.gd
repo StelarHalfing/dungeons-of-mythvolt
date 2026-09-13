@@ -1701,21 +1701,51 @@ const SLOT_SAVE_INTERVAL := 1.0
 func slot_path(slot: int) -> String:
 	return "user://save_slot_%d.json" % slot
 
+# Saves are written to path + ".tmp" and renamed over the real file, so
+# a crash mid-write leaves the previous good file rather than a truncated
+# one. Godot's rename can remove the target before moving the temp file
+# in, so a crash in that gap leaves only the .tmp - which is complete by
+# then, and is what the readers below fall back to.
+func _tmp_path(path: String) -> String:
+	return path + ".tmp"
+
+func _save_file_exists(path: String) -> bool:
+	return FileAccess.file_exists(path) or FileAccess.file_exists(_tmp_path(path))
+
 func _read_json(path: String) -> Dictionary:
+	var data = _parse_json_file(path)
+	if data == null:
+		data = _parse_json_file(_tmp_path(path))
+	return data if data != null else {}
+
+# The file's top-level Dictionary, or null if it is missing or unparseable.
+func _parse_json_file(path: String):
 	if not FileAccess.file_exists(path):
-		return {}
+		return null
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		return {}
+		return null
 	var parsed = JSON.parse_string(file.get_as_text())
 	file.close()
-	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else null
 
 func _write_json(path: String, data: Dictionary) -> void:
-	var file := FileAccess.open(path, FileAccess.WRITE)
+	var text: String = JSON.stringify(data)
+	var tmp: String = _tmp_path(path)
+	var file := FileAccess.open(tmp, FileAccess.WRITE)
+	if file != null:
+		file.store_string(text)
+		var stored: bool = file.get_error() == OK
+		file.close()
+		if stored and DirAccess.rename_absolute(tmp, path) == OK:
+			return
+		DirAccess.remove_absolute(tmp)
+	# The temp file couldn't be written or moved (e.g. a locked file):
+	# fall back to writing in place rather than not saving at all.
+	file = FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return
-	file.store_string(JSON.stringify(data))
+	file.store_string(text)
 	file.close()
 
 # JSON numbers come back as floats and any key may hold the wrong type;
@@ -1932,8 +1962,10 @@ func delete_slot(slot: int) -> void:
 		return
 	var path: String = slot_path(slot)
 	var dir := DirAccess.open("user://")
-	if dir != null and FileAccess.file_exists(path):
-		dir.remove(path.get_file())
+	if dir != null:
+		for file_path in [path, _tmp_path(path)]:
+			if FileAccess.file_exists(file_path):
+				dir.remove(file_path.get_file())
 	if slot == active_slot:
 		_load_slot(slot)
 
@@ -1944,7 +1976,7 @@ func slot_summary(slot: int) -> Dictionary:
 	if slot == active_slot:
 		_flush_slot()
 	var path: String = slot_path(slot)
-	if not FileAccess.file_exists(path):
+	if not _save_file_exists(path):
 		return {"exists": false, "coins": 0, "upgrade_levels": 0, "items": 0}
 	var data := _read_json(path)
 	var levels: int = 0
@@ -1964,7 +1996,7 @@ func slot_summary(slot: int) -> Dictionary:
 # ignored instead of re-migrated over the player's current slot 1. The
 # legacy file itself is never touched - it *is* the backup.
 func _migrate_legacy_save() -> void:
-	if FileAccess.file_exists(SETTINGS_PATH) or not FileAccess.file_exists(LEGACY_SAVE_PATH):
+	if _save_file_exists(SETTINGS_PATH) or not FileAccess.file_exists(LEGACY_SAVE_PATH):
 		return
 	var legacy := _read_json(LEGACY_SAVE_PATH)
 	_apply_settings(legacy)
@@ -1972,7 +2004,7 @@ func _migrate_legacy_save() -> void:
 	_save_settings()
 	# A legacy file that didn't parse (legacy == {}) has no progression
 	# to carry over; leave slot 1 empty rather than writing a 0-coin save.
-	if legacy.has("coins") and not FileAccess.file_exists(slot_path(1)):
+	if legacy.has("coins") and not _save_file_exists(slot_path(1)):
 		_apply_slot(legacy)
 		_save_slot()
 

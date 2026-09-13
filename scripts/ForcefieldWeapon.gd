@@ -30,7 +30,9 @@ func _process(delta: float) -> void:
 	tick_timer -= delta
 	if tick_timer <= 0:
 		_deal_damage(stats["damage"] * GameManager.get_damage_mult())
-		tick_timer = interval
+		# Carry the overshoot so the tick rate doesn't round up to whole
+		# frames; clamp so a hitch can't bank a run of ticks.
+		tick_timer = maxf(tick_timer + interval, 0.0)
 
 func _sync_shape() -> void:
 	var stats: Dictionary = GameManager.weapons["forcefield"]

@@ -252,6 +252,12 @@ func _spawn_damage_number(amount: float) -> void:
 	DamageNumberScript.spawn(damage_number_scene, get_parent(), amount, self)
 
 func die() -> void:
+	# A kill queued in the frame the player died runs after the game-over
+	# panel has snapshotted "Enemies defeated" (pausing mid-frame doesn't
+	# stop the deferred flush): don't count it or drop loot on a dead field.
+	if GameManager.is_game_over:
+		queue_free()
+		return
 	GameManager.enemies_defeated += 1
 	_drop_loot()
 	# A chest, luck-weighted and throttled (GameManager.try_drop_chest).

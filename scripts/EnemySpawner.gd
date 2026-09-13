@@ -79,6 +79,7 @@ const SPAWN_HIDE_MARGIN := 48.0
 const SPAWN_CAP_MARGIN := 64.0
 
 var spawn_timer: float = 0.0
+const MAX_SPAWNS_PER_FRAME := 8
 var enemies_spawned: int = 0
 
 func _process(delta: float) -> void:
@@ -88,10 +89,18 @@ func _process(delta: float) -> void:
 		if not reaper_summoned:
 			_summon_reaper()
 		return
+	# Accumulate rather than reset: `spawn_timer = current_interval()`
+	# threw away the overshoot and allowed one spawn a frame, rounding
+	# the interval up to whole frames - 20/s instead of ~27/s at 60 fps
+	# after 11:00. The burst cap keeps a hitch from dumping a crowd.
 	spawn_timer -= delta
-	if spawn_timer <= 0:
+	var burst: int = 0
+	while spawn_timer <= 0.0 and burst < MAX_SPAWNS_PER_FRAME:
 		spawn_enemy()
-		spawn_timer = current_interval()
+		spawn_timer += current_interval()
+		burst += 1
+	if spawn_timer < 0.0:
+		spawn_timer = 0.0
 
 # Seconds between spawns right now: the base ramp, then the surge on top.
 func current_interval() -> float:
